@@ -19,7 +19,7 @@ Generatore procedurale di brani MIDI multi-traccia, interamente client-side: nes
 Non serve build né server: `index.html` è un'app statica.
 
 ```bash
-git clone https://github.com/<tuo-utente>/sumidi.git
+git clone https://github.com/johnwhaledev/sumidi.git
 cd sumidi
 # apri index.html nel browser, oppure servilo con un server statico qualsiasi, es.:
 npx serve .
