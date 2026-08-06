@@ -1,0 +1,8 @@
+node_modules/
+*.mid
+.DS_Store
+*.zip
+*.code-workspace
+data_players.xlsx
+PLAN/
+docs/

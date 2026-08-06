@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>suMidi</title>
+  <link rel="icon" type="image/x-icon" href="logo.ico">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <canvas id="bg"></canvas>
+
+  <div class="wrap">
+
+    <!-- SITE NAV -->
+    <nav class="site-nav">
+      <a href="https://www.johnwhale.com" class="site-nav-logo">
+        <span class="site-nav-dot"></span>
+        JOHN WHALE
+      </a>
+      <div class="site-nav-right">
+        <a href="https://www.johnwhale.com" class="site-nav-back">← Home</a>
+        <span class="site-nav-tag">SUMIDI</span>
+      </div>
+    </nav>
+
+    <!-- HEADER -->
+    <header>
+      <div class="logo-mark">
+        <img src="logo.png" alt="Logo" style="height:26px; margin-right:8px; object-fit:contain;">
+        <span class="logo-su">su</span><span class="logo-midi">Midi</span>
+      </div>
+      <div class="logo-dot"></div>
+      <a href="manual.html"
+        style="padding:5px 13px;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;font-weight:500;text-decoration:none;white-space:nowrap;transition:all .15s;"
+        onmouseover="this.style.borderColor='var(--teal)';this.style.color='var(--teal)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"
+        title="Apri il manuale">Manuale</a>
+    </header>
+
+    <div style="text-align: center; font-size: 10px; color: var(--muted); margin-top: -8px; margin-bottom: 20px;">
+      Applicazione interamente client-side: i dati inseriti restano nel tuo browser e non vengono mai inviati a un server. Non vengono utilizzati cookie di profilazione.
+    </div>
+
+    <!-- Composer bar — Key / BPM / Style / bottoni export sempre visibili -->
+    <div class="composer-bar" id="composer-bar">
+      <div>
+        <label>Tonalità</label>
+        <select id="sm-key" onchange="smSyncMeta()">
+          <optgroup label="Minori">
+            <option value="Am" selected>Am</option>
+            <option value="Em">Em</option>
+            <option value="Dm">Dm</option>
+            <option value="Bm">Bm</option>
+            <option value="F#m">F#m</option>
+            <option value="Cm">Cm</option>
+            <option value="Gm">Gm</option>
+            <option value="Fm">Fm</option>
+            <option value="C#m">C#m</option>
+          </optgroup>
+          <optgroup label="Maggiori">
+            <option value="C">C</option>
+            <option value="G">G</option>
+            <option value="F">F</option>
+            <option value="D">D</option>
+            <option value="A">A</option>
+            <option value="E">E</option>
+            <option value="B">B</option>
+            <option value="Bb">Bb</option>
+            <option value="Eb">Eb</option>
+            <option value="Ab">Ab</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="cb-bpm">
+        <label>BPM — <b id="sm-bpm-v">90</b></label>
+        <input type="range" id="sm-bpm" min="50" max="180" value="90"
+          oninput="document.getElementById('sm-bpm-v').textContent=this.value;smSyncMeta()">
+      </div>
+      <div>
+        <label>Stile</label>
+        <select id="sm-style" onchange="smSyncMeta()">
+          <option value="unplugged">MTV Unplugged</option>
+          <option value="folk">Folk Acoustic</option>
+          <option value="jazz_ballad">Jazz Ballad</option>
+          <option value="neo_soul">Neo Soul</option>
+          <option value="classical">Classical Chamber</option>
+          <option value="pop_rock">Pop Rock</option>
+          <option value="bossa_nova">Bossa Nova</option>
+          <option value="blues_rock">Blues Rock</option>
+          <option value="singer_songwriter">Singer/Songwriter</option>
+          <option value="latin">Latin / Afro-Cuban</option>
+          <option value="cinematic">Cinematic / Orchestral</option>
+          <option value="reggae">Reggae / Dub</option>
+          <option value="lo_fi">Lo-Fi</option>
+          <option value="punk">Punk</option>
+          <option value="garage_rock">Garage Rock</option>
+          <option value="chiptune">8-Bit / Chiptune</option>
+        </select>
+      </div>
+      <div class="cb-sep"></div>
+      <div class="cb-spacer"></div>
+      <button id="sm-seed-lock-btn" class="btn btn-s btn-sm" onclick="smToggleSeedLock()"
+        title="Blocca il seed: rigenerando riproduci sempre lo stesso brano">🔓</button>
+      <button id="sm-random-btn" class="btn btn-s btn-sm" onclick="smRandomAll()"
+        title="Randomizza stile, tonalità e BPM e rigenera">🎲 Random</button>
+      <button id="sm-gen-btn" class="btn btn-p btn-sm" onclick="smAutoGenerate()"
+        title="Genera canzone completa e importa nelle lanes">⚡ Genera</button>
+      <div class="cb-sep"></div>
+      <button id="sm-undo-btn" class="btn btn-s btn-sm" onclick="smUndo()" title="Annulla ultima modifica (Ctrl+Z)"
+        disabled>↩</button>
+      <div class="cb-sep"></div>
+      <button class="btn btn-s btn-sm" onclick="smExportChordChart()" title="Esporta accordi">🎼 CRD</button>
+      <button id="sm-export-btn" class="btn btn-d btn-sm" onclick="smExportSession()">⬇ MIDI</button>
+    </div>
+
+    <!-- ── Classic Mode (nascosto — integrazione completa in S17) ─── -->
+    <div id="classic-panel" style="display:none">
+
+      <!-- PARAMS -->
+      <div class="card">
+        <div class="card-title">Song Parameters</div>
+        <div class="grid">
+          <div>
+            <label>Style</label>
+            <select id="p-style" onchange="onStyleChange()">
+              <option value="unplugged">MTV Unplugged</option>
+              <option value="folk">Folk Acoustic</option>
+              <option value="jazz_ballad">Jazz Ballad</option>
+              <option value="neo_soul">Neo Soul</option>
+              <option value="classical">Classical Chamber</option>
+              <option value="pop_rock">Pop Rock</option>
+              <option value="bossa_nova">Bossa Nova</option>
+              <option value="blues_rock">Blues Rock</option>
+              <option value="singer_songwriter">Singer/Songwriter</option>
+              <option value="lo_fi">Lo-Fi</option>
+              <option value="punk">Punk</option>
+              <option value="garage_rock">Garage Rock</option>
+              <option value="chiptune">8-Bit / Chiptune</option>
+            </select>
+          </div>
+          <div>
+            <label>Tonalità</label>
+            <select id="p-key">
+              <optgroup label="Minori">
+                <option value="Am" selected>Am</option>
+                <option value="Em">Em</option>
+                <option value="Dm">Dm</option>
+                <option value="Bm">Bm</option>
+                <option value="F#m">F#m</option>
+                <option value="Cm">Cm</option>
+                <option value="Gm">Gm</option>
+                <option value="Fm">Fm</option>
+                <option value="C#m">C#m</option>
+              </optgroup>
+              <optgroup label="Maggiori">
+                <option value="C">C</option>
+                <option value="G">G</option>
+                <option value="F">F</option>
+                <option value="D">D</option>
+                <option value="A">A</option>
+                <option value="E">E</option>
+                <option value="B">B</option>
+                <option value="Bb">Bb</option>
+                <option value="Eb">Eb</option>
+                <option value="Ab">Ab</option>
+              </optgroup>
+            </select>
+          </div>
+          <div>
+            <label>BPM — <b id="bpm-v">72</b></label>
+            <input type="range" id="p-bpm" min="50" max="130" value="72"
+              oninput="document.getElementById('bpm-v').textContent=this.value">
+          </div>
+          <div>
+            <label>Forma</label>
+            <select id="p-form">
+              <optgroup label="Unplugged">
+                <option value="unplugged_ballad">Ballad completa</option>
+                <option value="unplugged_short">Ballad corta</option>
+                <option value="unplugged_no_bridge">No bridge</option>
+                <option value="unplugged_extended">Extended</option>
+                <option value="unplugged_waltz">Waltz 3/4</option>
+              </optgroup>
+              <optgroup label="Folk">
+                <option value="folk_standard">Standard</option>
+                <option value="folk_short">Corta</option>
+              </optgroup>
+              <optgroup label="Jazz Ballad">
+                <option value="jazz_standard">Standard</option>
+                <option value="jazz_aaba">AABA</option>
+              </optgroup>
+              <optgroup label="Neo Soul">
+                <option value="neo_soul_standard">Standard</option>
+              </optgroup>
+              <optgroup label="Classical">
+                <option value="classical_standard">Chamber</option>
+              </optgroup>
+              <optgroup label="Pop Rock">
+                <option value="pop_rock_standard">Standard</option>
+                <option value="pop_rock_short">Corta</option>
+              </optgroup>
+              <optgroup label="Bossa Nova">
+                <option value="bossa_nova_standard">Standard</option>
+                <option value="bossa_nova_aaba">AABA</option>
+              </optgroup>
+              <optgroup label="Blues Rock">
+                <option value="blues_rock_standard">Standard</option>
+              </optgroup>
+              <optgroup label="Singer/Songwriter">
+                <option value="singer_songwriter_standard">Standard</option>
+              </optgroup>
+              <optgroup label="Lo-Fi">
+                <option value="lo_fi_standard">Standard</option>
+              </optgroup>
+              <optgroup label="Punk">
+                <option value="punk_standard">Standard</option>
+                <option value="punk_short">Corta</option>
+              </optgroup>
+              <optgroup label="Garage Rock">
+                <option value="garage_rock_standard">Standard</option>
+              </optgroup>
+              <optgroup label="8-Bit / Chiptune">
+                <option value="chiptune_standard">Standard</option>
+              </optgroup>
+            </select>
+          </div>
+          <div>
+            <label>Chitarra</label>
+            <select id="p-guitar">
+              <option value="">Auto (da stile)</option>
+              <option value="fingerpicking">Fingerpicking</option>
+              <option value="arpeggio">Arpeggio</option>
+              <option value="strumming">Strumming</option>
+              <option value="classical">Classical</option>
+              <option value="powerchord">Power Chords</option>
+              <option value="riff">Riff melodico</option>
+            </select>
+          </div>
+          <div>
+            <label>Percussioni</label>
+            <select id="p-drumline">
+              <option value="">Auto (da stile)</option>
+              <option value="acoustic">Batteria Acustica</option>
+              <option value="brushes">Brushes (Spazzole)</option>
+              <option value="cajon">Cajón</option>
+              <option value="jazz">Jazz Ride</option>
+              <option value="bossa">Bossa Nova</option>
+            </select>
+          </div>
+          <div>
+            <label>Ensemble</label>
+            <select id="p-ens">
+              <option value="strings">Archi</option>
+              <option value="woodwinds">Fiati</option>
+              <option value="brass">Ottoni</option>
+              <option value="chamber">Camera (Vl/Va/Vc)</option>
+            </select>
+          </div>
+          <div>
+            <label>Umanizzazione — <b id="hum-v">35%</b></label>
+            <input type="range" id="p-hum" min="0" max="100" value="35"
+              oninput="document.getElementById('hum-v').textContent=this.value+'%'">
+          </div>
+          <div>
+            <label>Seed</label>
+            <div style="display:flex;gap:5px">
+              <input type="number" id="p-seed" value="42" min="1" max="999999" style="flex:1">
+              <button class="btn btn-s btn-sm" onclick="rnd()" title="seed casuale">🎲</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="p-seed-lock">
+              <span>🔒 Lock seed</span>
+            </label>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="p-flat" checked>
+              <span>MIDI Flat (no CC7/CC11)</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label>Moduli</label>
+          <div class="mods" id="mod-row">
+            <div class="mt on" data-m="drums" onclick="tog(this)"><span class="d"></span>🥁 Drums</div>
+            <div class="mt on" data-m="bass" onclick="tog(this)"><span class="d"></span>🎸 Bass</div>
+            <div class="mt on" data-m="guitar" onclick="tog(this)"><span class="d"></span>🎵 Guitar</div>
+            <div class="mt on" data-m="piano" onclick="tog(this)"><span class="d"></span>🎹 Piano</div>
+            <div class="mt on" data-m="ensemble" onclick="tog(this)"><span class="d"></span>🎻 Ensemble</div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-p" id="gen-btn">▶ Generate</button>
+          <button class="btn btn-s" id="rnd-btn" onclick="randomAll()">🎲 Random</button>
+          <span id="gen-note" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+        <div class="prog" id="prog">
+          <div class="prog-bar" id="pbar" style="width:0%"></div>
+        </div>
+        <div id="status"></div>
+      </div>
+
+    </div><!-- /classic-panel -->
+
+    <!-- ── Session Mode ───────────────────────────────────────────── -->
+    <div id="session-panel">
+
+      <!-- Mixer Preview -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="card-title" style="margin-bottom:0">Mixer Preview</span>
+          <span style="font-size:9px;color:var(--muted)">Solo preview · Export sempre completo</span>
+        </div>
+        <div class="sm-mixer">
+          <div class="sm-mixer-col" data-mix-inst="drums">
+            <img src="img/icons_instruments/player_drums.png" alt="" class="sm-mixer-bg">
+            <div class="sm-mixer-body">
+              <div class="sm-mixer-ctrls">
+                <select class="sm-mixer-out" onchange="smMixerSetOverride('drums', this.value)" title="Output MIDI">
+                  <option value="auto">Auto</option>
+                  <option value="0">Standard Kit</option>
+                  <option value="8">Room Kit</option>
+                  <option value="16">Power Kit</option>
+                  <option value="24">Electronic Kit</option>
+                  <option value="25">TR-808 Kit</option>
+                  <option value="32">Jazz Kit</option>
+                  <option value="40">Brush Kit</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="sm-mixer-col" data-mix-inst="bass">
+            <img src="img/icons_instruments/player_bass.png" alt="" class="sm-mixer-bg">
+            <div class="sm-mixer-body">
+              <div class="sm-mixer-ctrls">
+                <select class="sm-mixer-out" onchange="smMixerSetOverride('bass', this.value)" title="Output MIDI">
+                  <option value="auto">Auto</option>
+                  <option value="32">Acoustic</option>
+                  <option value="33">Elec Finger</option>
+                  <option value="34">Elec Pick</option>
+                  <option value="35">Fretless</option>
+                  <option value="36">Slap</option>
+                  <option value="38">Synth Bass</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="sm-mixer-col" data-mix-inst="guitar">
+            <img src="img/icons_instruments/player_guitar_acoustic.png" alt="" class="sm-mixer-bg">
+            <div class="sm-mixer-body">
+              <div class="sm-mixer-ctrls">
+                <select class="sm-mixer-out" onchange="smMixerSetOverride('guitar', this.value)" title="Output MIDI">
+                  <option value="auto">Auto</option>
+                  <option value="24">Nylon</option>
+                  <option value="25">Steel</option>
+                  <option value="26">Jazz</option>
+                  <option value="27">Clean</option>
+                  <option value="28">Muted</option>
+                  <option value="29">Overdrive</option>
+                  <option value="30">Distortion</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="sm-mixer-col" data-mix-inst="piano">
+            <img src="img/icons_instruments/player_piano_classical.png" alt="" class="sm-mixer-bg">
+            <div class="sm-mixer-body">
+              <div class="sm-mixer-ctrls">
+                <select class="sm-mixer-out" onchange="smMixerSetOverride('piano', this.value)" title="Output MIDI">
+                  <option value="auto">Auto</option>
+                  <option value="0">Gr. Piano</option>
+                  <option value="1">Brt. Piano</option>
+                  <option value="4">El. Piano 1</option>
+                  <option value="5">El. Piano 2</option>
+                  <option value="6">Harpsi.</option>
+                  <option value="7">Clavinet</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="sm-mixer-col" data-mix-inst="ensemble">
+            <img src="img/icons_instruments/player_strings_small.png" alt="" class="sm-mixer-bg">
+            <div class="sm-mixer-body">
+              <div class="sm-mixer-ctrls">
+                <select class="sm-mixer-out" onchange="smMixerSetOverride('ensemble', this.value)" title="Output MIDI">
+                  <option value="auto">Auto</option>
+                  <option value="48">Strings 1</option>
+                  <option value="50">SynthStr 1</option>
+                  <option value="52">Choir</option>
+                  <option value="61">Brass</option>
+                  <option value="73">Flute</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrangement Lanes -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="card-title" style="margin-bottom:0">Arrangement</span>
+          <span id="sm-count" style="color:var(--muted);font-size:10px">0 sezioni</span>
+        </div>
+
+        <!-- Toolbar aggiungi sezione -->
+        <div class="lanes-toolbar">
+          <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">+ Sezione</span>
+          <button class="lanes-add-btn" onclick="smAddSection('intro')">Intro</button>
+          <button class="lanes-add-btn" onclick="smAddSection('verse')">Verse</button>
+          <button class="lanes-add-btn" onclick="smAddSection('chorus')">Chorus</button>
+          <button class="lanes-add-btn" onclick="smAddSection('bridge')">Bridge</button>
+          <button class="lanes-add-btn" onclick="smAddSection('outro')">Outro</button>
+        </div>
+
+        <div id="sm-empty" class="sm-empty" style="display:none">
+          Nessuna sezione. Aggiungi le sezioni con i pulsanti qui sopra.
+        </div>
+
+        <!-- Lanes container -->
+        <div id="sm-lanes-wrap" class="lanes-wrap">
+          <div id="sm-lanes-header" class="lanes-header"></div>
+          <!-- Chord track: chip per accordo, sopra le lanes -->
+          <div id="sm-chord-track" class="chord-track-row">
+            <div class="chord-track-spacer"></div>
+            <div class="chord-track-blocks"></div>
+          </div>
+          <div id="sm-lanes-grid" class="lanes-grid"></div>
+        </div>
+
+        <!-- Flyout pannello strumento (aperto da click su lane-block) -->
+        <div id="sm-flyout" style="display:none"></div>
+      </div>
+
+      <!-- Pannelli strumento (per-sezione, iniettati dal flyout) -->
+      <div id="sm-panels-area"></div>
+
+      <!-- Pannelli strumento rimossi: Song Structure, Output MIDI, Notazione -->
+      <!-- Questi pannelli sono stati nascosti per S18 punto 9 -->
+
+    </div><!-- /session-panel -->
+
+    <!-- ── Footer ─────────────────────────────────────────────────── -->
+    <footer class="sm-footer">
+      <div>
+        <div class="sm-footer-mark">su<span>Midi</span></div>
+        <div class="sm-footer-sub">Un progetto John Whale · johnwhale.com</div>
+      </div>
+      <div class="sm-footer-links">
+        <a href="https://www.johnwhale.com" target="_blank" rel="noopener">Home</a>
+        <a href="https://www.johnwhale.com/privacy.html" target="_blank" rel="noopener">Privacy</a>
+        <a href="manual.html">Manuale</a>
+      </div>
+      <div class="sm-footer-links">
+        <a href="https://github.com/johnwhaledev/" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://open.spotify.com/intl-it/artist/7etRtq3G1vv4HOwIO29VgK" target="_blank" rel="noopener">Spotify</a>
+        <a href="https://www.linkedin.com/in/gianluca-savona/" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://ko-fi.com/johnwhale" target="_blank" rel="noopener">Ko-fi</a>
+        <a href="mailto:hi@johnwhale.com">hi@johnwhale.com</a>
+      </div>
+    </footer>
+    <div class="sm-footer-copy">JOHN WHALE © 2026</div>
+
+  </div><!-- /wrap -->
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <script type="module" src="src/main.js"></script>
+  <script>
+  (function () {
+    const canvas = document.getElementById('bg');
+    const ctx = canvas.getContext('2d');
+    let W, H, cols, pts, rings, frame = 0, nextSonar;
+    const COL_W = 15;
+    const CHARS = '0123456789ABCDEF♩♪+×∑∂░▒01ME51N▓SAP⟨⟩{}[]//'.split('');
+
+    function init() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+      const N_COLS = Math.ceil(W / COL_W), N_ROWS = Math.ceil(H / COL_W) + 2;
+      cols = Array.from({length: N_COLS}, () => ({
+        y: Math.random() * H, speed: 0.12 + Math.random() * 0.22,
+        chars: Array.from({length: N_ROWS}, () => CHARS[Math.floor(Math.random() * CHARS.length)]),
+        opacity: 0.025 + Math.random() * 0.045,
+        changeCounters: Array.from({length: N_ROWS}, () => Math.random() * 120),
+        changeIntervals: Array.from({length: N_ROWS}, () => 80 + Math.random() * 300),
+      }));
+      pts = Array.from({length: 28}, () => ({
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - .5) * .35, vy: (Math.random() - .5) * .35,
+        r: 1.5 + Math.random() * 2, pulse: Math.random() * Math.PI * 2,
+      }));
+      rings = []; nextSonar = 80 + Math.random() * 120;
+    }
+
+    function draw() {
+      ctx.fillStyle = '#0D1117'; ctx.fillRect(0, 0, W, H);
+      ctx.font = `${COL_W * 0.78}px 'Ubuntu Mono', monospace`; ctx.textBaseline = 'top';
+      cols.forEach((col, ci) => {
+        col.y += col.speed;
+        const nRows = col.chars.length;
+        col.chars.forEach((ch, ri) => {
+          col.changeCounters[ri]++;
+          if (col.changeCounters[ri] > col.changeIntervals[ri]) {
+            col.chars[ri] = CHARS[Math.floor(Math.random() * CHARS.length)];
+            col.changeCounters[ri] = 0; col.changeIntervals[ri] = 80 + Math.random() * 300;
+          }
+          const py = (ri * COL_W - col.y % (nRows * COL_W) + nRows * COL_W) % (nRows * COL_W);
+          const edgeFade = Math.max(0, Math.min(py / 80, 1) * Math.min((H - py) / 80, 1));
+          ctx.fillStyle = `rgba(46,204,113,${(col.opacity * edgeFade).toFixed(3)})`;
+          ctx.fillText(ch, ci * COL_W, py);
+        });
+      });
+      frame++;
+      pts.forEach(p => {
+        p.x += p.vx + Math.sin(frame * 0.008 + p.pulse) * 0.06;
+        p.y += p.vy + Math.cos(frame * 0.008 + p.pulse) * 0.06;
+        if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(46,204,113,0.18)'; ctx.fill();
+      });
+      for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 135) {
+          ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y);
+          ctx.strokeStyle = `rgba(46,204,113,${((1 - d / 135) * 0.09).toFixed(3)})`; ctx.lineWidth = 0.6; ctx.stroke();
+        }
+      }
+      nextSonar--;
+      if (nextSonar <= 0) {
+        const p = pts[Math.floor(Math.random() * pts.length)];
+        rings.push({x: p.x, y: p.y, r: 0, alpha: 0.22, maxR: 150});
+        nextSonar = 100 + Math.random() * 160;
+      }
+      for (let i = rings.length - 1; i >= 0; i--) {
+        const ring = rings[i];
+        ring.r += 1.1; ring.alpha *= 0.968;
+        if (ring.alpha < 0.003 || ring.r > ring.maxR) { rings.splice(i, 1); continue; }
+        ctx.beginPath(); ctx.arc(ring.x, ring.y, ring.r, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(46,204,113,${ring.alpha.toFixed(3)})`; ctx.lineWidth = 0.8; ctx.stroke();
+      }
+      requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', init); init(); draw();
+  })();
+  </script>
+</body>
+
+</html>

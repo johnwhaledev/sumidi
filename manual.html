@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>suMidi — Manuale</title>
+  <link rel="icon" type="image/x-icon" href="logo.ico">
+  <link rel="icon" type="image/png"    href="logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      /* Palette allineata alla styleguide (test) — vedi styles.css */
+      --bg:#0D1117; --s1:#161B22; --s2:#1C2128; --s3:#262C36;
+      --border:#21262D; --teal:#2ECC71; --teal2:#77DEA3;
+      --purple:#7B5EA7; --blue:#2E75B6; --gold:#FFD54F;
+      --text:#F0F6FC; --muted:#8B949E; --ok:#66BB6A;
+    }
+    body { background:var(--bg); color:var(--text); font-family:'Ubuntu','Segoe UI',system-ui,sans-serif; min-height:100vh; padding:18px 14px; }
+    #bg { position:fixed; inset:0; width:100%; height:100%; display:block; z-index:0; pointer-events:none; }
+    .wrap { position:relative; z-index:1; max-width:820px; margin:0 auto; }
+
+    /* Site nav — rimanda a johnwhale.com, stessa identità del sito */
+    .site-nav { display:flex; align-items:center; justify-content:space-between; padding:0 0 14px; margin-bottom:10px; flex-wrap:wrap; gap:10px; }
+    .site-nav-logo { display:flex; align-items:center; gap:.5rem; font-weight:700; font-size:13px; letter-spacing:.12em; color:var(--text); text-decoration:none; }
+    .site-nav-dot { width:6px; height:6px; border-radius:50%; background:var(--teal); }
+    .site-nav-right { display:flex; align-items:center; gap:.75rem; }
+    .site-nav-back { font-size:11px; color:var(--muted); text-decoration:none; border:1px solid var(--border); border-radius:6px; padding:4px 10px; transition:color .15s, border-color .15s; }
+    .site-nav-back:hover { color:var(--teal); border-color:var(--teal); }
+    .site-nav-tag { font-size:10px; letter-spacing:.1em; color:var(--teal); border:1px solid rgba(46,204,113,.3); border-radius:4px; padding:3px 8px; }
+
+    /* Footer */
+    .sm-footer { border-top:1px solid var(--border); margin-top:32px; padding:24px 0 14px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:1.5rem; }
+    .sm-footer-mark { font-weight:700; font-size:15px; letter-spacing:.1em; color:var(--text); }
+    .sm-footer-mark span { color:var(--teal); }
+    .sm-footer-sub { font-size:11px; color:var(--muted); margin-top:.3rem; }
+    .sm-footer-links { display:flex; flex-direction:column; gap:.35rem; }
+    .sm-footer-links a { font-size:12px; color:var(--muted); text-decoration:none; transition:color .15s; }
+    .sm-footer-links a:hover { color:var(--teal); }
+    .sm-footer-copy { text-align:center; font-size:10px; color:var(--border); padding:0 0 1rem; letter-spacing:.06em; }
+    .sm-footer-copy a { color:var(--muted); text-decoration:none; }
+    .sm-footer-copy a:hover { color:var(--teal); }
+
+    /* Nav app */
+    .top-nav { display:flex; align-items:center; gap:14px; border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:24px; flex-wrap:wrap; }
+    .top-nav a { padding:6px 14px; border:1px solid var(--border); border-radius:7px; color:var(--muted); font-size:12px; font-weight:500; text-decoration:none; transition:all .15s; }
+    .top-nav a:hover { border-color:var(--teal); color:var(--teal); }
+    .top-nav .logo-mark { display:flex; align-items:center; gap:0; }
+    .top-nav .logo-su   { font-weight:700; font-size:20px; color:var(--muted); }
+    .top-nav .logo-midi { font-weight:700; font-size:20px; color:var(--teal); }
+    .top-nav .logo-sep  { color:var(--border); margin:0 8px; font-weight:300; }
+    .top-nav .logo-title{ font-size:13px; color:var(--muted); font-weight:400; }
+
+    /* Sezioni manuale */
+    .section { background:var(--s1); border:1px solid var(--border); border-radius:10px; padding:20px 22px; margin-bottom:16px; }
+    .section h2 { font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--teal2); margin-bottom:14px; font-weight:700; }
+    .section h3 { font-size:12px; color:var(--gold); margin:14px 0 6px; }
+    p { font-size:13px; line-height:1.65; color:var(--text); margin-bottom:8px; }
+    .muted { color:var(--muted); font-size:12px; }
+
+    /* Tabella parametri */
+    table { width:100%; border-collapse:collapse; margin-top:8px; }
+    th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:var(--teal2); padding:6px 8px; border-bottom:1px solid var(--border); }
+    td { font-size:12px; padding:7px 8px; border-bottom:1px solid var(--s3); vertical-align:top; }
+    td:first-child { color:var(--gold); font-weight:600; white-space:nowrap; }
+    tr:last-child td { border-bottom:none; }
+
+    /* Chip */
+    .chip { display:inline-block; background:var(--s3); border:1px solid var(--border); border-radius:12px; padding:2px 9px; font-size:11px; color:var(--teal2); margin:2px; }
+    .chip-ch { background:rgba(38,166,154,.12); border-color:var(--teal); color:var(--teal); }
+  </style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="wrap">
+
+<nav class="site-nav">
+  <a href="https://www.johnwhale.com" class="site-nav-logo">
+    <span class="site-nav-dot"></span>
+    JOHN WHALE
+  </a>
+  <div class="site-nav-right">
+    <a href="https://www.johnwhale.com" class="site-nav-back">← Home</a>
+    <span class="site-nav-tag">SUMIDI</span>
+  </div>
+</nav>
+
+<nav class="top-nav">
+  <a href="index.html">← App</a>
+  <div class="logo-mark">
+    <span class="logo-su">su</span><span class="logo-midi">Midi</span>
+    <span class="logo-sep">|</span>
+    <span class="logo-title">Manuale Utente</span>
+  </div>
+</nav>
+
+<div style="text-align: center; font-size: 10px; color: var(--muted); margin-top: -12px; margin-bottom: 24px;">
+  Applicazione interamente client-side: i dati inseriti restano nel tuo browser e non vengono mai inviati a un server. Non vengono utilizzati cookie di profilazione.
+</div>
+
+<!-- COS'È SUMIDI -->
+<div class="section">
+  <h2>Cos'è suMidi</h2>
+  <p>suMidi è un generatore MIDI procedurale che funziona interamente nel browser, senza server e senza dipendenze esterne. Inserisci i parametri, esplora le tue idee tramite la <strong>Session Mode</strong> a tracce collegate e ottieni un file MIDI multi-traccia pronto per Logic o per un qualsiasi DAW.</p>
+  <p>L'interfaccia <strong>DAW-inspired</strong> ti offre arranger lanes a blocchi, funzionalità di Mute/Solo, un mixer per la configurazione di output/routing MIDI e una chord track interattiva con editor integrato. È presente un sistema di snapshot per tornare indietro (<strong>Undo ↩</strong>) fino a 10 step.</p>
+</div>
+
+<!-- STILI -->
+<div class="section">
+  <h2>Stili musicali</h2>
+  <p>Lo stile definisce il carattere armonico, ritmico e dinamico dell'intero brano. Influenza BPM di default, progressioni tipiche, densità strumentale e tipo di swing.</p>
+
+  <table>
+    <tr><th>Stile</th><th>Descrizione</th><th>BPM tipico</th></tr>
+    <tr>
+      <td>MTV Unplugged</td>
+      <td>Arrangiamento acustico intimista. Chitarra fingerpicking, piano ballad, archi leggeri. Progressioni I–VI–IV–V con varianti folk.</td>
+      <td>60–80</td>
+    </tr>
+    <tr>
+      <td>Folk Acoustic</td>
+      <td>Stile roots americano. Strumming e arpeggi, basso walking leggero, ensemble woodwinds. Progressioni pentatoniche e modali.</td>
+      <td>80–110</td>
+    </tr>
+    <tr>
+      <td>Jazz Ballad</td>
+      <td>Standard jazz con voicings estesi (7a, 9a, 13a). Piano comping, basso walking, ensemble woodwinds. Accordi dominanti alterati, harmonic minor.</td>
+      <td>50–80</td>
+    </tr>
+    <tr>
+      <td>Neo Soul</td>
+      <td>R&amp;B moderno con groove sincopato. Piano hip-hop keys, basso slap/fingerstyle, ensemble strings. Progressioni modali con passing chords.</td>
+      <td>65–90</td>
+    </tr>
+    <tr>
+      <td>Classical Chamber</td>
+      <td>Musica da camera con progressioni diatoniche classiche. Ensemble chamber (violino, viola, violoncello), piano classico. Contorni melodici stepwise e arch.</td>
+      <td>60–100</td>
+    </tr>
+    <tr>
+      <td>Pop / Rock</td>
+      <td>Band elettrica completa. Batteria rock con kick pattern sincopato e crash su ogni sezione, basso distinto, chitarra con arc per sezione (arpeggio intro → strumming verse → powerchord/riff chorus), ottoni ensemble. Progressioni diatoniche maggiori con dominanti secondari.</td>
+      <td>100–130</td>
+    </tr>
+    <tr>
+      <td>Bossa Nova</td>
+      <td>Groove brasiliano leggero con swing sottile. Piano/chitarra comping, basso agile, ensemble woodwinds. Progressioni jazz-influenced su base maggiore.</td>
+      <td>110–145</td>
+    </tr>
+    <tr>
+      <td>Blues Rock</td>
+      <td>Shuffle con blue note (scala blues, b5). Batteria e chitarra in feel shuffle, ottoni ensemble. Progressioni blues a 12 bar e varianti.</td>
+      <td>85–115</td>
+    </tr>
+    <tr>
+      <td>Singer/Songwriter</td>
+      <td>Voce e chitarra al centro, arrangiamento sobrio. Ensemble chamber discreto, chitarra fingerpicking/arpeggio. Progressioni diatoniche semplici.</td>
+      <td>65–90</td>
+    </tr>
+    <tr>
+      <td>Latin / Afro-Cuban</td>
+      <td>Groove afro-cubano, ottoni ensemble in evidenza. Tonalità minore, ritmiche sincopate.</td>
+      <td>100–140</td>
+    </tr>
+    <tr>
+      <td>Cinematic / Orchestral</td>
+      <td>Colonna sonora con ensemble a 4 voci (archi estesi). Tonalità minore, dinamiche ampie, adatto a intro/outro drammatici.</td>
+      <td>55–90</td>
+    </tr>
+    <tr>
+      <td>Reggae / Dub</td>
+      <td>Chitarra skank in levare (upstroke sull'ottavo off-beat), basso in evidenza, ottoni ensemble. Groove one-drop.</td>
+      <td>70–100</td>
+    </tr>
+    <tr>
+      <td>Lo-Fi</td>
+      <td>Groove rilassato "dietro il beat", umanizzazione alta per un effetto tape/vinile. Ensemble strings ridotto (2 voci), swing moderato.</td>
+      <td>70–90</td>
+    </tr>
+    <tr>
+      <td>Punk</td>
+      <td>Trio powerchord puro (batteria/basso/chitarra), tempo molto rapido, poca umanizzazione (tight e grezzo). Nessuna sezione orchestrale.</td>
+      <td>160–190</td>
+    </tr>
+    <tr>
+      <td>Garage Rock</td>
+      <td>Trio più "sporco" e live del punk, scala mixolydian, swing leggero. Nessuna sezione orchestrale.</td>
+      <td>120–150</td>
+    </tr>
+    <tr>
+      <td>8-Bit / Chiptune</td>
+      <td>Estetica square/pulse wave, quantizzazione rigida (zero umanizzazione). Nessuna sezione orchestrale.</td>
+      <td>140–165</td>
+    </tr>
+  </table>
+  <p class="muted">Gli stili <strong>Punk</strong>, <strong>Garage Rock</strong> e <strong>8-Bit/Chiptune</strong> sono trio "puri" (batteria/basso/chitarra): il modulo Ensemble resta disattivato per coerenza stilistica, anche se selezionato.</p>
+</div>
+
+<!-- PARAMETRI -->
+<div class="section">
+  <h2>Parametri</h2>
+
+  <h3>Tonalità</h3>
+  <p>La tonalità radice del brano. Le tonalità <strong>minori</strong> (Am, Em, Dm…) usano scale minori naturali/armoniche. Le tonalità <strong>maggiori</strong> (C, G, F…) usano scale maggiori e relativi modi. Influenza direttamente le progressioni degli accordi e le note disponibili per ogni strumento.</p>
+
+  <h3>BPM</h3>
+  <p>Velocità del brano in battiti per minuto. Range consigliato per stile indicato nella tabella sopra. BPM molto bassi (sotto 60) possono rendere i fill della batteria meno efficaci.</p>
+
+  <h3>Forma</h3>
+  <table>
+    <tr><th>Forma</th><th>Struttura</th></tr>
+    <tr><td>Ballad completa</td><td>Intro → Verse → Pre-chorus → Chorus → Verse → Chorus → Bridge → Chorus → Outro</td></tr>
+    <tr><td>Ballad corta</td><td>Intro → Verse → Chorus → Bridge → Chorus → Outro</td></tr>
+    <tr><td>Senza bridge</td><td>Come la completa ma senza sezione bridge</td></tr>
+    <tr><td>Extended</td><td>Struttura allargata con doppio verse e chorus multipli</td></tr>
+    <tr><td>Standard jazz</td><td>Forma ABAC (32 bar) tipica degli standard jazz</td></tr>
+    <tr><td>Jazz AABA</td><td>Forma AABA (32 bar) — il più comune schema jazz</td></tr>
+  </table>
+
+  <h3>Umanizzazione</h3>
+  <p>Aggiunge micro-variazioni casuali al timing e alla velocity degli eventi MIDI, simulando l'imperfezione di un musicista umano. <strong>0%</strong> = perfettamente quantizzato. <strong>100%</strong> = molto libero. Consigliato 25–45% per un suono naturale senza perdere il groove.</p>
+
+  <h3>Seed</h3>
+  <p>Numero intero che inizializza il generatore di numeri casuali. Stesso seed, stesso stile, stessa tonalità e stesso BPM producono sempre <strong>esattamente</strong> lo stesso brano — utile per confrontare varianti o tornare su un'idea che ti era piaciuta.</p>
+  <p>Nella composer bar in alto trovi due controlli dedicati:</p>
+  <table>
+    <tr><th>Controllo</th><th>Cosa fa</th></tr>
+    <tr><td>🔓 / 🔒 Blocca seed</td><td>Se sbloccato (🔓), ogni volta che premi Genera viene estratto un nuovo seed casuale (quindi un brano diverso anche a parità di stile/tonalità/BPM). Se bloccato (🔒), il seed resta fisso e rigenerare riproduce sempre lo stesso brano.</td></tr>
+    <tr><td>🎲 Random</td><td>Randomizza insieme stile, tonalità e BPM (scelto in un range coerente con lo stile estratto) e rigenera subito il brano. Utile per uscire dal "blocco dell'idea" e scoprire combinazioni a cui non avresti pensato.</td></tr>
+  </table>
+</div>
+
+<!-- MODULI -->
+<div class="section">
+  <h2>Moduli strumentali</h2>
+  <p>Ogni modulo può essere attivato o disattivato con il toggle corrispondente. Se un solo modulo è attivo, copre automaticamente tutte le sezioni adattando lo stile al tipo di sezione (intro → sparse, chorus → fuller, bridge → più espressivo).</p>
+
+  <h3>🥁 Drums</h3>
+  <p>Batteria GM con 5 tipi di fill (tom run, snare roll, crash accent, flam tom, kick burst). Il groove varia tra le sezioni: hi-hat denso nei chorus, ride/spazzole nei bridge jazz. Pattern a 2 bar con variazione sul bar 2. Pre-fill velocity ramp negli ultimi 2 beat prima di ogni fill.</p>
+
+  <h3>🎸 Bass</h3>
+  <p>Basso con 6 stili selezionabili (walking, fingerstyle, slap, fretless, acoustic bass, pick). Walking bass include passing tones diatonici. Fingerstyle include ghost notes a bassa energia. Range adattato allo stile (jazz walking più esteso, folk più compatto).</p>
+
+  <h3>🎵 Guitar — stili</h3>
+  <table>
+    <tr><th>Stile</th><th>Tecnica</th><th>Uso tipico</th></tr>
+    <tr><td>Auto</td><td>Selezionato dallo stile del brano</td><td>Default consigliato</td></tr>
+    <tr><td>Fingerpicking</td><td>Pattern Travis (bass + mid + hi), pinch, roll-up</td><td>Ballad acustica, folk intimo</td></tr>
+    <tr><td>Arpeggio</td><td>Note dell'accordo in sequenza ascendente/discendente con groove offset swing</td><td>Pop, unplugged, jazz leggero</td></tr>
+    <tr><td>Strumming</td><td>Accordi D/U con stagger per corda (8 tick), palm mute a bassa energia</td><td>Folk, pop, rock medio</td></tr>
+    <tr><td>Classical</td><td>Travis pattern su chitarra classica (program 24)</td><td>Classical chamber, brani formali</td></tr>
+    <tr><td>Power Chords</td><td>Root + 5a + ottava (alta energia), palm mute (bassa energia), pattern 8th aggr.</td><td>Rock, pop-rock, intro energici</td></tr>
+    <tr><td>Riff melodico</td><td>Linea melodica procedurale sul range basso E2–A4, PhraseMemory + selectContextualNote</td><td>Hook melodici, bridge, intro</td></tr>
+  </table>
+
+  <h3>🎹 Piano</h3>
+  <p>5 stili: <strong>ballad</strong> (accompagnamento morbido), <strong>comping</strong> (jazz comping con voicings estesi, upper extensions, drop-2), <strong>hip_hop_keys</strong> (groove sincopato con ghost beat LH), <strong>classical</strong> (accompagnamento classico), <strong>pad</strong> (note sostenute accordali). Anticipation notes su comping e hip_hop_keys (−s16/2 sul beat forte).</p>
+
+  <h3>🎻 Ensemble</h3>
+  <table>
+    <tr><th>Tipo</th><th>Voci</th><th>Caratteristiche</th></tr>
+    <tr><td>Archi</td><td>Violino, Viola, Violoncello</td><td>Pad legato + linee melodiche con portamento (glissando) tra alcune note, vibrato CC76 su chamber</td></tr>
+    <tr><td>Fiati</td><td>Flauto, Oboe, Clarinetto</td><td>Contorni melodici stepwise, vibrato CC76</td></tr>
+    <tr><td>Ottoni</td><td>Tromba, Trombone, Corno</td><td>Accordi forti, energy-dipendente, staccato ad alta energia</td></tr>
+    <tr><td>Camera (Vl/Va/Vc)</td><td>Violino, Viola, Violoncello (timbri distinti)</td><td>Passing tones soprano, contorni jazz o classical per stile</td></tr>
+  </table>
+  <p class="muted">Il modulo Ensemble è disattivato automaticamente per gli stili Punk, Garage Rock e 8-Bit/Chiptune (trio puri, coerenti con l'estetica del genere).</p>
+
+  <h3>🎚️ Drum Machine</h3>
+  <p>Alternativa alla batteria acustica: uno <strong>step sequencer a 16 step</strong> con pattern deterministici (nessuna umanizzazione, timing sempre identico) e swing opzionale. 3 preset di partenza — <strong>Trap</strong> (808 sub, hi-hat veloci), <strong>Lo-Fi</strong> (pattern spezzati, swing organico) e <strong>Electro</strong> (precisione 909, four-on-the-floor) — ognuno modificabile passo per passo dalla griglia UI (kick, snare, clap, hi-hat chiuso/aperto).</p>
+
+  <h3>🎭 Roster personaggi</h3>
+  <p>Ogni strumento (incluse batteria, drum machine e percussioni etniche) può essere assegnato a un <strong>personaggio</strong> con un proprio stile di esecuzione, un "feel" (0 = suona leggermente in ritardo sul beat, 1 = spinge in avanti) e una breve biografia. Sono disponibili 33 personaggi in totale, distribuiti su batteria/percussioni, basso, chitarra, piano ed ensemble. Selezionare un personaggio imposta automaticamente lo stile dello strumento corrispondente — è un modo rapido per esplorare varianti senza dover conoscere a memoria tutti gli stili disponibili.</p>
+</div>
+
+<!-- EXPORT MARKDOWN / TAB -->
+<div class="section">
+  <h2>Esportazione testi, accordi e tablature</h2>
+  <p>Oltre al file <strong>.mid</strong>, puoi esportare il brano in un documento <strong>Markdown (.md)</strong> leggibile e stampabile, utile per studiare il pezzo lontano dal computer o condividerlo con altri musicisti. Il documento include:</p>
+  <p>la struttura del brano sezione per sezione con i relativi accordi; una <strong>tablatura testuale</strong> per chitarra e basso, calcolata automaticamente scegliendo per ogni nota la posizione più comoda sul manico (corda/tasto); un diagramma sintetico degli accordi usati.</p>
+  <p class="muted">La tablatura è una stima algoritmica (non conosce le tue preferenze di diteggiatura): è pensata come punto di partenza per lo studio, non come trascrizione professionale.</p>
+</div>
+
+<!-- INTERFACCIA E MIXER -->
+<div class="section">
+  <h2>Interfaccia Session e Mixer</h2>
+  <p>La schermata principale centralizza il flusso di lavoro. Ad ogni azione (generazione, modifica accordo) i dati del brano e la preview visiva (pattern, accordi) vengono aggiornati subito.</p>
+
+  <h3>Arrangement Lanes</h3>
+  <p>Il brano viene suddiviso in blocchi visivi ("lanes") corrispondenti alle sezioni logiche (Intro, Verse, Chorus, ecc.). Ogni modulo strumentale ha il suo colore dedicato: <strong>Giallo</strong> (Drums), <strong>Blu</strong> (Bass), <strong>Rosso</strong> (Guitar), <strong>Verde</strong> (Piano), <strong>Arancio</strong> (Ensemble). Cliccando su un blocco strumento si espande il pannello di dettaglio (flyout) di quello strumento in quella sezione, dove puoi cambiarne stile/personaggio/parametri.</p>
+  <p>Cliccando invece sull'<strong>etichetta della sezione</strong> (es. "Verse 1") si apre un flyout a livello di intera sezione, con due azioni che riguardano tutti gli strumenti di quella sezione insieme: <strong>🔄 Rigenera sezione</strong> (ricalcola da capo tutti i moduli attivi in quella sezione, con un nuovo esito casuale) e <strong>× Elimina sezione</strong> (rimuove la sezione dal brano). Sono azioni a livello di canzone/sezione, non di singolo strumento — per questo sono state spostate qui e non si trovano più nel flyout dello strumento.</p>
+
+  <h3>Mixer</h3>
+  <p>Sotto la sezione arranger è presente un <strong>Mixer</strong> con una colonna per strumento. Da qui puoi forzare l'<strong>Output MIDI</strong> — cioè lo specifico strumento/patch General MIDI (es. "Slap Bass" o "Electronic Kit") con cui quella traccia verrà esportata, in alternativa alla scelta automatica basata sullo stile. Non essendoci una preview audio in-browser, il mixer serve a preparare l'assegnazione dei suoni per quando importerai il MIDI nel tuo DAW o campionatore.</p>
+</div>
+
+<!-- OUTPUT MIDI -->
+<div class="section">
+  <h2>Output MIDI — canali</h2>
+  <p>Il file MIDI generato contiene tracce separate per ogni modulo. Ogni traccia è su un canale MIDI dedicato per facilitare l'assegnazione dei VST nel DAW.</p>
+
+  <table>
+    <tr><th>Canale</th><th>Traccia</th><th>Program GM</th></tr>
+    <tr><td><span class="chip chip-ch">ch 1</span></td><td>Bass</td><td>Dipende dallo stile (33=Bass Finger, 36=Slap Bass…)</td></tr>
+    <tr><td><span class="chip chip-ch">ch 2</span></td><td>Guitar</td><td>25=Steel Guitar, 24=Nylon, 30=Overdrive, 29=Muted</td></tr>
+    <tr><td><span class="chip chip-ch">ch 3</span></td><td>Piano</td><td>0=Grand Piano, 4=Rhodes, 88=Pad</td></tr>
+    <tr><td><span class="chip chip-ch">ch 4</span></td><td><strong>Chord track</strong> — sempre presente</td><td>49=String Ensemble 2 (pad di riferimento armonico)</td></tr>
+    <tr><td><span class="chip chip-ch">ch 5–7</span></td><td>Ensemble V1/V2/V3</td><td>Variabile per tipo ensemble</td></tr>
+    <tr><td><span class="chip chip-ch">ch 9</span></td><td>Drums</td><td>Standard GM percussion</td></tr>
+  </table>
+
+  <p style="margin-top:10px" class="muted">La <strong>Chord track (ch 4)</strong> è sempre generata indipendentemente dai moduli attivi. Contiene block-chord sostenuti per ogni regione armonica — utile come riferimento armonico in DAW o per l'assegnazione di un pad/pad synth.</p>
+</div>
+
+<!-- CHORD TRACK E CHIP EDITOR -->
+<div class="section">
+  <h2>Chord Track e Chip Editor</h2>
+  <p>L'armonia del brano è esposta sotto forma di una "Chord Track" orizzontale posizionata in sincrono sopra le lanes degli arrangiamenti. Ogni accordo è rappresentato da un bottone grafico ("Chip").</p>
+
+  <h3>Come funziona</h3>
+  <p>La larghezza del chip è proporzionale al ritmo armonico della sezione (un chip da mezzo bar è più corto di un chip da 2 bar). Cliccando su un chip si espande un <strong>micro-editor dinamico</strong> in popup.</p>
+
+  <h3>Slash Chords e Modifiche</h3>
+  <p>Dal micro-editor puoi alterare la nota radice, la qualità (maj, min, dom7 ecc.) e inserire una specifica nota al <strong>basso (Slash Chord, es. Am/E)</strong>. Premendo "Applica" lo stato verrà propagato al flyout memorizzato e gli eventi MIDI verranno ricalcolati cercando il voice-leading di minor sforzo (shortest-path ±6 semitoni).</p>
+
+  <h3>Aggiunta o Reset</h3>
+  <p>È possibile aggiungere sezioni manuali vuote che verranno espanse con template base da popolare. Per reset completi puoi sempre cliccare su ⚡ Genera per calcolare i soli dati dipendenti, oppure avvalerti del pulsante <strong>Undo (↩)</strong> per ripristinare il blocco precedente.</p>
+</div>
+
+<!-- NOTE TECNICHE / TROUBLESHOOTING -->
+<div class="section">
+  <h2>Note tecniche e risoluzione problemi</h2>
+
+  <h3>Il brano non si salva da solo</h3>
+  <p>suMidi non salva automaticamente il lavoro in corso tra una sessione e l'altra: se chiudi o ricarichi la pagina prima di esportare, il brano va perso. Esporta il <strong>.mid</strong> (e, se ti interessa, il <strong>.md</strong> con accordi e tablature) prima di chiudere la scheda. L'unico "salvataggio" presente è la cronologia <strong>Undo (↩)</strong>, valida solo all'interno della sessione corrente e limitata a 10 passi.</p>
+
+  <h3>Compatibilità</h3>
+  <p>suMidi è pensato per browser desktop moderni (Chrome, Edge, Firefox aggiornati). Non richiede installazione né connessione a Internet dopo il primo caricamento della pagina, con l'eccezione del font Google (Ubuntu) caricato da remoto: se non c'è connessione, l'app resta comunque utilizzabile con un font di sistema equivalente.</p>
+</div>
+
+<footer class="sm-footer">
+  <div>
+    <div class="sm-footer-mark">su<span>Midi</span></div>
+    <div class="sm-footer-sub">Un progetto John Whale · johnwhale.com</div>
+  </div>
+  <div class="sm-footer-links">
+    <a href="https://www.johnwhale.com" target="_blank" rel="noopener">Home</a>
+    <a href="https://www.johnwhale.com/privacy.html" target="_blank" rel="noopener">Privacy</a>
+    <a href="index.html">App</a>
+  </div>
+  <div class="sm-footer-links">
+    <a href="https://github.com/johnwhaledev/" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://open.spotify.com/intl-it/artist/7etRtq3G1vv4HOwIO29VgK" target="_blank" rel="noopener">Spotify</a>
+    <a href="https://www.linkedin.com/in/gianluca-savona/" target="_blank" rel="noopener">LinkedIn</a>
+    <a href="https://ko-fi.com/johnwhale" target="_blank" rel="noopener">Ko-fi</a>
+    <a href="mailto:hi@johnwhale.com">hi@johnwhale.com</a>
+  </div>
+</footer>
+<div class="sm-footer-copy">JOHN WHALE © 2026</div>
+
+</div><!-- /wrap -->
+<script>
+(function () {
+  const canvas = document.getElementById('bg');
+  const ctx = canvas.getContext('2d');
+  let W, H, cols, pts, rings, frame = 0, nextSonar;
+  const COL_W = 15;
+  const CHARS = '0123456789ABCDEF♩♪+×∑∂░▒01ME51N▓SAP⟨⟩{}[]//'.split('');
+
+  function init() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    const N_COLS = Math.ceil(W / COL_W), N_ROWS = Math.ceil(H / COL_W) + 2;
+    cols = Array.from({length: N_COLS}, () => ({
+      y: Math.random() * H, speed: 0.12 + Math.random() * 0.22,
+      chars: Array.from({length: N_ROWS}, () => CHARS[Math.floor(Math.random() * CHARS.length)]),
+      opacity: 0.025 + Math.random() * 0.045,
+      changeCounters: Array.from({length: N_ROWS}, () => Math.random() * 120),
+      changeIntervals: Array.from({length: N_ROWS}, () => 80 + Math.random() * 300),
+    }));
+    pts = Array.from({length: 28}, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - .5) * .35, vy: (Math.random() - .5) * .35,
+      r: 1.5 + Math.random() * 2, pulse: Math.random() * Math.PI * 2,
+    }));
+    rings = []; nextSonar = 80 + Math.random() * 120;
+  }
+
+  function draw() {
+    ctx.fillStyle = '#0D1117'; ctx.fillRect(0, 0, W, H);
+    ctx.font = `${COL_W * 0.78}px 'Ubuntu Mono', monospace`; ctx.textBaseline = 'top';
+    cols.forEach((col, ci) => {
+      col.y += col.speed;
+      const nRows = col.chars.length;
+      col.chars.forEach((ch, ri) => {
+        col.changeCounters[ri]++;
+        if (col.changeCounters[ri] > col.changeIntervals[ri]) {
+          col.chars[ri] = CHARS[Math.floor(Math.random() * CHARS.length)];
+          col.changeCounters[ri] = 0; col.changeIntervals[ri] = 80 + Math.random() * 300;
+        }
+        const py = (ri * COL_W - col.y % (nRows * COL_W) + nRows * COL_W) % (nRows * COL_W);
+        const edgeFade = Math.max(0, Math.min(py / 80, 1) * Math.min((H - py) / 80, 1));
+        ctx.fillStyle = `rgba(46,204,113,${(col.opacity * edgeFade).toFixed(3)})`;
+        ctx.fillText(ch, ci * COL_W, py);
+      });
+    });
+    frame++;
+    pts.forEach(p => {
+      p.x += p.vx + Math.sin(frame * 0.008 + p.pulse) * 0.06;
+      p.y += p.vy + Math.cos(frame * 0.008 + p.pulse) * 0.06;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(46,204,113,0.18)'; ctx.fill();
+    });
+    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+      const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 135) {
+        ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y);
+        ctx.strokeStyle = `rgba(46,204,113,${((1 - d / 135) * 0.09).toFixed(3)})`; ctx.lineWidth = 0.6; ctx.stroke();
+      }
+    }
+    nextSonar--;
+    if (nextSonar <= 0) {
+      const p = pts[Math.floor(Math.random() * pts.length)];
+      rings.push({x: p.x, y: p.y, r: 0, alpha: 0.22, maxR: 150});
+      nextSonar = 100 + Math.random() * 160;
+    }
+    for (let i = rings.length - 1; i >= 0; i--) {
+      const ring = rings[i];
+      ring.r += 1.1; ring.alpha *= 0.968;
+      if (ring.alpha < 0.003 || ring.r > ring.maxR) { rings.splice(i, 1); continue; }
+      ctx.beginPath(); ctx.arc(ring.x, ring.y, ring.r, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(46,204,113,${ring.alpha.toFixed(3)})`; ctx.lineWidth = 0.8; ctx.stroke();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', init); init(); draw();
+})();
+</script>
+</body>
+</html>

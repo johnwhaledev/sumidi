@@ -1,0 +1,370 @@
+{
+    "cases": [
+        [
+            40,
+            43,
+            0,
+            480,
+            90,
+            120,
+            480
+        ],
+        [
+            43,
+            40,
+            480,
+            480,
+            90,
+            120,
+            480
+        ],
+        [
+            40,
+            41,
+            0,
+            480,
+            80,
+            100,
+            480
+        ],
+        [
+            40,
+            52,
+            0,
+            960,
+            100,
+            140,
+            480
+        ],
+        [
+            60,
+            65,
+            0,
+            480,
+            70,
+            90,
+            480
+        ],
+        [
+            65,
+            60,
+            0,
+            960,
+            110,
+            160,
+            960
+        ]
+    ],
+    "results": {
+        "createSlide": [
+            [
+                {
+                    "tick": 0,
+                    "note": 40,
+                    "velocity": 90,
+                    "duration": 174
+                },
+                {
+                    "tick": 160,
+                    "note": 42,
+                    "velocity": 45,
+                    "duration": 170
+                },
+                {
+                    "tick": 320,
+                    "note": 43,
+                    "velocity": 81,
+                    "duration": 160
+                }
+            ],
+            [
+                {
+                    "tick": 480,
+                    "note": 43,
+                    "velocity": 90,
+                    "duration": 174
+                },
+                {
+                    "tick": 640,
+                    "note": 41,
+                    "velocity": 45,
+                    "duration": 170
+                },
+                {
+                    "tick": 800,
+                    "note": 40,
+                    "velocity": 81,
+                    "duration": 160
+                }
+            ],
+            [
+                {
+                    "tick": 0,
+                    "note": 40,
+                    "velocity": 80,
+                    "duration": 252
+                },
+                {
+                    "tick": 240,
+                    "note": 41,
+                    "velocity": 72,
+                    "duration": 240
+                }
+            ],
+            [
+                {
+                    "tick": 0,
+                    "note": 40,
+                    "velocity": 100,
+                    "duration": 257
+                },
+                {
+                    "tick": 240,
+                    "note": 44,
+                    "velocity": 50,
+                    "duration": 251
+                },
+                {
+                    "tick": 480,
+                    "note": 48,
+                    "velocity": 40,
+                    "duration": 251
+                },
+                {
+                    "tick": 720,
+                    "note": 52,
+                    "velocity": 90,
+                    "duration": 240
+                }
+            ],
+            [
+                {
+                    "tick": 0,
+                    "note": 60,
+                    "velocity": 70,
+                    "duration": 131
+                },
+                {
+                    "tick": 120,
+                    "note": 62,
+                    "velocity": 35,
+                    "duration": 127
+                },
+                {
+                    "tick": 240,
+                    "note": 63,
+                    "velocity": 28,
+                    "duration": 127
+                },
+                {
+                    "tick": 360,
+                    "note": 65,
+                    "velocity": 63,
+                    "duration": 120
+                }
+            ],
+            [
+                {
+                    "tick": 0,
+                    "note": 65,
+                    "velocity": 110,
+                    "duration": 278
+                },
+                {
+                    "tick": 240,
+                    "note": 63,
+                    "velocity": 55,
+                    "duration": 266
+                },
+                {
+                    "tick": 480,
+                    "note": 62,
+                    "velocity": 44,
+                    "duration": 266
+                },
+                {
+                    "tick": 720,
+                    "note": 60,
+                    "velocity": 99,
+                    "duration": 240
+                }
+            ]
+        ],
+        "createPortamento": [
+            [
+                {
+                    "tick": 0,
+                    "note": 40,
+                    "velocity": 27,
+                    "duration": 179
+                },
+                {
+                    "tick": 160,
+                    "note": 41,
+                    "velocity": 33,
+                    "duration": 174
+                },
+                {
+                    "tick": 320,
+                    "note": 42,
+                    "velocity": 48,
+                    "duration": 174
+                },
+                {
+                    "tick": 432,
+                    "note": 43,
+                    "velocity": 90,
+                    "duration": 48
+                }
+            ],
+            [
+                {
+                    "tick": 480,
+                    "note": 43,
+                    "velocity": 27,
+                    "duration": 179
+                },
+                {
+                    "tick": 640,
+                    "note": 42,
+                    "velocity": 33,
+                    "duration": 174
+                },
+                {
+                    "tick": 800,
+                    "note": 41,
+                    "velocity": 48,
+                    "duration": 174
+                },
+                {
+                    "tick": 912,
+                    "note": 40,
+                    "velocity": 90,
+                    "duration": 48
+                }
+            ],
+            [
+                {
+                    "tick": 0,
+                    "note": 41,
+                    "velocity": 80,
+                    "duration": 480
+                }
+            ],
+            [
+                {
+                    "tick": 0,
+                    "note": 40,
+                    "velocity": 30,
+                    "duration": 214
+                },
+                {
+                    "tick": 192,
+                    "note": 42,
+                    "velocity": 30,
+                    "duration": 209
+                },
+                {
+                    "tick": 384,
+                    "note": 45,
+                    "velocity": 40,
+                    "duration": 209
+                },
+                {
+                    "tick": 576,
+                    "note": 47,
+                    "velocity": 50,
+                    "duration": 209
+                },
+                {
+                    "tick": 768,
+                    "note": 50,
+                    "velocity": 60,
+                    "duration": 209
+                },
+                {
+                    "tick": 902,
+                    "note": 52,
+                    "velocity": 100,
+                    "duration": 58
+                }
+            ],
+            [
+                {
+                    "tick": 0,
+                    "note": 60,
+                    "velocity": 21,
+                    "duration": 110
+                },
+                {
+                    "tick": 96,
+                    "note": 61,
+                    "velocity": 21,
+                    "duration": 107
+                },
+                {
+                    "tick": 192,
+                    "note": 62,
+                    "velocity": 28,
+                    "duration": 107
+                },
+                {
+                    "tick": 288,
+                    "note": 63,
+                    "velocity": 35,
+                    "duration": 107
+                },
+                {
+                    "tick": 384,
+                    "note": 64,
+                    "velocity": 42,
+                    "duration": 107
+                },
+                {
+                    "tick": 451,
+                    "note": 65,
+                    "velocity": 70,
+                    "duration": 29
+                }
+            ],
+            [
+                {
+                    "tick": 0,
+                    "note": 65,
+                    "velocity": 33,
+                    "duration": 243
+                },
+                {
+                    "tick": 192,
+                    "note": 64,
+                    "velocity": 33,
+                    "duration": 230
+                },
+                {
+                    "tick": 384,
+                    "note": 63,
+                    "velocity": 44,
+                    "duration": 230
+                },
+                {
+                    "tick": 576,
+                    "note": 62,
+                    "velocity": 55,
+                    "duration": 230
+                },
+                {
+                    "tick": 768,
+                    "note": 61,
+                    "velocity": 66,
+                    "duration": 230
+                },
+                {
+                    "tick": 902,
+                    "note": 60,
+                    "velocity": 110,
+                    "duration": 58
+                }
+            ]
+        ]
+    }
+}

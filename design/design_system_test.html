@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>suMidi — Design System Test</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root {
+    --bg:#1a1a1a; --s1:#222; --s2:#2a2a2a; --s3:#333;
+    --border:#404040; --teal:#26A69A; --teal2:#80CBC4;
+    --text:#e0e0e0; --muted:#888; --gold:#FFD54F;
+  }
+  body { background:var(--bg); color:var(--text); font-family:'Ubuntu',system-ui,sans-serif; padding:32px; }
+  h1 { color:var(--teal); font-size:20px; margin-bottom:6px; font-weight:500; }
+  h2 { color:var(--teal2); font-size:12px; text-transform:uppercase; letter-spacing:1.5px;
+       margin:28px 0 16px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  .row { display:flex; flex-wrap:wrap; gap:32px; align-items:flex-end; margin-bottom:20px; }
+  .card {
+    background:var(--s1); border:1px solid var(--border); border-radius:12px;
+    padding:20px 24px; display:flex; flex-direction:column; gap:16px;
+  }
+  .card-title { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+  .log { font-size:10px; color:var(--muted); margin-top:8px; font-family:monospace; }
+
+  /* Panel simulato — come apparirà nel Session Player */
+  .session-panel {
+    background:#222; border:1px solid #404040; border-radius:14px;
+    padding:18px 20px; width:380px;
+  }
+  .panel-header {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:16px;
+  }
+  .panel-name { font-size:14px; font-weight:500; color:var(--text); }
+  .panel-style { font-size:10px; color:var(--teal); text-transform:uppercase; letter-spacing:.8px; }
+  .regen-btn {
+    padding:5px 12px; border:none; border-radius:6px;
+    background:var(--s2); color:var(--muted); font-size:10px;
+    cursor:pointer; font-family:'Ubuntu',sans-serif;
+    border:1px solid var(--border); transition:all .15s;
+  }
+  .regen-btn:hover { background:var(--teal); color:#000; border-color:var(--teal); }
+  .controls-row { display:flex; gap:24px; align-items:flex-end; }
+  .section-label { font-size:9px; color:var(--muted); text-transform:uppercase;
+                   letter-spacing:.8px; margin-bottom:10px; }
+  .dots-section { margin:14px 0; }
+  hr.ds { border:none; border-top:1px solid #333; margin:14px 0; }
+</style>
+</head>
+<body>
+
+<h1>suMidi — Design System</h1>
+<p style="color:#666;font-size:12px;margin-bottom:8px">Componenti SVG · drag per regolare i knob · click per toggle e dots</p>
+
+<h2>Knob</h2>
+<div class="row" id="knobs-row"></div>
+
+<h2>Slider</h2>
+<div class="row" id="sliders-row"></div>
+
+<h2>Pattern Dots (16 step)</h2>
+<div id="dots-row" style="display:flex;flex-direction:column;gap:16px;"></div>
+
+<h2>Toggle</h2>
+<div class="row" id="toggles-row"></div>
+
+<h2>Level Meter</h2>
+<div class="row" id="meters-row"></div>
+
+<h2>Pannello Session Player (simulazione)</h2>
+<div class="session-panel" id="demo-panel"></div>
+
+<div class="log" id="log">→ interagisci con i controlli</div>
+
+<script type="module">
+import {
+  createKnob, createSlider, createPatternDots, createToggle, createLevelMeter
+} from './DesignSystem.js';
+
+const log = t => { document.getElementById('log').textContent = '→ ' + t; };
+
+// ── Knobs ────────────────────────────────────────────────────────
+const kr = document.getElementById('knobs-row');
+
+createKnob(kr, { label:'Complexity', value:0.5, onChange: v => log(`Complexity: ${(v*100).toFixed(0)}%`) });
+createKnob(kr, { label:'Intensity',  value:0.7, onChange: v => log(`Intensity: ${(v*100).toFixed(0)}%`) });
+createKnob(kr, { label:'Fill Amt',   value:0.3, size:48,  onChange: v => log(`Fill: ${(v*100).toFixed(0)}%`) });
+createKnob(kr, { label:'Swing',      value:0.2, size:48,  onChange: v => log(`Swing: ${(v*100).toFixed(0)}%`) });
+createKnob(kr, { label:'Ghost Notes',value:0.4, size:44,  onChange: v => log(`Ghost: ${(v*100).toFixed(0)}%`) });
+
+// ── Sliders ──────────────────────────────────────────────────────
+const sr = document.getElementById('sliders-row');
+
+createSlider(sr, { label:'Volume',     value:0.8, orient:'vertical',   length:80 });
+createSlider(sr, { label:'Dynamics',   value:0.6, orient:'vertical',   length:80 });
+createSlider(sr, { label:'Lowest Note',value:0.3, orient:'horizontal', length:160, onChange: v => log(`Lowest: ${Math.round(v*48)+28}`) });
+
+// ── Dots ─────────────────────────────────────────────────────────
+const dr = document.getElementById('dots-row');
+
+// Pattern kick (con accenti sui tempi forti)
+const kickAccents = Array(16).fill(false).map((_,i) => i%4===0);
+const kickPat = Array(16).fill(false);
+kickPat[0]=kickPat[8]=true;
+
+const kick = createPatternDots(dr, {
+  pattern: kickPat, accents: kickAccents, label: 'Kick',
+  onChange: p => log('Kick: ' + p.map((v,i)=>v?i+1:'·').filter(Boolean).join(' '))
+});
+
+const snarePat = Array(16).fill(false);
+snarePat[4]=snarePat[12]=true;
+createPatternDots(dr, {
+  pattern: snarePat, label: 'Snare',
+  onChange: p => log('Snare: ' + p.map((v,i)=>v?i+1:'·').filter(Boolean).join(' '))
+});
+
+const hhPat = Array(16).fill(true); // tutti attivi
+createPatternDots(dr, {
+  pattern: hhPat, label: 'Hi-Hat',
+  onChange: p => log('HH: ' + p.filter(Boolean).length + '/16')
+});
+
+// ── Toggles ──────────────────────────────────────────────────────
+const tr = document.getElementById('toggles-row');
+createToggle(tr, { value:true,  label:'Follow Chord Rhythm', onChange: v => log('Chord rhythm: '+v) });
+createToggle(tr, { value:false, label:'Fills',               onChange: v => log('Fills: '+v) });
+createToggle(tr, { value:true,  label:'Brushes',             onChange: v => log('Brushes: '+v) });
+
+// ── Meters ───────────────────────────────────────────────────────
+const mr = document.getElementById('meters-row');
+const m1 = createLevelMeter(mr, { value:0.7, width:140 });
+createLevelMeter(mr, { value:0.4, width:140 });
+
+// Animazione meter
+let t = 0;
+setInterval(() => {
+  t += 0.08;
+  m1.setValue(0.5 + 0.4 * Math.abs(Math.sin(t)));
+}, 80);
+
+// ── Demo Panel ────────────────────────────────────────────────────
+const panel = document.getElementById('demo-panel');
+panel.innerHTML = `
+  <div class="panel-header">
+    <div>
+      <div class="panel-name">Marco</div>
+      <div class="panel-style">Acoustic Drummer · Brushes</div>
+    </div>
+    <button class="regen-btn">⟳ Regenerate</button>
+  </div>
+`;
+
+// Riga complexity + intensity
+const ctrlRow = document.createElement('div');
+ctrlRow.className = 'controls-row';
+ctrlRow.style.justifyContent = 'flex-start';
+
+const complexWrap = document.createElement('div');
+complexWrap.innerHTML = '<div class="section-label">Complexity</div>';
+createKnob(complexWrap, { value:0.55, size:54, onChange: v=>log(`Complexity: ${(v*100).toFixed(0)}%`) });
+
+const intensWrap = document.createElement('div');
+intensWrap.innerHTML = '<div class="section-label">Intensity</div>';
+createKnob(intensWrap, { value:0.70, size:54, onChange: v=>log(`Intensity: ${(v*100).toFixed(0)}%`) });
+
+const ghostWrap = document.createElement('div');
+ghostWrap.innerHTML = '<div class="section-label">Ghost</div>';
+createKnob(ghostWrap, { value:0.30, size:44, onChange: v=>log(`Ghost: ${(v*100).toFixed(0)}%`) });
+
+const fillWrap = document.createElement('div');
+fillWrap.innerHTML = '<div class="section-label">Fill Amt</div>';
+createKnob(fillWrap, { value:0.40, size:44, onChange: v=>log(`Fill: ${(v*100).toFixed(0)}%`) });
+
+ctrlRow.appendChild(complexWrap);
+ctrlRow.appendChild(intensWrap);
+ctrlRow.appendChild(ghostWrap);
+ctrlRow.appendChild(fillWrap);
+panel.appendChild(ctrlRow);
+
+// Pattern dots
+const dotsSection = document.createElement('div');
+dotsSection.className = 'dots-section';
+const kickPat2 = Array(16).fill(false); kickPat2[0]=kickPat2[8]=kickPat2[10]=true;
+createPatternDots(dotsSection, { pattern:kickPat2, accents:kickAccents, label:'Kick / Snare' });
+panel.appendChild(dotsSection);
+
+// Divider
+panel.insertAdjacentHTML('beforeend', '<hr class="ds">');
+
+// Toggle row
+const togRow = document.createElement('div');
+togRow.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+createToggle(togRow, { value:true,  label:'Follow Chord Rhythm' });
+createToggle(togRow, { value:false, label:'Ghost Notes' });
+panel.appendChild(togRow);
+
+// Feel slider
+panel.insertAdjacentHTML('beforeend', '<hr class="ds"><div class="section-label" style="margin-bottom:8px">Feel</div>');
+const feelRow = document.createElement('div');
+feelRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+feelRow.insertAdjacentHTML('beforeend','<span style="font-size:9px;color:#666">Pull</span>');
+createSlider(feelRow, { value:0.5, orient:'horizontal', length:200, onChange:v=>log(`Feel: ${v>.5?'Push':'Pull'} ${Math.abs(v-.5)*200|0}%`) });
+feelRow.insertAdjacentHTML('beforeend','<span style="font-size:9px;color:#666">Push</span>');
+panel.appendChild(feelRow);
+</script>
+
+</body>
+</html>
