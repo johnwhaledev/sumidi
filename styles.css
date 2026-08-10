@@ -1291,6 +1291,40 @@
       color: var(--teal2);
     }
 
+    /* Indicatore statico "sta suonando" — niente barra/elemento che si
+       muove in sincrono col tempo, solo un bordo/glow fisso sulla sezione
+       corrente (vedi Playback.js per il motivo del design). */
+    .lanes-sec-label.sm-playing {
+      border-color: var(--teal2);
+      color: var(--teal2);
+      box-shadow: 0 0 0 1px var(--teal2) inset;
+    }
+
+    .sm-sec-play-btn {
+      display: block;
+      margin: 0 auto 2px;
+      width: 16px;
+      height: 16px;
+      line-height: 14px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: var(--panel2, rgba(255,255,255,.08));
+      color: var(--muted);
+      font-size: 8px;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .sm-sec-play-btn:hover {
+      background: var(--teal2);
+      color: #fff;
+    }
+
+    #sm-play-btn.btn-playing {
+      background: var(--teal2);
+      color: #fff;
+    }
+
     /* Toolbar sezioni sopra le lanes */
     .lanes-toolbar {
       display: flex;
@@ -1417,7 +1451,7 @@
     .chord-chip {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       height: 22px;
       min-width: 28px;
       padding: 0 5px;
@@ -1429,6 +1463,8 @@
       color: var(--teal2);
       cursor: pointer;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       transition: all .12s;
       font-family: inherit;
       flex-shrink: 0;
@@ -1830,6 +1866,12 @@
 .sm-toast-body p {
   margin: 0 0 6px;
   line-height: 1.45;
+}
+
+/* Toast semplice (conferme rapide, senza link sotto) — niente margine
+   inferiore residuo pensato per il link Ko-fi del toast di supporto. */
+.sm-toast-simple .sm-toast-body p {
+  margin-bottom: 0;
 }
 
 .sm-toast-body a {

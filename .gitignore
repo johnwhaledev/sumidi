@@ -6,3 +6,8 @@ node_modules/
 data_players.xlsx
 PLAN/
 docs/
+# Preset WebAudioFont scaricati in locale con scripts/download-soundfonts.mjs:
+# opzionali (servono solo per l'uso offline), il default è il CDN ufficiale.
+soundfonts/
+# Script di verifica usa-e-getta delle sessioni di lavoro
+_verify_*_tmp.mjs

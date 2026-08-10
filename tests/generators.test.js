@@ -11,7 +11,7 @@ import { buildDrumContext } from '../src/FlowCore.js';
 // Smoke test end-to-end: per ogni generatore, verifica che a partire da un
 // blueprint reale (buildSong) produca eventi validi senza eccezioni, sui
 // principali stili storici e su quelli toccati dalle sessioni V2/V3.
-const STYLES_TO_CHECK = ['unplugged', 'jazz_ballad', 'bossa_nova', 'punk', 'garage_rock', 'chiptune'];
+const STYLES_TO_CHECK = ['unplugged', 'jazz_ballad', 'pop_rock', 'punk', 'garage_rock', 'chiptune'];
 
 function assertValidEvents(events, label) {
   expect(Array.isArray(events), `${label}: non è un array`).toBe(true);

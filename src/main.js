@@ -26,6 +26,8 @@
     } from './TabRenderer.js';
     import { exportMarkdown, downloadMarkdown } from './MarkdownExporter.js';
     import { applyGrooveLock } from './GrooveLock.js';
+    import { playTracks, stopAll as stopPlayback } from './Playback.js';
+    import { STYLES } from './Styles.js';
 
     // ── State ─────────────────────────────────────────────────────
     const disabled = new Set();
@@ -58,12 +60,9 @@
         neo_soul: 'neo_soul_standard',
         classical: 'classical_standard',
         pop_rock: 'pop_rock_standard',
-        bossa_nova: 'bossa_nova_standard',
         blues_rock: 'blues_rock_standard',
         singer_songwriter: 'singer_songwriter_standard',
-        latin: 'latin_standard',
         cinematic: 'cinematic_standard',
-        reggae: 'reggae_standard',
         lo_fi: 'lo_fi_standard',
         punk: 'punk_standard',
         garage_rock: 'garage_rock_standard',
@@ -76,26 +75,46 @@
         neo_soul: 78,
         classical: 80,
         pop_rock: 112,
-        bossa_nova: 130,
         blues_rock: 100,
         singer_songwriter: 76,
-        latin: 120,
         cinematic: 72,
-        reggae: 84,
         lo_fi: 80,
         punk: 175,
         garage_rock: 132,
         chiptune: 152,
       };
+      // Umanizzazione di default per stile (da Styles.js) — prima lo slider
+      // restava sempre a 35% indipendentemente dal genere, quindi jazz_ballad
+      // (dovrebbe essere più "rubato") e stili tirati come punk/chiptune
+      // (dovrebbero restare stretti/rigidi) suonavano con la stessa quantità
+      // di umanizzazione. Resta comunque modificabile manualmente dall'utente.
+      const humMap = {
+        unplugged: 35,
+        folk: 40,
+        jazz_ballad: 50,
+        neo_soul: 45,
+        classical: 30,
+        pop_rock: 30,
+        blues_rock: 40,
+        singer_songwriter: 38,
+        cinematic: 30,
+        lo_fi: 55,
+        punk: 18,
+        garage_rock: 32,
+        chiptune: 0,
+      };
       document.getElementById('p-form').value = formMap[style] ?? 'unplugged_ballad';
       const bpm = bpmMap[style] ?? 72;
       document.getElementById('p-bpm').value = bpm;
       document.getElementById('bpm-v').textContent = bpm;
+      const hum = humMap[style] ?? 35;
+      document.getElementById('p-hum').value = hum;
+      document.getElementById('hum-v').textContent = hum + '%';
     };
 
     window.randomAll = () => {
-      const STYLES = ['unplugged', 'folk', 'jazz_ballad', 'neo_soul', 'classical', 'pop_rock', 'bossa_nova', 'blues_rock', 'singer_songwriter',
-        'latin', 'cinematic', 'reggae', 'lo_fi', 'punk', 'garage_rock', 'chiptune'];
+      const STYLES = ['unplugged', 'folk', 'jazz_ballad', 'neo_soul', 'classical', 'pop_rock', 'blues_rock', 'singer_songwriter',
+        'cinematic', 'lo_fi', 'punk', 'garage_rock', 'chiptune'];
       const KEYS = ['Am', 'Em', 'Dm', 'Bm', 'F#m', 'Cm', 'Gm', 'Fm', 'C#m',
         'C', 'G', 'F', 'D', 'A', 'E', 'B', 'Bb', 'Eb', 'Ab'];
       const FORMS = {
@@ -105,12 +124,9 @@
         neo_soul: ['neo_soul_standard'],
         classical: ['classical_standard'],
         pop_rock: ['pop_rock_standard', 'pop_rock_short'],
-        bossa_nova: ['bossa_nova_standard', 'bossa_nova_aaba'],
         blues_rock: ['blues_rock_standard'],
         singer_songwriter: ['singer_songwriter_standard'],
-        latin: ['latin_standard'],
         cinematic: ['cinematic_standard'],
-        reggae: ['reggae_standard'],
         lo_fi: ['lo_fi_standard'],
         punk: ['punk_standard', 'punk_short'],
         garage_rock: ['garage_rock_standard'],
@@ -118,8 +134,8 @@
       };
       const BPM_RANGES = {
         unplugged: [60, 85], folk: [80, 110], jazz_ballad: [55, 90], neo_soul: [70, 100], classical: [60, 80], pop_rock: [100, 130],
-        bossa_nova: [110, 145], blues_rock: [85, 115], singer_songwriter: [65, 90],
-        latin: [100, 140], cinematic: [55, 90], reggae: [70, 100], lo_fi: [70, 90], punk: [160, 190], garage_rock: [120, 150], chiptune: [140, 165],
+        blues_rock: [85, 115], singer_songwriter: [65, 90],
+        cinematic: [55, 90], lo_fi: [70, 90], punk: [160, 190], garage_rock: [120, 150], chiptune: [140, 165],
       };
       const ENS = ['strings', 'woodwinds', 'brass', 'chamber'];
       const r = (lo, hi) => Math.floor(Math.random() * (hi - lo + 1)) + lo;
@@ -293,8 +309,11 @@
           st('info', '🥁 Drums…'); await w();
           drumEvts = generateDrums(bp);
           humanize(drumEvts, bp.meta.ppq, humAmt * 0.4, 9, params.seed + 1, bp.meta.barTicks);
-          const drumSwing = (bp.meta.swing ?? 0) * 0.33;
-          applySwing(drumEvts, bp.meta.ppq, drumSwing);
+          // Swing pieno come tutti gli altri strumenti — prima la batteria
+          // swingava solo al 33% dello stesso bp.meta.swing usato da
+          // basso/chitarra/piano/ensemble, uno sfasamento sistematico (non
+          // casuale) su ogni ottavo "in levare" negli stili con swing.
+          applySwing(drumEvts, bp.meta.ppq, bp.meta.swing ?? 0);
           if (!isFlat) _addCCArc(drumEvts, bp.sections, 105);
           allTrackEvts.drums = drumEvts;
           prg(18);
@@ -806,10 +825,10 @@
       const isPerc = charId.startsWith('perc_');
 
       // Riga stile — lista diversa per percussionisti etnici
-      const drumStyles = ['brushes', 'rock', 'cajon', 'jazz', 'blues_shuffle', 'bossa', 'pop', 'waltz_8th'];
-      const percStyles = ['bossa', 'reggae', 'cajon', 'latin', 'folk'];
+      const drumStyles = ['brushes', 'rock', 'cajon', 'jazz', 'blues_shuffle', 'pop', 'waltz_8th'];
+      const percStyles = ['cajon', 'folk'];
       const styleList = isPerc ? percStyles : drumStyles;
-      const defaultStyle = isPerc ? 'bossa' : 'rock';
+      const defaultStyle = isPerc ? 'cajon' : 'rock';
 
       const styleRow = document.createElement('div');
       styleRow.className = 'sm-ctrl-row';
@@ -1343,6 +1362,11 @@
       // Aggiorna i chip chord track se la sezione non ha progressione custom
       if (!section.progression?.length) smRenderChordTrack();
 
+      // Umanizzazione per-stile (bp.meta.humanize, es. jazz_ballad 0.5 "rubato",
+      // punk 0.18 "stretto", chiptune 0.0 rigido) — prima ignorata, si usava
+      // sempre il default fisso 0.35 indipendentemente dal genere.
+      humAmt = bp.meta.humanize ?? humAmt;
+
       const voices = [];
 
       // ── Drums ──────────────────────────────────────────────────────
@@ -1364,7 +1388,11 @@
             const seed = inst.seed ^ SM_SALT.drums;
             evts = generateDrums(bp, seed);
             humanize(evts, bp.meta.ppq, humAmt * 0.4, 9, seed + 1, bp.meta.barTicks);
-            applySwing(evts, bp.meta.ppq, (bp.meta.swing ?? 0) * 0.33);
+            // Swing pieno come tutti gli altri strumenti — prima la batteria
+            // swingava solo al 33% dello stesso bp.meta.swing usato da
+            // basso/chitarra/piano/ensemble, uno sfasamento sistematico (non
+            // casuale) su ogni ottavo "in levare" negli stili con swing.
+            applySwing(evts, bp.meta.ppq, bp.meta.swing ?? 0);
           }
           AppState.cache.sm[ckey] = { events: evts };
         }
@@ -1422,6 +1450,23 @@
           voices.push({ channel: 3, events: AppState.cache.sm[ckey].events, program: AppState.cache.sm[ckey].program });
       }
 
+      // ── GrooveLock (pocket engine) ───────────────────────────────────
+      // Riancora basso / corde basse chitarra / mano sinistra piano al kick
+      // (12-28ms dopo, come un ensemble reale). Prima girava solo una volta
+      // all'export finale con seed non deterministico (Math.random()) — qui
+      // gira ad ogni generazione di sezione con seed derivato da section.seed,
+      // quindi anteprima ed export sono coerenti e riproducibili.
+      {
+        const glTrackEvts = {
+          drums:  AppState.cache.sm[`${sectionId}:drums`]?.events  ?? null,
+          bass:   AppState.cache.sm[`${sectionId}:bass`]?.events   ?? null,
+          guitar: AppState.cache.sm[`${sectionId}:guitar`]?.events ?? null,
+          piano:  AppState.cache.sm[`${sectionId}:piano`]?.events  ?? null,
+        };
+        const glRng = makeRng(section.seed ^ 0xC0FF);
+        applyGrooveLock(glTrackEvts, bp.meta, glRng);
+      }
+
       // ── Ensemble ───────────────────────────────────────────────────
       if (section.instruments.ensemble.active) {
         const ckey = `${sectionId}:ensemble`;
@@ -1471,7 +1516,23 @@
     window.smRegenerateSection = sectionId => {
       smInvalidateCache(sectionId);
       _smgr?.mutateSeed(sectionId);
+      // Bug fix: mutateSeed() cambia solo il seed di SEZIONE, usato per
+      // rigenerare armonia/blueprint (buildSectionBlueprint) — ma batteria,
+      // basso, chitarra, piano ed ensemble leggono ciascuno il proprio
+      // section.instruments[inst].seed (fissato una volta alla creazione
+      // della sezione), che mutateSeed() non toccava. Risultato: il tasto
+      // "rigenera sezione" cambiava gli accordi ma lasciava quasi identica
+      // l'esecuzione (stesso pattern ritmico/voicing) — da ascolto sembrava
+      // non aver fatto nulla. Ora si muta anche il seed di ogni strumento
+      // non locked, come promesso dal tooltip del bottone.
+      const _secForSeed = _smgr?.getSection(sectionId);
+      if (_secForSeed) {
+        for (const inst of Object.keys(_secForSeed.instruments)) {
+          if (!_secForSeed.instruments[inst].locked) _smgr.mutateInstrumentSeed(sectionId, inst);
+        }
+      }
       smRender();
+      smToast('🔄 Sezione rigenerata: nuova armonia ed esecuzione per tutti gli strumenti sbloccati.');
       // Ricarica cache in background per aggiornare i pattern dots nel flyout/panel
       smGenerateSection(sectionId).then(() => {
         const section = _smgr?.getSection(sectionId);
@@ -1652,6 +1713,39 @@
       setTimeout(dismiss, 8000);
     }
 
+    /**
+     * Toast leggera generica (senza link Ko-fi) per conferme rapide, es.
+     * "sezione rigenerata". Riusa lo stesso stack/stile di smShowSupportToast
+     * ma con corpo semplice e durata più breve (2.5s).
+     */
+    function smToast(message, { icon = '✓', duration = 2500 } = {}) {
+      let wrap = document.getElementById('sm-toast-wrap');
+      if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.id = 'sm-toast-wrap';
+        wrap.className = 'sm-toast-wrap';
+        document.body.appendChild(wrap);
+      }
+      const toast = document.createElement('div');
+      toast.className = 'sm-toast sm-toast-simple';
+      toast.innerHTML = `
+        <span class="sm-toast-icon">${icon}</span>
+        <div class="sm-toast-body"><p>${message}</p></div>
+        <button class="sm-toast-close" title="Chiudi" aria-label="Chiudi">✕</button>`;
+      wrap.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('sm-toast-in'));
+
+      let dismissed = false;
+      const dismiss = () => {
+        if (dismissed) return;
+        dismissed = true;
+        toast.classList.remove('sm-toast-in');
+        setTimeout(() => toast.remove(), 250);
+      };
+      toast.querySelector('.sm-toast-close').onclick = dismiss;
+      setTimeout(dismiss, duration);
+    }
+
     /** Chiama gen() usando i parametri della composer-bar, poi importa il risultato. */
     window.smAutoGenerate = async () => {
       // Q2: reset memoria inter-sezione ad ogni full rebuild
@@ -1696,8 +1790,8 @@
     // V2: BPM di default per stile (min/max presi da SongArchitect.js STYLES.defaultBpm)
     const SM_STYLE_BPM_RANGES = {
       unplugged: [60, 85], folk: [80, 110], jazz_ballad: [55, 90], neo_soul: [70, 100],
-      classical: [60, 100], pop_rock: [100, 130], bossa_nova: [110, 145], blues_rock: [85, 115],
-      singer_songwriter: [65, 90], latin: [100, 140], cinematic: [55, 90], reggae: [70, 100],
+      classical: [60, 100], pop_rock: [100, 130], blues_rock: [85, 115],
+      singer_songwriter: [65, 90], cinematic: [55, 90],
       lo_fi: [70, 90], punk: [160, 190], garage_rock: [120, 150], chiptune: [140, 165],
     };
 
@@ -1712,10 +1806,21 @@
       // Pesca sempre dalle option realmente presenti nella select — mai da liste
       // duplicate hardcoded, per evitare che tornino a disallinearsi in futuro.
       const styleValues = Array.from(styleSel.options).map(o => o.value);
-      const keyValues = Array.from(keySel.options).map(o => o.value);
       const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
       const style = pick(styleValues);
+      // Tonalità pescata solo dal gruppo compatibile con lo stile (vedi
+      // _smApplyKeyConstraint) — così il Random resta vario invece di
+      // ricadere sempre sulla tonalità di default dello stile. Per gli
+      // stili mode-aware (vedi sotto) entrambi i gruppi sono validi.
+      let keyValues;
+      if (MODE_AWARE_STYLES.has(style)) {
+        keyValues = Array.from(keySel.options).map(o => o.value);
+      } else {
+        const wantMinor = _smKeyIsMinor(STYLES[style]?.defaultScale);
+        const groupLabel = wantMinor ? 'Minori' : 'Maggiori';
+        keyValues = Array.from(keySel.querySelectorAll(`optgroup[label="${groupLabel}"] option`)).map(o => o.value);
+      }
       const [bLo, bHi] = SM_STYLE_BPM_RANGES[style] ?? [70, 130];
       const bpm = Math.floor(Math.random() * (bHi - bLo + 1)) + bLo;
 
@@ -1728,23 +1833,110 @@
       smAutoGenerate();
     };
 
+    // Ogni stile ha una scala fissa (STYLES[style].defaultScale) usata SEMPRE
+    // per costruire progressione e pool di note, indipendentemente dal fatto
+    // che la Tonalità scelta sia elencata come "Minori" o "Maggiori" in UI —
+    // quel menu sceglie solo la tonica (root) e trasporrà su quella scala.
+    // Qui mostriamo la scala reale accanto al selettore Stile per chiarezza.
+    const SCALE_LABELS = {
+      major:      'Maggiore',
+      minor:      'Minore',
+      dorian:     'Dorico',
+      mixolydian: 'Misolidio',
+      blues:      'Blues',
+    };
+
+    // Stili il cui pool ha GIÀ (o ha ora) progressioni scritte sia a tonica
+    // maggiore che minore (vedi MODE_AWARE_FAMILIES in SongArchitect.js) —
+    // per questi la Tonalità scelta pilota davvero il modo, quindi non li
+    // limitiamo. Gli altri restano sotto il vincolo auto-imposto descritto
+    // sotto, finché non verranno composte progressioni minori dedicate.
+    const MODE_AWARE_STYLES = new Set([
+      'pop_rock', 'folk', 'classical', 'singer_songwriter', 'punk', 'garage_rock', 'chiptune',
+    ]);
+
+    function _smUpdateScaleHint() {
+      const hintEl = document.getElementById('sm-scale-hint');
+      if (!hintEl) return;
+      const style = document.getElementById('sm-style').value;
+      if (MODE_AWARE_STYLES.has(style)) {
+        const isMinor = document.getElementById('sm-key').value.endsWith('m');
+        hintEl.textContent = `Scala: ${isMinor ? SCALE_LABELS.minor : SCALE_LABELS.major} (segue la tonalità)`;
+        return;
+      }
+      const scale = STYLES[style]?.defaultScale;
+      hintEl.textContent = scale ? `Scala: ${SCALE_LABELS[scale] ?? scale}` : '';
+    }
+
+    // ── Vincolo Tonalità↔Stile ────────────────────────────────────────
+    // ATTENZIONE: questo è un limite AUTO-IMPOSTATO dal nostro motore di
+    // generazione, non un vincolo di teoria musicale reale — nella realtà
+    // un pezzo "pop rock" può benissimo essere scritto in tonalità minore.
+    // Il limite esiste solo perché QUI ogni stile ha UNA scala fissa
+    // (STYLES[style].defaultScale) usata per l'intera pipeline (progressioni
+    // + pool di note dei generatori), quindi selezionare una tonalità della
+    // qualità "sbagliata" produce un brano internamente incoerente. Filtriamo
+    // quindi le opzioni del menu Tonalità in base allo stile corrente per
+    // evitare la combinazione impossibile-per-QUESTO-motore.
+    // Gli stili in MODE_AWARE_STYLES (sopra) sono già stati liberati da
+    // questo vincolo: per loro entrambe le qualità sono davvero supportate.
+    // Man mano che altri stili vengono resi mode-aware, aggiungerli a
+    // MODE_AWARE_STYLES rimuove automaticamente il filtro anche per loro.
+    const MINOR_ISH_SCALES = new Set(['minor', 'dorian']);
+    function _smKeyIsMinor(scale) { return MINOR_ISH_SCALES.has(scale); }
+
+    function _smApplyKeyConstraint() {
+      const styleSel = document.getElementById('sm-style');
+      const keySel = document.getElementById('sm-key');
+      if (!styleSel || !keySel) return;
+
+      if (MODE_AWARE_STYLES.has(styleSel.value)) {
+        keySel.querySelectorAll('optgroup').forEach(g => {
+          g.hidden = false;
+          Array.from(g.options).forEach(o => { o.disabled = false; });
+        });
+        return;
+      }
+
+      const wantMinor = _smKeyIsMinor(STYLES[styleSel.value]?.defaultScale);
+      keySel.querySelectorAll('optgroup').forEach(g => {
+        const isMinorGroup = g.label === 'Minori';
+        const compatible = isMinorGroup === wantMinor;
+        g.hidden = !compatible;
+        Array.from(g.options).forEach(o => { o.disabled = !compatible; });
+      });
+      // La tonalità selezionata non è più valida per lo stile corrente →
+      // passa alla tonalità di default dello stile (Styles.js defaultKey).
+      const selectedOpt = keySel.options[keySel.selectedIndex];
+      if (!selectedOpt || selectedOpt.disabled) {
+        const fallback = STYLES[styleSel.value]?.defaultKey;
+        if (fallback && Array.from(keySel.options).some(o => o.value === fallback)) {
+          keySel.value = fallback;
+        }
+      }
+    }
+
     function smInit() {
       AppState.ui.flyoutOpen = null;
+      _smApplyKeyConstraint();
       _smgr = new SessionManager({
         key: document.getElementById('sm-key').value,
         bpm: parseInt(document.getElementById('sm-bpm').value),
         style: document.getElementById('sm-style').value,
       });
+      _smUpdateScaleHint();
       smRender();
     }
 
     window.smSyncMeta = () => {
       if (!_smgr) return;
+      _smApplyKeyConstraint();
       _smgr.setMeta({
         key: document.getElementById('sm-key').value,
         bpm: parseInt(document.getElementById('sm-bpm').value),
         style: document.getElementById('sm-style').value,
       });
+      _smUpdateScaleHint();
     };
 
     window.smAddSection = type => {
@@ -1857,7 +2049,8 @@
             const isEdit = AppState.ui.chipEditing?.sectionId === sec.id && AppState.ui.chipEditing?.chordIndex === ci;
             return `<div style="position:relative;display:inline-block">
           <button class="chord-chip${isCustom ? ' custom' : ''}${isEdit ? ' editing' : ''}"
-                  style="width:${chipW}px;min-width:${chipW}px;overflow:hidden;"
+                  style="width:${chipW}px;min-width:${chipW}px;"
+                  title="${chord}"
                   onclick="smChipClick('${sec.id}',${ci})">${chord}</button>
           ${isEdit ? _buildChipEditor(sec.id, ci, chord, chords) : ''}
         </div>`;
@@ -1922,14 +2115,41 @@
   </div>`;
     }
 
+    /**
+     * Tiene il popup .chip-editor dentro i confini dello schermo. È
+     * position:absolute/left:0 rispetto al blocco della sezione (non del
+     * singolo chip), largo almeno 180px: su mobile, aprendolo su un accordo
+     * verso il bordo destro dello schermo, sfora fuori dal viewport e si
+     * sovrappone/taglia con il resto della UI (segnalato come bottoni che
+     * si accavallano). Nessun clamp esisteva prima — qui si misura dopo il
+     * render e, se sfora a destra, si ancora invece al bordo destro del suo
+     * contenitore (si apre verso sinistra invece che verso destra).
+     */
+    function _smClampChipEditor() {
+      const el = document.querySelector('.chip-editor');
+      if (!el) return;
+      el.style.left = '';
+      el.style.right = '';
+      if (el.getBoundingClientRect().right > window.innerWidth) {
+        el.style.left = 'auto';
+        el.style.right = '0';
+      }
+      // Su schermi molto stretti, anche ancorato a destra potrebbe sforare a
+      // sinistra (popup più largo del contenitore): in quel caso si tiene
+      // semplicemente incollato al bordo sinistro dello schermo.
+      if (el.getBoundingClientRect().left < 0) {
+        const shift = el.getBoundingClientRect().left;
+        el.style.left = 'auto';
+        el.style.right = `${parseFloat(el.style.right || '0') + shift}px`;
+      }
+    }
+
     // Apre/chiude il micro-editor per un chip
     window.smChipClick = (sectionId, chordIndex) => {
-      if (AppState.ui.chipEditing?.sectionId === sectionId && AppState.ui.chipEditing?.chordIndex === chordIndex) {
-        AppState.ui.chipEditing = null;
-      } else {
-        AppState.ui.chipEditing = { sectionId, chordIndex };
-      }
+      const isClosing = AppState.ui.chipEditing?.sectionId === sectionId && AppState.ui.chipEditing?.chordIndex === chordIndex;
+      AppState.ui.chipEditing = isClosing ? null : { sectionId, chordIndex };
       smRenderChordTrack();
+      if (!isClosing) requestAnimationFrame(_smClampChipEditor);
     };
 
     window.smChipClose = () => { AppState.ui.chipEditing = null; smRenderChordTrack(); };
@@ -2039,9 +2259,13 @@
         secs.map(sec => {
           const w = Math.max(40, Math.round(sec.bars * PX_PER_BAR));
           const isSecFly = AppState.ui.flyoutOpen?.sectionId === sec.id && AppState.ui.flyoutOpen?.inst === null;
-          return `<div class="lanes-sec-label${isSecFly ? ' sm-cfg-open' : ''}" style="width:${w}px;cursor:pointer"
+          const isPlayingThis = _smPlayback.active && _smPlayback.sectionId === sec.id;
+          return `<div class="lanes-sec-label${isSecFly ? ' sm-cfg-open' : ''}${isPlayingThis ? ' sm-playing' : ''}"
+           data-sec-id="${sec.id}" style="width:${w}px;cursor:pointer"
            title="${sec.label} · ${sec.bars} bars — clic per rigenerare o rimuovere l'intera sezione"
            onclick="smSectionFlyout('${sec.id}')">
+        <button class="sm-sec-play-btn" onclick="smPlaySection('${sec.id}', event)"
+          title="Ascolta questa sezione">${isPlayingThis ? '■' : '▶'}</button>
         ${sec.label}
       </div>`;
         }).join('');
@@ -2198,6 +2422,143 @@
       smRender();
     };
 
+    // ── Playback (WebAudioFont) ──────────────────────────────────────
+    // Nessuna barra di scorrimento/playhead sincronizzato — solo play/stop
+    // per sezione o per brano intero, con un indicatore statico (bordo)
+    // sulla sezione in riproduzione. Vedi Playback.js per il motivo del
+    // design (il vecchio SynthPreview a oscillatori è stato rimosso perché
+    // "inutile e fastidioso" e mai sincronizzato col visual).
+    let _smPlayback = { active: false, sectionId: null }; // sectionId=null → sta suonando l'intero brano
+
+    function _smSetPlayUI() {
+      const globalBtn = document.getElementById('sm-play-btn');
+      if (globalBtn) {
+        const playingSong = _smPlayback.active && _smPlayback.sectionId === null;
+        globalBtn.textContent = playingSong ? '■ Stop' : '▶ Ascolta';
+        globalBtn.classList.toggle('btn-playing', playingSong);
+      }
+      document.querySelectorAll('.lanes-sec-label').forEach(el => {
+        const isPlaying = _smPlayback.active && el.dataset.secId === _smPlayback.sectionId;
+        el.classList.toggle('sm-playing', isPlaying);
+      });
+    }
+
+    window.smStopPlayback = () => {
+      stopPlayback();
+      _smPlayback = { active: false, sectionId: null };
+      _smSetPlayUI();
+    };
+
+    // Canale MIDI → nome strumento, per applicare l'override del mixer
+    // (finora usato SOLO in export, mai in anteprima — vedi smMixerSetOverride)
+    // anche alla riproduzione dal vivo. La batteria (ch 9) è volutamente
+    // esclusa: WebAudioFont qui carica un campione per NOTA, non per "kit",
+    // quindi non c'è un program GM da sostituire per farla suonare diversa.
+    const SM_CHANNEL_TO_INST = { 1: 'bass', 2: 'guitar', 3: 'piano' };
+    function _smApplyMixerOverride(tracks) {
+      return (tracks ?? []).map(t => {
+        if (t.channel === 9) return t; // batteria: nessun override possibile in anteprima
+        const inst = SM_CHANNEL_TO_INST[t.channel] ?? 'ensemble';
+        const override = window._smMixerOverride?.[inst];
+        if (!override || override === 'auto') return t;
+        return { ...t, program: parseInt(override, 10) };
+      });
+    }
+
+    window.smPlaySection = async (sectionId, evt) => {
+      evt?.stopPropagation?.(); // non deve anche aprire/chiudere il flyout della sezione
+      if (!_smgr) return;
+      if (_smPlayback.active && _smPlayback.sectionId === sectionId) { window.smStopPlayback(); return; }
+      stopPlayback();
+      _smPlayback = { active: true, sectionId };
+      _smSetPlayUI();
+      try {
+        const { bp, voices } = await smGenerateSection(sectionId);
+        if (!voices?.length) { window.smStopPlayback(); return; }
+        const state = _smgr.getState();
+        const { durationSec } = await playTracks(_smApplyMixerOverride(voices), { ppq: bp.meta.ppq, bpm: state.bpm });
+        setTimeout(() => {
+          if (_smPlayback.sectionId === sectionId) window.smStopPlayback();
+        }, Math.round(durationSec * 1000) + 150);
+      } catch (err) {
+        console.error('[Playback] errore riproduzione sezione:', err);
+        window.smStopPlayback();
+      }
+    };
+
+    window.smPlaySong = async () => {
+      if (!_smgr) return;
+      if (_smPlayback.active && _smPlayback.sectionId === null) { window.smStopPlayback(); return; }
+      stopPlayback();
+      _smPlayback = { active: true, sectionId: null };
+      _smSetPlayUI();
+      try {
+        const state = _smgr.getState();
+        const secs = _smgr.getSections();
+        if (!secs.length) { window.smStopPlayback(); return; }
+
+        // Assicura che ogni sezione attiva sia generata (stesso pre-step di smExportSession)
+        for (const sec of secs) {
+          let needsGen = false;
+          for (const inst of ['drums', 'bass', 'guitar', 'piano', 'ensemble']) {
+            if (sec.instruments[inst].active && !AppState.cache.sm[`${sec.id}:${inst}`]) { needsGen = true; break; }
+          }
+          if (needsGen) await smGenerateSection(sec.id);
+        }
+
+        // Assembla le tracce dell'intero brano offsettando i tick sezione per sezione
+        // (stesso principio di SessionManager.assembleSessionEvents, ma nel formato
+        // { channel, events, program } atteso da Playback.playTracks).
+        const buckets = new Map(); // key: channel|program -> { channel, program, events:[] }
+        let ppq = 480, globalTick = 0;
+        const bump = (channel, program, events) => {
+          if (!events?.length) return;
+          const key = `${channel}:${program ?? ''}`;
+          if (!buckets.has(key)) buckets.set(key, { channel, program, events: [] });
+          buckets.get(key).events.push(...events);
+        };
+
+        for (const sec of secs) {
+          const bp = AppState.cache.bp[`${sec.id}:_bp`];
+          const barTicks = bp?.meta?.barTicks ?? (ppq * 4);
+          if (bp?.meta?.ppq) ppq = bp.meta.ppq;
+
+          for (const inst of ['drums', 'bass', 'guitar', 'piano']) {
+            if (!sec.instruments[inst].active) continue;
+            const cached = AppState.cache.sm[`${sec.id}:${inst}`];
+            if (!cached?.events?.length) continue;
+            const channel = { drums: 9, bass: 1, guitar: 2, piano: 3 }[inst];
+            const shifted = cached.events.map(e => ({ ...e, tick: e.tick + globalTick }));
+            bump(channel, cached.program, shifted);
+          }
+          if (sec.instruments.ensemble.active) {
+            const cached = AppState.cache.sm[`${sec.id}:ensemble`];
+            if (cached?.voiceEvents) {
+              cached.voiceEvents.forEach((evts, vi) => {
+                const noteEvts = evts.filter(e => e.cc == null);
+                if (!noteEvts.length) return;
+                const channel = cached.channels?.[vi] ?? (5 + vi);
+                const program = cached.programs?.[vi];
+                const shifted = noteEvts.map(e => ({ ...e, tick: e.tick + globalTick }));
+                bump(channel, program, shifted);
+              });
+            }
+          }
+          globalTick += sec.bars * barTicks;
+        }
+
+        const tracks = [...buckets.values()];
+        if (!tracks.length) { window.smStopPlayback(); return; }
+        const { durationSec } = await playTracks(_smApplyMixerOverride(tracks), { ppq, bpm: state.bpm });
+        setTimeout(() => {
+          if (_smPlayback.sectionId === null) window.smStopPlayback();
+        }, Math.round(durationSec * 1000) + 150);
+      } catch (err) {
+        console.error('[Playback] errore riproduzione brano:', err);
+        window.smStopPlayback();
+      }
+    };
+
     /** Apre/chiude il flyout a livello di SEZIONE (🔄 rigenera tutta la sezione, × rimuovi),
      *  cliccando l'etichetta della sezione nell'header sopra le lanes. `inst: null` lo
      *  distingue dal flyout per singolo strumento aperto da smLaneFlyout. */
@@ -2250,7 +2611,14 @@
           piano: trackBuffers.piano,
         };
         if (glBuffers.drums?.length) {
-          const glRng = makeRng(Math.floor(Math.random() * 99999) ^ 0xC0FF);
+          // Passata di sicurezza sull'intero brano assemblato: smGenerateSection
+          // applica già GrooveLock per-sezione (con seed deterministico), ma
+          // sezioni cachate PRIMA di questo fix (o ricaricate da una sessione
+          // salvata) potrebbero non averlo mai ricevuto. Seed deterministico
+          // derivato dai seed di sezione — prima usava Math.random(), quindi
+          // ogni export dava un pocket-feel diverso anche a parità di sessione.
+          const seedSum = state.sections.reduce((acc, s) => acc ^ (s.seed ?? 0), 0);
+          const glRng = makeRng(seedSum ^ 0xC0FF);
           applyGrooveLock(glBuffers, { ppq, bpm: state.bpm, barTicks }, glRng);
         }
 

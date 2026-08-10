@@ -48,7 +48,7 @@ export const SECTION_PRESETS = {
       drums:    { active: true,  style: 'cajon',         density: 0.6, dynamics: 'mf' },
       bass:     { active: true,  style: 'fingerstyle',   density: 0.55,dynamics: 'mp' },
       guitar:   { active: true,  style: 'strumming',     density: 0.7, dynamics: 'mf' },
-      piano:    { active: true,  style: 'comping',       density: 0.5, dynamics: 'mp' },
+      piano:    { active: true,  style: 'ballad',        density: 0.5, dynamics: 'mp' },
       ensemble: { active: true,  style: 'melodic',       density: 0.5, dynamics: 'mp' },
     },
     bridge: {
@@ -83,14 +83,14 @@ export const SECTION_PRESETS = {
     },
     verse: {
       drums:    { active: true,  style: 'brushes',       density: 0.4, dynamics: 'mp', rest_probability: 0.0  },
-      bass:     { active: true,  style: 'walking',       density: 0.5, dynamics: 'mp', rest_probability: 0.10 },
+      bass:     { active: true,  style: 'fingerstyle',   density: 0.5, dynamics: 'mp', rest_probability: 0.10 },
       guitar:   { active: true,  style: 'fingerpicking', density: 0.6, dynamics: 'mf', rest_probability: 0.08 },
       piano:    { active: true,  style: 'alberti_bass',  density: 0.4, dynamics: 'mp', rest_probability: 0.12 },
       ensemble: { active: false },
     },
     chorus: {
       drums:    { active: true,  style: 'rock',          density: 0.7, dynamics: 'f'  },
-      bass:     { active: true,  style: 'walking',       density: 0.7, dynamics: 'mf' },
+      bass:     { active: true,  style: 'fingerstyle',   density: 0.7, dynamics: 'mf' },
       guitar:   { active: true,  style: 'strumming',     density: 0.8, dynamics: 'f'  },
       piano:    { active: true,  style: 'gospel_pump',   density: 0.6, dynamics: 'f'  },
       ensemble: { active: true,  style: 'pad',           density: 0.4, dynamics: 'mp' },
@@ -212,21 +212,21 @@ export const SECTION_PRESETS = {
       drums:    { active: true,  style: 'rock',        density: 0.5, dynamics: 'mp' },
       bass:     { active: true,  style: 'pick',        density: 0.5, dynamics: 'mp' },
       guitar:   { active: true,  style: 'strumming',   density: 0.6, dynamics: 'mp' },
-      piano:    { active: true,  style: 'comping',     density: 0.4, dynamics: 'p'  },
+      piano:    { active: true,  style: 'ballad',      density: 0.4, dynamics: 'p'  },
       ensemble: { active: true,  style: 'pad',         density: 0.3, dynamics: 'p'  },
     },
     chorus: {
       drums:    { active: true,  style: 'rock',        density: 0.8, dynamics: 'f'  },
       bass:     { active: true,  style: 'pick',        density: 0.7, dynamics: 'f'  },
       guitar:   { active: true,  style: 'powerchord',  density: 0.8, dynamics: 'f'  },
-      piano:    { active: true,  style: 'comping',     density: 0.6, dynamics: 'mf' },
+      piano:    { active: true,  style: 'ballad',      density: 0.6, dynamics: 'mf' },
       ensemble: { active: true,  style: 'melodic',     density: 0.5, dynamics: 'mf' },
     },
     bridge: {
       drums:    { active: true,  style: 'rock',        density: 0.5, dynamics: 'mp' },
       bass:     { active: true,  style: 'fingerstyle', density: 0.45,dynamics: 'mp' },
       guitar:   { active: true,  style: 'riff',        density: 0.6, dynamics: 'mp' },
-      piano:    { active: true,  style: 'comping',     density: 0.4, dynamics: 'p'  },
+      piano:    { active: true,  style: 'ballad',      density: 0.4, dynamics: 'p'  },
       ensemble: { active: true,  style: 'pad',         density: 0.3, dynamics: 'p'  },
     },
     outro: {
@@ -234,46 +234,6 @@ export const SECTION_PRESETS = {
       bass:     { active: true,  style: 'pick',        density: 0.4, dynamics: 'p'  },
       guitar:   { active: true,  style: 'strumming',   density: 0.4, dynamics: 'p'  },
       piano:    { active: false },
-      ensemble: { active: false },
-    },
-  },
-
-  // ── Bossa Nova ────────────────────────────────────────────────
-  // Piano protagonista, chitarra classica, basso walking, no drums pesanti
-  bossa_nova: {
-    intro: {
-      drums:    { active: false },
-      bass:     { active: true,  style: 'walking',     density: 0.3, dynamics: 'pp'  },
-      guitar:   { active: true,  style: 'fingerpicking',density: 0.3, dynamics: 'p'  },
-      piano:    { active: true,  style: 'ballad',      density: 0.3, dynamics: 'pp' },
-      ensemble: { active: false },
-    },
-    verse: {
-      drums:    { active: true,  style: 'bossa',       density: 0.4, dynamics: 'p'  },
-      bass:     { active: true,  style: 'walking',     density: 0.6, dynamics: 'mp' },
-      guitar:   { active: true,  style: 'fingerpicking',density: 0.5, dynamics: 'mp' },
-      piano:    { active: true,  style: 'comping',     density: 0.5, dynamics: 'mp' },
-      ensemble: { active: true,  style: 'pad',         density: 0.25,dynamics: 'p'  },
-    },
-    chorus: {
-      drums:    { active: true,  style: 'bossa',       density: 0.6, dynamics: 'mf' },
-      bass:     { active: true,  style: 'walking',     density: 0.8, dynamics: 'mf' },
-      guitar:   { active: true,  style: 'fingerpicking',density: 0.65,dynamics: 'mf' },
-      piano:    { active: true,  style: 'comping',     density: 0.7, dynamics: 'mf' },
-      ensemble: { active: true,  style: 'melodic',     density: 0.5, dynamics: 'mp' },
-    },
-    bridge: {
-      drums:    { active: true,  style: 'brushes',     density: 0.3, dynamics: 'p'  },
-      bass:     { active: true,  style: 'walking',     density: 0.5, dynamics: 'mp' },
-      guitar:   { active: true,  style: 'arpeggio',    density: 0.4, dynamics: 'p'  },
-      piano:    { active: true,  style: 'ballad',      density: 0.4, dynamics: 'p'  },
-      ensemble: { active: true,  style: 'pad',         density: 0.3, dynamics: 'p'  },
-    },
-    outro: {
-      drums:    { active: false },
-      bass:     { active: true,  style: 'walking',     density: 0.3, dynamics: 'pp' },
-      guitar:   { active: true,  style: 'fingerpicking',density: 0.25,dynamics: 'pp' },
-      piano:    { active: true,  style: 'ballad',      density: 0.2, dynamics: 'ppp'},
       ensemble: { active: false },
     },
   },
@@ -341,7 +301,7 @@ export const SECTION_PRESETS = {
       drums:    { active: true,  style: 'cajon',       density: 0.55,dynamics: 'mf' },
       bass:     { active: true,  style: 'fingerstyle', density: 0.55,dynamics: 'mp' },
       guitar:   { active: true,  style: 'strumming',   density: 0.65,dynamics: 'mf' },
-      piano:    { active: true,  style: 'comping',     density: 0.45,dynamics: 'mp' },
+      piano:    { active: true,  style: 'ballad',      density: 0.45,dynamics: 'mp' },
       ensemble: { active: true,  style: 'pad',         density: 0.35,dynamics: 'mp' },
     },
     bridge: {
@@ -382,7 +342,7 @@ export const SECTION_PRESETS = {
       drums:    { active: true,  style: 'cajon',         density: 0.5, dynamics: 'mf' },
       bass:     { active: true,  style: 'fingerstyle',   density: 0.5, dynamics: 'mp' },
       guitar:   { active: true,  style: 'waltz_8th',     density: 0.6, dynamics: 'mf' },
-      piano:    { active: true,  style: 'comping',       density: 0.4, dynamics: 'mp' },
+      piano:    { active: true,  style: 'ballad',        density: 0.4, dynamics: 'mp' },
       ensemble: { active: true,  style: 'melodic',       density: 0.4, dynamics: 'mp' },
     },
     bridge: {
@@ -412,16 +372,16 @@ export const SECTION_PRESETS = {
     },
     verse: {
       drums:    { active: false },
-      bass:     { active: true,  style: 'walking',       density: 0.5, dynamics: 'mp' },
+      bass:     { active: true,  style: 'fingerstyle',   density: 0.5, dynamics: 'mp' },
       guitar:   { active: false },
       piano:    { active: true,  style: 'alberti_bass',  density: 0.5, dynamics: 'mp' },
       ensemble: { active: true,  style: 'pad',           density: 0.4, dynamics: 'mp' },
     },
     chorus: {
       drums:    { active: false },
-      bass:     { active: true,  style: 'walking',       density: 0.6, dynamics: 'mf' },
+      bass:     { active: true,  style: 'fingerstyle',   density: 0.6, dynamics: 'mf' },
       guitar:   { active: false },
-      piano:    { active: true,  style: 'comping',       density: 0.6, dynamics: 'mf' },
+      piano:    { active: true,  style: 'alberti_bass',  density: 0.6, dynamics: 'mf' },
       ensemble: { active: true,  style: 'melodic',       density: 0.6, dynamics: 'mf' },
     },
     bridge: {
@@ -433,50 +393,10 @@ export const SECTION_PRESETS = {
     },
     outro: {
       drums:    { active: false },
-      bass:     { active: true,  style: 'walking',       density: 0.3, dynamics: 'pp' },
+      bass:     { active: true,  style: 'fingerstyle',   density: 0.3, dynamics: 'pp' },
       guitar:   { active: false },
       piano:    { active: true,  style: 'alberti_bass',  density: 0.3, dynamics: 'pp' },
       ensemble: { active: true,  style: 'pad',           density: 0.2, dynamics: 'ppp'},
-    },
-  },
-
-  // ── Latin / Afro-Cuban ────────────────────────────────────────
-  // Chitarra: riff (intro) → strumming (verse) → riff (chorus/bridge) → arpeggio (outro)
-  latin: {
-    intro: {
-      drums:    { active: false },
-      bass:     { active: true,  style: 'walking',       density: 0.4, dynamics: 'mp' },
-      guitar:   { active: true,  style: 'riff',          density: 0.4, dynamics: 'mp' },
-      piano:    { active: true,  style: 'comping',       density: 0.35,dynamics: 'p'  },
-      ensemble: { active: false },
-    },
-    verse: {
-      drums:    { active: true,  style: 'latin',         density: 0.55,dynamics: 'mf', rest_probability: 0.0 },
-      bass:     { active: true,  style: 'walking',       density: 0.65,dynamics: 'mf', rest_probability: 0.08 },
-      guitar:   { active: true,  style: 'strumming',     density: 0.6, dynamics: 'mf', rest_probability: 0.08 },
-      piano:    { active: true,  style: 'comping',       density: 0.55,dynamics: 'mf', rest_probability: 0.10 },
-      ensemble: { active: true,  style: 'pad',           density: 0.3, dynamics: 'mp', rest_probability: 0.0  },
-    },
-    chorus: {
-      drums:    { active: true,  style: 'latin',         density: 0.75,dynamics: 'f'  },
-      bass:     { active: true,  style: 'walking',       density: 0.8, dynamics: 'f'  },
-      guitar:   { active: true,  style: 'riff',          density: 0.75,dynamics: 'f'  },
-      piano:    { active: true,  style: 'comping',       density: 0.7, dynamics: 'mf' },
-      ensemble: { active: true,  style: 'melodic',       density: 0.55,dynamics: 'mf' },
-    },
-    bridge: {
-      drums:    { active: true,  style: 'latin',         density: 0.5, dynamics: 'mp' },
-      bass:     { active: true,  style: 'walking',       density: 0.55,dynamics: 'mp' },
-      guitar:   { active: true,  style: 'riff',          density: 0.55,dynamics: 'mp' },
-      piano:    { active: true,  style: 'comping',       density: 0.45,dynamics: 'mp' },
-      ensemble: { active: true,  style: 'pad',           density: 0.3, dynamics: 'p'  },
-    },
-    outro: {
-      drums:    { active: false },
-      bass:     { active: true,  style: 'walking',       density: 0.4, dynamics: 'mp' },
-      guitar:   { active: true,  style: 'arpeggio',      density: 0.35,dynamics: 'p'  },
-      piano:    { active: true,  style: 'comping',       density: 0.3, dynamics: 'p'  },
-      ensemble: { active: false },
     },
   },
 
@@ -492,16 +412,16 @@ export const SECTION_PRESETS = {
     },
     verse: {
       drums:    { active: true,  style: 'brushes',       density: 0.35,dynamics: 'p',  rest_probability: 0.0  },
-      bass:     { active: true,  style: 'walking',       density: 0.45,dynamics: 'mp', rest_probability: 0.10 },
+      bass:     { active: true,  style: 'fingerstyle',   density: 0.45,dynamics: 'mp', rest_probability: 0.10 },
       guitar:   { active: false },
       piano:    { active: true,  style: 'alberti_bass',  density: 0.45,dynamics: 'mp', rest_probability: 0.12 },
       ensemble: { active: true,  style: 'pad',           density: 0.5, dynamics: 'mp', rest_probability: 0.0  },
     },
     chorus: {
       drums:    { active: true,  style: 'rock',          density: 0.65,dynamics: 'mf' },
-      bass:     { active: true,  style: 'walking',       density: 0.65,dynamics: 'mf' },
+      bass:     { active: true,  style: 'fingerstyle',   density: 0.65,dynamics: 'mf' },
       guitar:   { active: false },
-      piano:    { active: true,  style: 'comping',       density: 0.6, dynamics: 'mf' },
+      piano:    { active: true,  style: 'ballad',        density: 0.6, dynamics: 'mf' },
       ensemble: { active: true,  style: 'melodic',       density: 0.7, dynamics: 'f'  },
     },
     bridge: {
@@ -517,46 +437,6 @@ export const SECTION_PRESETS = {
       guitar:   { active: false },
       piano:    { active: true,  style: 'new_age_flow',  density: 0.25,dynamics: 'pp' },
       ensemble: { active: true,  style: 'pad',           density: 0.35,dynamics: 'p'  },
-    },
-  },
-
-  // ── Reggae / Dub ──────────────────────────────────────────────
-  // Chitarra: skank (offbeat) — stile definito; basso prominente con riff
-  reggae: {
-    intro: {
-      drums:    { active: false },
-      bass:     { active: true,  style: 'fingerstyle',   density: 0.45,dynamics: 'mp' },
-      guitar:   { active: true,  style: 'skank',         density: 0.5, dynamics: 'mp' },
-      piano:    { active: false },
-      ensemble: { active: false },
-    },
-    verse: {
-      drums:    { active: true,  style: 'reggae',        density: 0.5, dynamics: 'mf', rest_probability: 0.0  },
-      bass:     { active: true,  style: 'fingerstyle',   density: 0.65,dynamics: 'mf', rest_probability: 0.08 },
-      guitar:   { active: true,  style: 'skank',         density: 0.65,dynamics: 'mf', rest_probability: 0.08 },
-      piano:    { active: true,  style: 'comping',       density: 0.35,dynamics: 'mp', rest_probability: 0.15 },
-      ensemble: { active: false },
-    },
-    chorus: {
-      drums:    { active: true,  style: 'reggae',        density: 0.7, dynamics: 'f'  },
-      bass:     { active: true,  style: 'fingerstyle',   density: 0.75,dynamics: 'f'  },
-      guitar:   { active: true,  style: 'skank',         density: 0.75,dynamics: 'f'  },
-      piano:    { active: true,  style: 'comping',       density: 0.5, dynamics: 'mf' },
-      ensemble: { active: true,  style: 'pad',           density: 0.35,dynamics: 'mp' },
-    },
-    bridge: {
-      drums:    { active: true,  style: 'reggae',        density: 0.4, dynamics: 'mp' },
-      bass:     { active: true,  style: 'fingerstyle',   density: 0.5, dynamics: 'mp' },
-      guitar:   { active: true,  style: 'skank',         density: 0.5, dynamics: 'mp' },
-      piano:    { active: false },
-      ensemble: { active: false },
-    },
-    outro: {
-      drums:    { active: false },
-      bass:     { active: true,  style: 'fingerstyle',   density: 0.4, dynamics: 'mp' },
-      guitar:   { active: true,  style: 'skank',         density: 0.45,dynamics: 'mp' },
-      piano:    { active: false },
-      ensemble: { active: false },
     },
   },
 

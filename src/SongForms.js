@@ -138,26 +138,6 @@ export const SONG_FORMS = {
     { type: 'outro',  bars: [4, 4],  energy: 3 },
   ],
 
-  // ── Bossa Nova ─────────────────────────────────────────────────
-  bossa_nova_standard: [
-    { type: 'intro',   bars: [4, 4],   energy: 3 },
-    { type: 'verse',   bars: [8, 8],   energy: 5 },
-    { type: 'chorus',  bars: [8, 8],   energy: 7 },
-    { type: 'verse',   bars: [8, 8],   energy: 6 },
-    { type: 'chorus',  bars: [8, 8],   energy: 8 },
-    { type: 'bridge',  bars: [8, 8],   energy: 5 },
-    { type: 'chorus',  bars: [8, 8],   energy: 8 },
-    { type: 'outro',   bars: [4, 4],   energy: 3 },
-  ],
-  bossa_nova_aaba: [                     // forma AABA jazz — 32 bar
-    { type: 'intro',   bars: [4, 4],   energy: 3 },
-    { type: 'verse',   bars: [8, 8],   energy: 5 },  // A
-    { type: 'verse',   bars: [8, 8],   energy: 6 },  // A
-    { type: 'bridge',  bars: [8, 8],   energy: 7 },  // B
-    { type: 'verse',   bars: [8, 8],   energy: 7 },  // A
-    { type: 'outro',   bars: [4, 4],   energy: 3 },
-  ],
-
   // ── Blues Rock ─────────────────────────────────────────────────
   blues_rock_standard: [
     { type: 'intro',   bars: [4, 4],   energy: 4 },
@@ -194,18 +174,6 @@ export const SONG_FORMS = {
     { type: 'outro',   bars: [4, 8],   energy: 3 },
   ],
 
-  // ── Latin / Afro-Cuban ─────────────────────────────────────────
-  latin_standard: [
-    { type: 'intro',   bars: [4, 4],   energy: 4 },
-    { type: 'verse',   bars: [8, 8],   energy: 6 },
-    { type: 'chorus',  bars: [8, 8],   energy: 8 },
-    { type: 'verse',   bars: [8, 8],   energy: 7 },
-    { type: 'chorus',  bars: [8, 8],   energy: 9 },
-    { type: 'bridge',  bars: [4, 8],   energy: 6 },
-    { type: 'chorus',  bars: [8, 8],   energy: 10 },
-    { type: 'outro',   bars: [4, 4],   energy: 4 },
-  ],
-
   // ── Cinematic / Orchestral ─────────────────────────────────────
   cinematic_standard: [
     { type: 'intro',   bars: [8, 8],   energy: 3 },
@@ -216,18 +184,6 @@ export const SONG_FORMS = {
     { type: 'bridge',  bars: [8, 8],   energy: 5 },
     { type: 'chorus',  bars: [8, 8],   energy: 10 },
     { type: 'outro',   bars: [8, 8],   energy: 3 },
-  ],
-
-  // ── Reggae / Dub ───────────────────────────────────────────────
-  reggae_standard: [
-    { type: 'intro',   bars: [4, 4],   energy: 4 },
-    { type: 'verse',   bars: [8, 8],   energy: 6 },
-    { type: 'chorus',  bars: [8, 8],   energy: 8 },
-    { type: 'verse',   bars: [8, 8],   energy: 6 },
-    { type: 'chorus',  bars: [8, 8],   energy: 8 },
-    { type: 'bridge',  bars: [4, 8],   energy: 5 },
-    { type: 'chorus',  bars: [8, 8],   energy: 9 },
-    { type: 'outro',   bars: [4, 4],   energy: 4 },
   ],
 
   // ── Lo-Fi ────────────────────────────────────────────────────────

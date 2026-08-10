@@ -99,7 +99,6 @@ const _SESSION_FORMS = {
   neo_soul:          'neo_soul_standard',
   classical:         'classical_standard',
   pop_rock:          'pop_rock_standard',
-  bossa_nova:        'bossa_nova_standard',
   blues_rock:        'blues_rock_standard',
   singer_songwriter: 'singer_songwriter_standard',
 };

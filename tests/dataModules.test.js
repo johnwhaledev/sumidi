@@ -29,9 +29,9 @@ describe('Moduli dati estratti da SongArchitect.js (R1)', () => {
     expect(Object.keys(SECTION_PRESETS).length).toBeGreaterThan(0);
   });
 
-  it('Styles.js espone tutti i 16 generi', () => {
-    expect(Object.keys(STYLES).length).toBe(16);
-    for (const style of ['punk', 'garage_rock', 'chiptune', 'latin', 'cinematic', 'reggae']) {
+  it('Styles.js espone tutti i 13 generi', () => {
+    expect(Object.keys(STYLES).length).toBe(13);
+    for (const style of ['punk', 'garage_rock', 'chiptune', 'cinematic']) {
       expect(STYLES[style], `manca STYLES['${style}']`).toBeDefined();
     }
   });

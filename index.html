@@ -83,7 +83,7 @@
           oninput="document.getElementById('sm-bpm-v').textContent=this.value;smSyncMeta()">
       </div>
       <div>
-        <label>Stile</label>
+        <label>Stile <span id="sm-scale-hint" style="font-weight:400;color:var(--muted);font-size:10px;margin-left:4px;" title="Ogni stile usa una scala armonica fissa; la Tonalità sceglie solo la tonica su cui viene trasposta"></span></label>
         <select id="sm-style" onchange="smSyncMeta()">
           <option value="unplugged">MTV Unplugged</option>
           <option value="folk">Folk Acoustic</option>
@@ -91,12 +91,9 @@
           <option value="neo_soul">Neo Soul</option>
           <option value="classical">Classical Chamber</option>
           <option value="pop_rock">Pop Rock</option>
-          <option value="bossa_nova">Bossa Nova</option>
           <option value="blues_rock">Blues Rock</option>
           <option value="singer_songwriter">Singer/Songwriter</option>
-          <option value="latin">Latin / Afro-Cuban</option>
           <option value="cinematic">Cinematic / Orchestral</option>
-          <option value="reggae">Reggae / Dub</option>
           <option value="lo_fi">Lo-Fi</option>
           <option value="punk">Punk</option>
           <option value="garage_rock">Garage Rock</option>
@@ -111,6 +108,8 @@
         title="Randomizza stile, tonalità e BPM e rigenera">🎲 Random</button>
       <button id="sm-gen-btn" class="btn btn-p btn-sm" onclick="smAutoGenerate()"
         title="Genera canzone completa e importa nelle lanes">⚡ Genera</button>
+      <button id="sm-play-btn" class="btn btn-s btn-sm" onclick="smPlaySong()"
+        title="Ascolta l'intero brano">▶ Ascolta</button>
       <div class="cb-sep"></div>
       <button id="sm-undo-btn" class="btn btn-s btn-sm" onclick="smUndo()" title="Annulla ultima modifica (Ctrl+Z)"
         disabled>↩</button>
@@ -135,7 +134,6 @@
               <option value="neo_soul">Neo Soul</option>
               <option value="classical">Classical Chamber</option>
               <option value="pop_rock">Pop Rock</option>
-              <option value="bossa_nova">Bossa Nova</option>
               <option value="blues_rock">Blues Rock</option>
               <option value="singer_songwriter">Singer/Songwriter</option>
               <option value="lo_fi">Lo-Fi</option>
@@ -205,10 +203,6 @@
                 <option value="pop_rock_standard">Standard</option>
                 <option value="pop_rock_short">Corta</option>
               </optgroup>
-              <optgroup label="Bossa Nova">
-                <option value="bossa_nova_standard">Standard</option>
-                <option value="bossa_nova_aaba">AABA</option>
-              </optgroup>
               <optgroup label="Blues Rock">
                 <option value="blues_rock_standard">Standard</option>
               </optgroup>
@@ -250,7 +244,6 @@
               <option value="brushes">Brushes (Spazzole)</option>
               <option value="cajon">Cajón</option>
               <option value="jazz">Jazz Ride</option>
-              <option value="bossa">Bossa Nova</option>
             </select>
           </div>
           <div>

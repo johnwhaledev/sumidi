@@ -54,12 +54,16 @@ export const BASS_GLIDE_PROFILE = {
 export const STRINGS_GLIDE_PROFILE = {
   minSemitonesToGlide: 2,
   computeSteps: semitones => Math.min(semitones, 5),
-  firstNote: { velocity: (v) => Math.round(v * 0.3), overlapMs: 20 },
+  // Floor a 1 (velocity MIDI valida) — a differenza di BASS_GLIDE_PROFILE
+  // (floor 20) questo profilo non aveva alcun clamp minimo: con v già al
+  // minimo (1, clampato a monte) il fattore 0.3x arrotondava a 0, un
+  // valore di velocity non valido (0 in MIDI equivale a un note-off).
+  firstNote: { velocity: (v) => Math.max(1, Math.round(v * 0.3)), overlapMs: 20 },
   innerNote: {
     active: () => true,
     loopEnd: steps => steps,
     progress: (i, steps) => i / steps,
-    velocity: (v, i, steps) => Math.round(v * (0.2 + (i / steps) * 0.5)),
+    velocity: (v, i, steps) => Math.max(1, Math.round(v * (0.2 + (i / steps) * 0.5))),
     overlapMs: 15,
   },
   finalNote: { velocity: (v) => v, durationMode: 'tailFraction', tailFraction: 0.3 },

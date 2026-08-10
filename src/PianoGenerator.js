@@ -26,7 +26,16 @@
 import { makeRng, clampToRegister } from './SongArchitect.js';
 import { arcVelocity, selectContextualNote, PhraseMemory, getMelodicCharacter } from './FlowCore.js';
 
-export const PIANO_PROGRAM = 0;
+export const PIANO_PROGRAM = 0;  // Acoustic Grand — default per tutti gli stili
+
+// Alcuni generi hanno un timbro pianistico "di default" diverso dal grand
+// acustico nella pratica reale (lo-fi hip-hop vive di Rhodes/electric piano,
+// non di piano acustico) — prima il MIDI esportato diceva sempre "Acoustic
+// Grand Piano" a prescindere dal genere, anche quando lo stile suonava
+// esplicitamente in chiave Rhodes (hip_hop_keys).
+const PIANO_PROGRAM_BY_STYLE = {
+  lo_fi: 4,  // Electric Piano 1 (Rhodes)
+};
 
 // Registri base — il LH lo viene calcolato dinamicamente per sezione (FASE I)
 const LH_HI  = 57;
@@ -428,7 +437,8 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
     }
   }
 
-  return { events, program: PIANO_PROGRAM };
+  const program = PIANO_PROGRAM_BY_STYLE[meta.style] ?? PIANO_PROGRAM;
+  return { events, program };
 }
 
 // ── Core voicing: root+3rd+5th — prova le 3 inversioni, sceglie min-movimento ─

@@ -466,10 +466,10 @@ function _shouldModulate(isLastOccurrence, energy, prevEnergy, rng) {
 // della sezione corrente.
 function _bridgeChord(decoratedStrings, nextFirstChord, progFamily, rng, preferFlats) {
   const BRIDGE_PROB = {
-    jazz: 0.35, bossa_nova: 0.30, neo_soul: 0.25,
+    jazz: 0.35, neo_soul: 0.25,
     classical: 0.20, unplugged: 0.20, folk: 0.10,
     pop_rock: 0.10, blues_rock: 0.0, singer_songwriter: 0.08,
-    latin: 0.30, cinematic: 0.15, reggae: 0.0,
+    cinematic: 0.15,
     lo_fi: 0.15, punk: 0.0, garage_rock: 0.05, chiptune: 0.10,
   };
   const prob = BRIDGE_PROB[progFamily] ?? 0.10;
@@ -501,19 +501,24 @@ function _decorateProgression(progression, progFamily, energy, parentRng, prefer
   // RNG locale: seed posizionale garantisce verse1 ≠ verse2 anche con stessa progressione
   const rng = makeRng((parentRng.next() * 0xFFFF | 0) ^ (sectionIdx * 0x1337));
   // Probabilità per decorazione e stile
-  const TRITONE_PROB   = { jazz: 0.15, neo_soul: 0.10, classical: 0.05, folk: 0.03, unplugged: 0.03, pop_rock: 0.02, bossa_nova: 0.12, blues_rock: 0.0,  singer_songwriter: 0.02, latin: 0.10, cinematic: 0.05, reggae: 0.0,
+  const TRITONE_PROB   = { jazz: 0.15, neo_soul: 0.10, classical: 0.05, folk: 0.03, unplugged: 0.03, pop_rock: 0.02, blues_rock: 0.0,  singer_songwriter: 0.02, cinematic: 0.05,
     lo_fi: 0.05, punk: 0.0, garage_rock: 0.02, chiptune: 0.03 };
-  const EXTENSION_PROB = { jazz: 0.40, neo_soul: 0.30, classical: 0.22, folk: 0.14, unplugged: 0.14, bossa_nova: 0.45, blues_rock: 0.10, singer_songwriter: 0.08, latin: 0.25, cinematic: 0.20, reggae: 0.05,
+  // BUG: pop_rock mancava da queste 5 tabelle (era presente solo in
+  // TRITONE_PROB e BRIDGE_PROB) — ricadeva sui default generici (0.14/0.18/
+  // 0.18/0.14/0.15, tarati per stili jazz-ish), risultando accidentalmente
+  // più "jazzato" (maj7/m7 frequenti) di quanto un genere rock diretto
+  // dovrebbe essere. Valori propri, più bassi, aggiunti sotto.
+  const EXTENSION_PROB = { jazz: 0.40, neo_soul: 0.30, classical: 0.22, folk: 0.14, unplugged: 0.14, pop_rock: 0.08, blues_rock: 0.10, singer_songwriter: 0.08, cinematic: 0.20,
     lo_fi: 0.35, punk: 0.0, garage_rock: 0.05, chiptune: 0.05 };
-  const DOM_UPGRADE_PROB = { jazz: 0.50, neo_soul: 0.30, classical: 0.15, folk: 0.20, unplugged: 0.18, bossa_nova: 0.45, blues_rock: 0.0,  singer_songwriter: 0.10, latin: 0.40, cinematic: 0.15, reggae: 0.0,
+  const DOM_UPGRADE_PROB = { jazz: 0.50, neo_soul: 0.30, classical: 0.15, folk: 0.20, unplugged: 0.18, pop_rock: 0.06, blues_rock: 0.0,  singer_songwriter: 0.10, cinematic: 0.15,
     lo_fi: 0.25, punk: 0.0, garage_rock: 0.05, chiptune: 0.10 };
-  // BUG-1: blues_rock/reggae a 0.0 — secondary dominants e borrowed chords sono incompatibili
-  //        con il framework I7–IV7–V7 del blues e con il feel modale del reggae.
-  const SEC_DOM_PROB   = { jazz: 0.30, neo_soul: 0.22, classical: 0.18, folk: 0.20, unplugged: 0.18, bossa_nova: 0.25, blues_rock: 0.0,  singer_songwriter: 0.05, latin: 0.25, cinematic: 0.15, reggae: 0.0,
+  // BUG-1: blues_rock a 0.0 — secondary dominants e borrowed chords sono
+  //        incompatibili con il framework I7–IV7–V7 del blues.
+  const SEC_DOM_PROB   = { jazz: 0.30, neo_soul: 0.22, classical: 0.18, folk: 0.20, unplugged: 0.18, pop_rock: 0.06, blues_rock: 0.0,  singer_songwriter: 0.05, cinematic: 0.15,
     lo_fi: 0.15, punk: 0.0, garage_rock: 0.05, chiptune: 0.12 };
-  const BORROW_PROB    = { jazz: 0.20, neo_soul: 0.25, classical: 0.12, folk: 0.14, unplugged: 0.14, bossa_nova: 0.15, blues_rock: 0.0,  singer_songwriter: 0.05, latin: 0.15, cinematic: 0.18, reggae: 0.0,
+  const BORROW_PROB    = { jazz: 0.20, neo_soul: 0.25, classical: 0.12, folk: 0.14, unplugged: 0.14, pop_rock: 0.08, blues_rock: 0.0,  singer_songwriter: 0.05, cinematic: 0.18,
     lo_fi: 0.20, punk: 0.0, garage_rock: 0.08, chiptune: 0.08 };
-  const SLASH_PROB     = { jazz: 0.15, neo_soul: 0.20, classical: 0.25, folk: 0.35, unplugged: 0.30, bossa_nova: 0.10, blues_rock: 0.10, singer_songwriter: 0.35, latin: 0.10, cinematic: 0.20, reggae: 0.05,
+  const SLASH_PROB     = { jazz: 0.15, neo_soul: 0.20, classical: 0.25, folk: 0.35, unplugged: 0.30, pop_rock: 0.12, blues_rock: 0.10, singer_songwriter: 0.35, cinematic: 0.20,
     lo_fi: 0.10, punk: 0.0, garage_rock: 0.05, chiptune: 0.05 };
 
   const noteNamesFlats  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
@@ -687,12 +692,9 @@ function buildSong(params = {}) {
     neo_soul:         'acoustic',
     classical:        null,        // niente percussioni
     pop_rock:         'acoustic',
-    bossa_nova:       'bossa',
     blues_rock:       'acoustic',
     singer_songwriter:'brushes',
-    latin:            'latin',
     cinematic:        'brushes',
-    reggae:           'reggae',
     lo_fi:            'lofi',
     punk:             'punk',
     garage_rock:      'acoustic',
@@ -710,9 +712,6 @@ function buildSong(params = {}) {
     brushes:  { style: 'brushes',   useCajon: false, useBrushes: true  },
     cajon:    { style: 'cajon',     useCajon: true,  useBrushes: false },
     jazz:     { style: 'jazz_trio', useCajon: false, useBrushes: false },
-    bossa:    { style: 'bossa',     useCajon: false, useBrushes: false },
-    latin:    { style: 'latin',     useCajon: false, useBrushes: false },
-    reggae:   { style: 'reggae',    useCajon: false, useBrushes: false },
     lofi:     { style: 'lofi',      useCajon: false, useBrushes: false },
     punk:     { style: 'punk',      useCajon: false, useBrushes: false },
     chiptune: { style: 'chiptune',  useCajon: false, useBrushes: false },
@@ -723,8 +722,52 @@ function buildSong(params = {}) {
   // Se l'utente sceglie una chiave maggiore (C, D, F…)  → riferimento C  (rootPc=0)
   // In questo modo "C" dà sempre accordi della scala di Do maggiore,
   // "Am" dà accordi della scala di La minore, indipendentemente dallo stile.
-  const refPc = keyInfo.isMinor ? 9 : 0;
+  //
+  // BUG: questa assunzione C(major)/Am(minor) vale solo per i pool più
+  // vecchi (unplugged, folk, jazz_ballad, classical, blues_rock,
+  // singer_songwriter, cinematic, waltz, chiptune). Pool più
+  // recenti sono scritti in un riferimento fisso DIVERSO (vedi i commenti
+  // "reference key" in SongProgressions.js): pop_rock/punk in A,
+  // garage_rock in E, neo_soul/lo_fi in Dm. Senza correzione, la
+  // progressione veniva trasposta nella tonalità sbagliata rispetto a
+  // quella scelta dall'utente, MENTRE keyScaleNotes (sotto — usata da
+  // chitarra/piano/ensemble per le note melodiche) restava ancorata alla
+  // tonalità realmente selezionata: risultato, accordi in una tonalità e
+  // melodia vincolata a un'altra, dissonanze sistematiche (es. "punk
+  // stonato" con l'impostazione di default style=punk key=A: gli accordi
+  // finivano trasposti su F# invece di restare in A).
+  const PROG_FAMILY_REF_PC = {
+    pop_rock:    9,  // A / Am — "reference key A major / Am minor"
+    neo_soul:    2,  // Dm (dorian)
+    lo_fi:       2,  // Dm
+    punk:        9,  // A
+    garage_rock: 4,  // E
+  };
+  const refPc = PROG_FAMILY_REF_PC[progFamily] ?? (keyInfo.isMinor ? 9 : 0);
   const semitoneShift = (keyInfo.rootPc - refPc + 12) % 12;
+
+  // Stili per cui la scelta Minori/Maggiori dell'utente pilota davvero sia
+  // quale progressione pescare sia la scala diatonica globale, invece di
+  // essere ignorata (bug corretto qui). Due meccanismi diversi a seconda
+  // di come sono fatti i dati in SongProgressions.js:
+  //  - QUALITY_FILTERED: il pool combinato contiene GIÀ entrambe le
+  //    qualità, etichettate correttamente come tonica vera (non solo un
+  //    vi/iii di passaggio) — es. pop_rock_verse ha 8 entry 'A...' e 8
+  //    'Am...' con "i" esplicito nel commento. Filtriamo il pool esistente
+  //    per qualità del primo accordo.
+  //  - Tutti gli altri in MODE_AWARE_FAMILIES: pool minore scritto ex novo
+  //    in `${progFamily}_${type}_minor` (i pool maggiori esistenti NON sono
+  //    dual-labeled in modo affidabile — es. folk_verse ha 'Am' usato come
+  //    vi di passaggio in Do maggiore, non come vera tonica i — quindi
+  //    filtrarli per qualità darebbe risultati sbagliati).
+  const QUALITY_FILTERED_FAMILIES = new Set(['pop_rock']);
+  const MODE_AWARE_FAMILIES = new Set([
+    'pop_rock', 'folk', 'classical', 'singer_songwriter', 'punk', 'garage_rock', 'chiptune',
+  ]);
+  const modeAware = MODE_AWARE_FAMILIES.has(progFamily);
+  const resolvedScale = modeAware
+    ? (keyInfo.isMinor ? 'minor' : 'major')
+    : (styleDef.defaultScale ?? (keyInfo.isMinor ? 'minor' : 'major'));
 
   // Preferisce bemolle nelle tonalità con armatura di bemolli
   // PC flat keys: F(5), Bb(10), Eb(3), Ab(8), Db(1), Gb(6) e relativi minori
@@ -770,10 +813,28 @@ function buildSong(params = {}) {
     occurrenceCount[type] = idx + 1;
 
     // ── Pick progression from pool ────────────────────────────
-    const poolKey = `${progFamily}_${type}`;
-    const pool    = PROGRESSION_POOLS[poolKey]
-                 ?? PROGRESSION_POOLS[`${progFamily}_verse`]
-                 ?? [['C', 'G', 'Am', 'F']];
+    // Per gli stili mode-aware con pool minore dedicato (tutti tranne
+    // pop_rock, vedi QUALITY_FILTERED_FAMILIES sopra), in tonalità minore
+    // si pesca direttamente dalla chiave `_minor` separata.
+    const useSeparateMinorPool = modeAware && keyInfo.isMinor && !QUALITY_FILTERED_FAMILIES.has(progFamily);
+    const poolKey = useSeparateMinorPool ? `${progFamily}_${type}_minor` : `${progFamily}_${type}`;
+    let pool = PROGRESSION_POOLS[poolKey]
+            ?? PROGRESSION_POOLS[useSeparateMinorPool ? `${progFamily}_verse_minor` : `${progFamily}_verse`]
+            ?? [['C', 'G', 'Am', 'F']];
+
+    // Filtra per modo (tonica maggiore/minore) solo per gli stili in
+    // QUALITY_FILTERED_FAMILIES (pool combinato già dual-labeled — vedi
+    // commento sopra). Fallback al pool intero se il filtro azzera le
+    // opzioni (safety, non dovrebbe mai accadere dato che questi pool
+    // sono composti 50/50).
+    if (modeAware && QUALITY_FILTERED_FAMILIES.has(progFamily)) {
+      const wantMinor = keyInfo.isMinor;
+      const filtered = pool.filter(entry => {
+        const firstRaw = Array.isArray(entry[0]) ? entry[0][0] : entry[0];
+        return (parseChord(firstRaw)?.quality === 'min') === wantMinor;
+      });
+      if (filtered.length) pool = filtered;
+    }
 
     // Avoid repeating the same progression on same section type
     // (e.g. verse 1 and verse 2 get different progressions)
@@ -896,13 +957,10 @@ function buildSong(params = {}) {
       key:        keyStr,
       keyInfo,
       // Scala diatonica globale: tiene conto dello stile (dorian per neo_soul, ecc.)
-      scale:          styleDef.defaultScale ?? (keyInfo.isMinor ? 'minor' : 'major'),
+      // — o della tonalità scelta per gli stili mode-aware (vedi resolvedScale sopra).
+      scale:          resolvedScale,
       // Pool MIDI della scala globale — usato dai generatori per rimanere in tonalità
-      keyScaleNotes:  buildScalePool(
-        keyInfo.rootPc,
-        styleDef.defaultScale ?? (keyInfo.isMinor ? 'minor' : 'major'),
-        36, 96
-      ),
+      keyScaleNotes:  buildScalePool(keyInfo.rootPc, resolvedScale, 36, 96),
       bpm,
       ppq,
       beatsPerBar,

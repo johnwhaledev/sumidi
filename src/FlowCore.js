@@ -20,7 +20,6 @@ const GROOVE_OFFSETS = {
   straight: [0, 0,    0,    0,    0, 0,    0,    0,    0, 0,    0,    0,    0, 0,    0,    0   ],
   swing:    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Delegato a Humanizer.applySwing()
   shuffle:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Delegato a Humanizer.applySwing()
-  bossa:    [0, 0.05, 0.10, 0,    0, 0.05, 0.10, 0,    0, 0.05, 0.10, 0,    0, 0.05, 0.10, 0   ],
   behind:   [0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08,
              0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08],
 };
@@ -49,7 +48,7 @@ function buildStepWeights(beatsPerBar = 4) {
  * Genera una griglia ritmica per una battuta.
  *
  * @param {number} density      0–1: frazione di step attivi
- * @param {string} groove       'straight'|'swing'|'shuffle'|'bossa'|'behind'
+ * @param {string} groove       'straight'|'swing'|'shuffle'|'behind'
  * @param {object} rng          istanza makeRng()
  * @param {number} ppq          tick per quarto (default 480)
  * @param {number} barStart     tick di inizio battuta (default 0)
@@ -212,8 +211,17 @@ export function selectContextualNote(pool, anchor, memory, rng, opts = {}) {
   // Carattere stilistico: cromatismo — con probabilità `chromaticism`, sposta
   // la nota scelta di ±1 semitono come approccio/enclosure cromatico (jazz,
   // blues). A 0 (default, es. folk/reggae) il comportamento è identico a prima.
+  //
+  // Fix: prima il verso dello spostamento era un lancio di moneta (rng.bool),
+  // indipendente dall'anchor — tanto spesso allontanava la nota appena scelta
+  // dalla nota precedente quanto la avvicinava, producendo un semitono "storto"
+  // senza risoluzione (segnalato come passaggi/note troppo azzardate, specie
+  // in jazz_ballad/neo_soul dove chromaticism è più alto). Ora il verso è
+  // sempre quello che avvicina la nota all'anchor — un vero tocco di
+  // approccio/enclosure che leviga la transizione invece di destabilizzarla.
   if (chromaticism > 0 && rng.bool(chromaticism)) {
-    picked += rng.bool(0.5) ? 1 : -1;
+    const dirToAnchor = anchor != null ? Math.sign(anchor - picked) : 0;
+    picked += dirToAnchor !== 0 ? dirToAnchor : (rng.bool(0.5) ? 1 : -1);
   }
 
   return picked;
@@ -233,15 +241,12 @@ const MELODIC_CHARACTER = {
   jazz_ballad:        { chromaticism: 0.22, stepBias: 0.50, randomness: 0.30 },
   neo_soul:           { chromaticism: 0.16, stepBias: 0.55, randomness: 0.28 },
   blues_rock:         { chromaticism: 0.14, stepBias: 0.55, randomness: 0.26 },
-  bossa_nova:         { chromaticism: 0.08, stepBias: 0.60, randomness: 0.22 },
-  latin:              { chromaticism: 0.10, stepBias: 0.58, randomness: 0.24 },
   cinematic:          { chromaticism: 0.06, stepBias: 0.62, randomness: 0.20 },
   pop_rock:           { chromaticism: 0.04, stepBias: 0.60, randomness: 0.22 },
   classical:          { chromaticism: 0.03, stepBias: 0.65, randomness: 0.18 },
   folk:               { chromaticism: 0.0,  stepBias: 0.75, randomness: 0.15 },
   unplugged:          { chromaticism: 0.0,  stepBias: 0.72, randomness: 0.16 },
   singer_songwriter:  { chromaticism: 0.0,  stepBias: 0.72, randomness: 0.16 },
-  reggae:             { chromaticism: 0.0,  stepBias: 0.70, randomness: 0.18 },
   lo_fi:              { chromaticism: 0.12, stepBias: 0.55, randomness: 0.30 },  // jazzy, un po' storto
   punk:               { chromaticism: 0.0,  stepBias: 0.80, randomness: 0.10 },  // diretto, quasi nessuna variazione
   garage_rock:        { chromaticism: 0.10, stepBias: 0.60, randomness: 0.28 },  // blues-ish, grezzo

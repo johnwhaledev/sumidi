@@ -252,21 +252,6 @@ export const GROOVE_PARAMS = {
     flam_chance: 0.15,
   },
 
-  bossa: {
-    kick_steps: [0, 3, 6, 9, 12], kick_extra_bar2: [], kick_density: 0.0,
-    snare_steps: [1, 4, 7, 9, 13], snare_ghost: 0.05,
-    hh_density: 0.50, groove: 'bossa',
-    useCrossStick: true,
-    flam_chance: 0.0,
-  },
-  bossa_authentic: {
-    kick_steps: [0, 8], kick_extra_bar2: [5], kick_density: 0.0,
-    snare_steps: [2, 5, 7, 9, 12], snare_ghost: 0.05,
-    hh_density: 0.50, groove: 'bossa',
-    useCrossStick: true,
-    flam_chance: 0.0,
-  },
-
   // Jazz ride: 3 varianti reali (non solo volume) — sparse a bassa energia
   // (solo quarti, feel rilassato), busy ad alta energia (comping snare più
   // presente + ride più denso). rideVariant letto in _genBar (ramo useRide).
@@ -329,30 +314,6 @@ export const GROOVE_PARAMS = {
     flam_chance: 0.18,
   },
 
-  // Reggae: one-drop minimale a bassa energia → steppers (kick su ogni quarto)
-  // ad alta energia, come nell'uso reale del genere (rockers/steppers feel).
-  reggae_low: {
-    kick_steps: [8], kick_extra_bar2: [], kick_density: 0.0,
-    snare_steps: [8], snare_ghost: 0.02,
-    hh_density: 0.35, groove: 'straight',
-    useCrossStick: true,
-    flam_chance: 0.0,
-  },
-  reggae: {
-    kick_steps: [8], kick_extra_bar2: [], kick_density: 0.0,
-    snare_steps: [8], snare_ghost: 0.05,
-    hh_density: 0.55, groove: 'straight',
-    useCrossStick: true,
-    flam_chance: 0.0,
-  },
-  reggae_steppers: {
-    kick_steps: [0, 4, 8, 12], kick_extra_bar2: [], kick_density: 0.05,
-    snare_steps: [8], snare_ghost: 0.10,
-    hh_density: 0.70, groove: 'straight',
-    useCrossStick: true,
-    flam_chance: 0.05,
-  },
-
   waltz_light: {
     kick_steps: [0], kick_extra_bar2: [], kick_density: 0.0,
     snare_steps: [8], snare_ghost: 0.04,
@@ -367,24 +328,9 @@ export const GROOVE_PARAMS = {
     useBrushes: false, useCrossStick: false, useCajon: false,
     flam_chance: 0.0,
   },
-  // Percussione latin/folk/bossa: percDensity varia lo strato di percussioni
+  // Percussione folk: percDensity varia lo strato di percussioni
   // effettivamente suonato (non solo il volume) — letto nel ramo usePercussion
   // di _genBar per aggiungere/togliere layer secondari (claves/tamburello/agogo extra).
-  perc_latin_low: {
-    usePercussion: true, percType: 'latin', percDensity: 'sparse',
-    hh_density: 0.0, groove: 'straight',
-    flam_chance: 0.0,
-  },
-  perc_latin: {
-    usePercussion: true, percType: 'latin', percDensity: 'mid',
-    hh_density: 0.0, groove: 'straight',
-    flam_chance: 0.0,
-  },
-  perc_latin_high: {
-    usePercussion: true, percType: 'latin', percDensity: 'dense',
-    hh_density: 0.0, groove: 'straight',
-    flam_chance: 0.0,
-  },
   perc_folk_low: {
     usePercussion: true, percType: 'folk', percDensity: 'sparse',
     hh_density: 0.0, groove: 'straight',
@@ -400,22 +346,6 @@ export const GROOVE_PARAMS = {
     hh_density: 0.0, groove: 'straight',
     flam_chance: 0.0,
   },
-  perc_bossa_low: {
-    usePercussion: true, percType: 'bossa', percDensity: 'sparse',
-    hh_density: 0.0, groove: 'bossa',
-    flam_chance: 0.0,
-  },
-  perc_bossa: {
-    usePercussion: true, percType: 'bossa', percDensity: 'mid',
-    hh_density: 0.0, groove: 'bossa',
-    flam_chance: 0.0,
-  },
-  perc_bossa_high: {
-    usePercussion: true, percType: 'bossa', percDensity: 'dense',
-    hh_density: 0.0, groove: 'bossa',
-    flam_chance: 0.0,
-  },
-
   // Lo-fi: boom-bap rilassato, hi-hat rade, molti "buchi" (rest_probability
   // fa il resto) — il groove qui resta semplice, lo swing è a livello stile.
   lofi_lazy: {
@@ -509,7 +439,6 @@ export const STYLE_PATTERNS = {
   brushes:       { low: 'brushes_light',  mid: 'brushes_light',  high: 'brushes_medium'   },
   cajon:         { low: 'cajon_simple',   mid: 'cajon_simple',   high: 'cajon_syncopated' },
   rock:          { low: 'rock_simple',    mid: 'rock_simple',    high: 'rock_busy'        },
-  bossa:         { low: 'bossa',          mid: 'bossa_authentic',high: 'bossa_authentic'  },
   // Bug preesistente: SongArchitect.js usa lo style string 'jazz_trio' (mai
   // 'jazz' da solo) per i preset jazz_ballad — mancava questa chiave, quindi
   // il jazz ripiegava silenziosamente sul pattern 'rock' generico (nessuna
@@ -519,11 +448,8 @@ export const STYLE_PATTERNS = {
   trap:          { low: 'trap_sparse',    mid: 'trap',           high: 'trap_busy'        },
   pop:           { low: 'pop_standard',  mid: 'pop_standard',   high: 'pop_standard'     },
   blues_shuffle: { low: 'blues_shuffle', mid: 'blues_shuffle',  high: 'blues_shuffle'    },
-  reggae:        { low: 'reggae_low',    mid: 'reggae',         high: 'reggae_steppers'  },
   waltz_8th:     { low: 'waltz_light',  mid: 'waltz_light',    high: 'waltz_full'       },
-  latin:         { low: 'perc_latin_low', mid: 'perc_latin',    high: 'perc_latin_high'  },
   folk_perc:     { low: 'perc_folk_low',  mid: 'perc_folk',     high: 'perc_folk_high'   },
-  bossa_perc:    { low: 'perc_bossa_low', mid: 'perc_bossa',    high: 'perc_bossa_high'  },
   lofi:          { low: 'lofi_lazy',      mid: 'lofi_lazy',     high: 'lofi_busy'        },
   punk:          { low: 'punk_drive_low', mid: 'punk_drive',    high: 'punk_drive_high'  },
   garage_rock:   { low: 'garage_rock_low',mid: 'garage_rock',   high: 'garage_rock_high' },
@@ -656,27 +582,7 @@ function _genBar(events, barStart, s16, ppq, rng, gp, barIdx, opts = {}, stepsPe
     const isSparse = percDensity === 'sparse';
     const isDense  = percDensity === 'dense';
 
-    if (type === 'latin') {
-      for (let s = 0; s < stepsPerBar; s++) {
-        const pos = s % 8;
-        if (pos === 0 || pos === 2 || pos === 6) {
-          events.push({ tick: barStart + s * s16, note: GM.CONGA_LO, velocity: velCurved('mf', rng, intensity), duration: durStep });
-        } else if (pos === 4) {
-          events.push({ tick: barStart + s * s16, note: GM.CONGA_OPEN_HI, velocity: velCurved('f', rng, intensity), duration: durStep });
-        } else if (pos === 3 || pos === 7) {
-          // Sparse: toglie del tutto le mute conga; dense: quasi sempre presenti
-          const muteProb = isSparse ? 0.25 : isDense ? 0.90 : 0.7;
-          if (rng.bool(muteProb)) events.push({ tick: barStart + s * s16, note: GM.CONGA_MUTE_HI, velocity: velCurved('mp', rng, intensity), duration: durStep });
-        }
-        // Sparse: solo le claves portanti (0,6); dense: aggiunge accenti extra
-        const claveSteps = isSparse ? [0, 6]
-                          : isDense ? [0, 3, 6, 9, 10, 12, 14]
-                          : [0, 3, 6, 10, 12];
-        if (claveSteps.includes(s)) {
-          events.push({ tick: barStart + s * s16, note: GM.CLAVES, velocity: velCurved('f', rng, intensity), duration: durStep });
-        }
-      }
-    } else if (type === 'folk') {
+    if (type === 'folk') {
       for (let s = 0; s < stepsPerBar; s++) {
         // Sparse: shaker solo sui quarti; dense: shaker su ogni sedicesimo
         if (isSparse && s % 4 !== 0) { /* skip shaker */ }
@@ -688,24 +594,6 @@ function _genBar(events, barStart, s16, ppq, rng, gp, barIdx, opts = {}, stepsPe
           events.push({ tick: barStart + s * s16, note: GM.TAMBOURINE, velocity: velCurved('f', rng, intensity), duration: durStep });
         } else if (!isSparse && s % 2 === 0 && rng.bool(isDense ? 0.45 : 0.2)) {
           events.push({ tick: barStart + s * s16, note: GM.TAMBOURINE, velocity: velCurved('mp', rng, intensity), duration: durStep });
-        }
-      }
-    } else if (type === 'bossa') {
-      for (let s = 0; s < stepsPerBar; s++) {
-        if (s % 2 === 0) {
-          const layer = (s % 4 === 0) ? 'mf' : 'mp';
-          events.push({ tick: barStart + s * s16, note: GM.MARACAS, velocity: velCurved(layer, rng, intensity), duration: durStep });
-        } else if (isDense) {
-          // Alta energia: maracas anche sugli offbeat per un feel più mosso
-          events.push({ tick: barStart + s * s16, note: GM.MARACAS, velocity: velCurved('p', rng, intensity), duration: Math.round(durStep * 0.6) });
-        }
-        // Sparse: solo agogo lo (beat forti); dense: aggiunge colpi extra
-        const agogoSteps = isSparse ? [0, 8]
-                          : isDense ? [0, 3, 5, 6, 8, 11, 13, 14]
-                          : [0, 3, 6, 8, 11, 14];
-        if (agogoSteps.includes(s)) {
-          const note = (s === 0 || s === 8) ? GM.AGOGO_LO : GM.AGOGO_HI;
-          events.push({ tick: barStart + s * s16, note, velocity: velCurved('mf', rng, intensity), duration: durStep });
         }
       }
     }
@@ -968,9 +856,7 @@ function _genFill(events, barStart, s16, rng, gp, nextSectionType = null, bpm = 
   }
 
   if (gp.usePercussion) {
-    const notes = gp.percType === 'latin' ? [GM.CONGA_OPEN_HI, GM.CONGA_LO, GM.TIMBALE_HI] :
-                  gp.percType === 'bossa' ? [GM.BONGO_HI, GM.BONGO_LO, GM.AGOGO_HI] :
-                  [GM.TAMBOURINE, GM.CABASA];
+    const notes = [GM.TAMBOURINE, GM.CABASA];
 
     for (let s = sStart; s < stepsMax; s++) {
       if (s % 2 === 0 || rng.bool(0.6)) {

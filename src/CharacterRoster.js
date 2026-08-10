@@ -45,12 +45,6 @@ export const CHARACTER_ROSTER = {
       img: 'img/icons_players/06_player_drum_machine_seated.png' },
 
     // ── Percussionisti etnici ────────────────────────────────────
-    { id: 'perc_ana',    name: 'Ana',    style: 'bossa',  feel: 0.4,
-      bio: 'Bossa nova brasiliana, ritmo di samba autentico.',
-      img: 'img/icons_players/05_player_percussion_conga.png' },
-    { id: 'perc_miguel', name: 'Miguel', style: 'reggae', feel: 0.2,
-      bio: 'Reggae one-drop, groove rilassato e pesante.',
-      img: 'img/icons_players/05_player_percussion_conga.png' },
     { id: 'perc_yasmin', name: 'Yasmin', style: 'cajon',  feel: 0.6,
       bio: 'Cajon flamenco e folk, attacchi precisi.',
       img: 'img/icons_players/05_player_percussion_conga.png' },

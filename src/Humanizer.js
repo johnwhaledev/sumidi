@@ -48,8 +48,13 @@ export function humanize(events, ppq, amount = 0.35, channel = 0, seed = 1, barT
     const isDown    = beat16 % 4 === 0;
     const isStrong  = beat16 === 0 || beat16 === Math.floor(stepsPerBar / 2);
 
-    // Timing: downbeats shift less
-    const timeFactor = isStrong ? 0.15 : isDown ? 0.4 : 1.0;
+    // Timing: downbeats shift less. Le sincopi (timeFactor più alto) restavano
+    // a 1.0 = piena deviazione: sommato a RNG indipendenti per strumento, due
+    // strumenti sulla stessa sincope potevano scartarsi anche ~25-40ms l'uno
+    // dall'altro (effetto "banda ubriaca" segnalato in test d'ascolto).
+    // Tetto abbassato a 0.65 — resta più libero delle battute forti, ma non
+    // al massimo teorico.
+    const timeFactor = isStrong ? 0.15 : isDown ? 0.4 : 0.65;
     const timeDev    = (rng.next() - 0.5) * 2 * maxTimeDev * timeFactor;
     e.tick = Math.max(0, Math.round(e.tick + timeDev));
 

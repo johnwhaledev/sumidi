@@ -3,8 +3,8 @@ import { buildSong, STYLES } from '../src/SongArchitect.js';
 
 // Stili rappresentativi: alcuni storici, alcuni recenti (toccati da V2/V3).
 const SAMPLE_STYLES = [
-  'unplugged', 'jazz_ballad', 'blues_rock', 'bossa_nova',
-  'latin', 'cinematic', 'reggae', 'lo_fi',
+  'unplugged', 'jazz_ballad', 'blues_rock', 'pop_rock',
+  'cinematic', 'lo_fi',
   'punk', 'garage_rock', 'chiptune',
 ];
 
