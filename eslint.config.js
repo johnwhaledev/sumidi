@@ -37,6 +37,8 @@ export default [
         URL: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
         TextEncoder: 'readonly',
         TextDecoder: 'readonly',
         // Node (per gli script di test)

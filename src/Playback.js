@@ -14,23 +14,24 @@
  *    (batteria/percussioni GM, basso, chitarra acustica/elettrica,
  *    piano/rhodes, archi solisti e in ensemble, ottoni, flauto) —
  *    non un intero soundfont da decine/centinaia di MB.
- *  - I preset vengono caricati "on demand" dal CDN ufficiale del
- *    progetto (https://surikov.github.io/webaudiofontdata/) al primo
- *    utilizzo e tenuti in cache in memoria per il resto della sessione.
- *    Se in futuro si vuole rendere l'app utilizzabile offline / senza
- *    dipendere da un CDN di terzi, basta scaricare i file elencati in
- *    PROGRAM_PRESET / le varianti percussive e cambiare WAF_CDN_BASE
- *    in un percorso locale (es. './soundfonts') — nessun'altra modifica
- *    al resto del modulo è necessaria.
+ *  - I preset vengono caricati "on demand" e tenuti in cache in memoria
+ *    per il resto della sessione. Per ogni preset si prova PRIMA la
+ *    cartella locale `soundfonts/` (veloce, funziona offline, popolata
+ *    da scripts/download-soundfonts.mjs) e POI, se il file non c'è, il
+ *    CDN ufficiale del progetto. La cartella locale è quindi opzionale
+ *    e non versionata: senza di essa l'app funziona comunque, via CDN.
+ *    Vale sia per i timbri melodici che per le percussioni — se si tocca
+ *    uno dei due percorsi di caricamento, mantenerli simmetrici.
  * ─────────────────────────────────────────────────────────────────
  */
 
-const WAF_CDN_BASE   = './soundfonts';
-// CDN ufficiale WebAudioFont — usato come fallback automatico quando un
-// preset non è presente in locale (es. le varianti extra del mixer, mai
-// scaricate col setup base): evita di dover pre-scaricare N file "nel
-// dubbio" per ogni possibile variante timbrica, si scarica solo quello che
-// viene davvero usato, al volo, la prima volta che serve.
+// Cartella locale opzionale (vedi scripts/download-soundfonts.mjs).
+const WAF_LOCAL_BASE  = './soundfonts';
+// CDN ufficiale WebAudioFont — fallback automatico quando un preset non è
+// presente in locale (cartella assente del tutto, oppure varianti extra del
+// mixer mai scaricate col setup base): evita di dover pre-scaricare N file
+// "nel dubbio" per ogni possibile variante timbrica, si scarica solo quello
+// che viene davvero usato, al volo, la prima volta che serve.
 const WAF_REMOTE_BASE = 'https://surikov.github.io/webaudiofontdata/sound';
 const WAF_PLAYER_URL = 'https://surikov.github.io/webaudiofont/npm/dist/WebAudioFontPlayer.js';
 
@@ -75,12 +76,11 @@ const DEFAULT_MELODIC_PROGRAM = 0;
 // A differenza dei timbri melodici, per le percussioni WebAudioFont non
 // espone un unico "drum kit": ogni pezzo è un preset a sé, indicizzato
 // per nota. Non tutte le note hanno necessariamente la stessa variante
-// disponibile lato CDN, quindi si prova una piccola lista di varianti
-// candidate finché una risponde — vedi _loadDrumPreset.
-const DRUM_NOTES = [
-  35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52,
-  53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 75,
-];
+// disponibile, quindi si prova una piccola lista di varianti candidate
+// finché una risponde — vedi _loadDrumPreset.
+// Qui non serve l'elenco delle note: si caricano solo quelle realmente
+// presenti negli eventi del brano. L'elenco completo da pre-scaricare vive
+// in scripts/download-soundfonts.mjs, che è l'unico a doverlo conoscere.
 const DRUM_VARIANT_CANDIDATES = [0, 1, 2, 3, 4, 6];
 
 // Finestra di "lookahead" per lo scheduler a rotazione (vedi playTracks):
@@ -153,16 +153,57 @@ function _ensurePlayer() {
   return _player;
 }
 
-/**
- * Carica uno script preset in una variabile globale specifica, risolvendo
- * a `null` (non a errore) se non si popola — usato sia per il tentativo
- * locale che per l'eventuale fallback CDN.
- */
-function _loadPresetVar(ctx, player, url, varName) {
+/** Inietta uno <script> e risolve a true/false a seconda dell'esito reale. */
+function _caricaScript(url) {
   return new Promise((resolve) => {
-    player.loader.startLoad(ctx, url, varName);
-    player.loader.waitLoad(() => resolve(window[varName] ?? null));
+    const s = document.createElement('script');
+    s.src = url;
+    s.onload  = () => resolve(true);
+    s.onerror = () => resolve(false);   // file assente (404) o non eseguibile
+    document.head.appendChild(s);
   });
+}
+
+/**
+ * Attende che i sample del preset siano decodificati in AudioBuffer.
+ * `adjustPreset` avvia la decodifica in modo asincrono: suonare le note
+ * prima che i buffer esistano produce silenzio. Il timeout evita di restare
+ * appesi su un preset che per qualche motivo non completa mai.
+ */
+function _attendiBuffer(preset, timeoutMs = 8000) {
+  const scadenza = Date.now() + timeoutMs;
+  return new Promise((resolve) => {
+    const controlla = () => {
+      const pronto = preset?.zones?.every(z => z.buffer);
+      if (pronto || Date.now() > scadenza) resolve(preset);
+      else setTimeout(controlla, 100);
+    };
+    controlla();
+  });
+}
+
+/**
+ * Carica uno script preset, risolvendo a `null` (non a errore) se il file
+ * non c'è — usato sia per il tentativo locale che per il fallback CDN.
+ *
+ * NON si usa `player.loader.startLoad/waitLoad`: quel loader dà per scontato
+ * che ogni file richiesto esista. Un file mancante resta nella sua coda come
+ * "mai caricato", quindi `progress()` non raggiunge più 1 e `waitLoad` fa
+ * polling all'infinito senza mai richiamare la callback — un singolo 404
+ * ammutolirebbe l'intero playback, non solo quel timbro. Caricando lo script
+ * direttamente l'esito è esplicito e il fallback può davvero scattare.
+ *
+ * NB: il nome della variabile globale non è negoziabile — ogni file dichiara
+ * `var <nome canonico> = {...}` — quindi `varName` dev'essere quello canonico
+ * sia per il file locale sia per quello remoto: sono lo stesso file.
+ */
+async function _loadPresetVar(ctx, player, url, varName) {
+  if (!window[varName]) {
+    const ok = await _caricaScript(url);
+    if (!ok || !window[varName]) return null;
+    player.adjustPreset(ctx, window[varName]);
+  }
+  return _attendiBuffer(window[varName]);
 }
 
 /**
@@ -181,14 +222,20 @@ function _loadMelodicPreset(program) {
   const ctx = _ensureContext();
   const player = _ensurePlayer();
 
-  const localVar = `_tone_${code}_FluidR3_GM_sf2_file`;
-  const p = _loadPresetVar(ctx, player, `${WAF_CDN_BASE}/${fname}`, localVar)
-    .then(preset => preset ?? _loadPresetVar(ctx, player, `${WAF_REMOTE_BASE}/${fname}`, `${localVar}_remote`));
+  const varName = `_tone_${code}_FluidR3_GM_sf2_file`;
+  const p = _loadPresetVar(ctx, player, `${WAF_LOCAL_BASE}/${fname}`, varName)
+    .then(preset => preset ?? _loadPresetVar(ctx, player, `${WAF_REMOTE_BASE}/${fname}`, varName));
   _melodicCache.set(code, p);
   return p;
 }
 
-/** Carica (con cache, provando più varianti) il preset percussivo per una nota MIDI. */
+/**
+ * Carica (con cache, provando più varianti) il preset percussivo per una
+ * nota MIDI. Come per i timbri melodici: prima la cartella locale, poi il
+ * CDN. Senza il fallback remoto la batteria resterebbe muta per chiunque
+ * non abbia scaricato `soundfonts/`, che non è versionato — cioè per tutti
+ * quelli che usano l'app pubblicata.
+ */
 function _loadDrumPreset(note) {
   if (_drumCache.has(note)) return _drumCache.get(note);
 
@@ -198,12 +245,11 @@ function _loadDrumPreset(note) {
   const tryVariant = (idx) => {
     if (idx >= DRUM_VARIANT_CANDIDATES.length) return Promise.resolve(null); // nessuna variante disponibile: nota silenziosa
     const v = DRUM_VARIANT_CANDIDATES[idx];
+    const fname   = `128${note}_${v}_FluidR3_GM_sf2_file.js`;
     const varName = `_drum_${note}_${v}_FluidR3_GM_sf2_file`;
-    const url = `${WAF_CDN_BASE}/128${note}_${v}_FluidR3_GM_sf2_file.js`;
-    return new Promise((resolve) => {
-      player.loader.startLoad(ctx, url, varName);
-      player.loader.waitLoad(() => resolve(window[varName] ?? null));
-    }).then(preset => preset ?? tryVariant(idx + 1));
+    return _loadPresetVar(ctx, player, `${WAF_LOCAL_BASE}/${fname}`, varName)
+      .then(preset => preset ?? _loadPresetVar(ctx, player, `${WAF_REMOTE_BASE}/${fname}`, varName))
+      .then(preset => preset ?? tryVariant(idx + 1));
   };
 
   const p = tryVariant(0);

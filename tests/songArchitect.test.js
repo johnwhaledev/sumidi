@@ -46,11 +46,18 @@ describe('buildSong — determinismo del seed (base della feature "Lock seed" V1
 
   it('seed diversi tendono a produrre progressioni diverse (varietà — V1)', () => {
     const seeds = [1, 2, 3, 4, 5, 6, 7, 8];
-    const firstChords = seeds.map(
-      seed => buildSong({ style: 'pop_rock', seed }).sections[0].harmonicMap[0].chord
+    // Si confronta la progressione INTERA della prima sezione, non il solo
+    // primo accordo: da quando pop_rock è mode-aware (sessione 2026-08-10) il
+    // pool maggiore è filtrato per qualità della tonica e tutte le sue
+    // progressioni partono dal I grado — guardare il primo accordo darebbe
+    // sempre lo stesso valore pur essendoci varietà piena a valle.
+    // Gli accordi possono essere stringhe o coppie [accordo, battute].
+    const nomeAccordo = e => (Array.isArray(e) ? e[0] : e);
+    const progressioni = seeds.map(
+      seed => buildSong({ style: 'pop_rock', seed }).sections[0].progression.map(nomeAccordo).join(' ')
     );
-    const distinct = new Set(firstChords);
-    // Non deve essere identico per tutti gli 8 seed — altrimenti la regressione
+    const distinct = new Set(progressioni);
+    // Non deve essere identica per tutti gli 8 seed — altrimenti la regressione
     // "il brano non cambia mai" (bug V1 originale) sarebbe tornata.
     expect(distinct.size).toBeGreaterThan(1);
   });
