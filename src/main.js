@@ -188,8 +188,12 @@
           style: document.getElementById('p-style').value,
           key: document.getElementById('p-key').value,
           bpm: parseInt(document.getElementById('p-bpm').value),
-          form: document.getElementById('p-form').value,
-          ensemble: document.getElementById('p-ens').value,
+          // `|| undefined` come per guitarStyle/drumLine sotto: se il select
+          // resta vuoto (valore non presente fra le sue option), buildSong deve
+          // ricadere sul default dello stile. Passare '' non lo fa: produce una
+          // struttura da ballad qualunque sia lo stile.
+          form: document.getElementById('p-form').value || undefined,
+          ensemble: document.getElementById('p-ens').value || undefined,
           guitarStyle: document.getElementById('p-guitar').value || undefined,
           drumLine: document.getElementById('p-drumline').value || undefined,
           seed: parseInt(document.getElementById('p-seed').value),
@@ -1755,14 +1759,36 @@
       const bpm = document.getElementById('sm-bpm')?.value ?? '90';
       const style = document.getElementById('sm-style')?.value ?? 'unplugged';
 
-      // Scrivi nei controlli del classic panel (usati da gen())
+      // Scrivi nei controlli del classic panel (usati da gen()).
+      //
+      // Session Mode espone solo tonalità, BPM e stile: forma, ensemble e
+      // umanizzazione vanno derivati dallo stile (Styles.js, fonte di verità),
+      // non lasciati ai default dell'HTML. Il pannello classic è nascosto,
+      // quindi onStyleChange() — che imposterebbe quei tre valori — non viene
+      // mai eseguita: è agganciata all'evento 'change' del select, e assegnare
+      // .value da JavaScript non lo emette. Senza questa derivazione ogni brano
+      // usciva con forma 'unplugged_ballad', ensemble ad archi e umanizzazione
+      // al 35% qualunque fosse lo stile scelto (jazz_ballad: 60 battute invece
+      // di 40; punk e chiptune umanizzati come una ballad).
+      const def = STYLES[style] ?? {};
       const pKey = document.getElementById('p-key');
       const pBpm = document.getElementById('p-bpm');
       const pStyle = document.getElementById('p-style');
+      const pForm = document.getElementById('p-form');
+      const pEns = document.getElementById('p-ens');
+      const pHum = document.getElementById('p-hum');
       const bpmV = document.getElementById('bpm-v');
+      const humV = document.getElementById('hum-v');
       if (pKey) pKey.value = key;
       if (pBpm) { pBpm.value = bpm; if (bpmV) bpmV.textContent = bpm; }
       if (pStyle) pStyle.value = style;
+      if (pForm && def.defaultForm) pForm.value = def.defaultForm;
+      if (pEns && def.ensemble?.type) pEns.value = def.ensemble.type;
+      if (pHum && def.humanize != null) {
+        const hum = Math.round(def.humanize * 100);
+        pHum.value = hum;
+        if (humV) humV.textContent = `${hum}%`;
+      }
 
       const genBtn = document.getElementById('sm-gen-btn');
       if (genBtn) { genBtn.disabled = true; genBtn.textContent = '⏳'; }
