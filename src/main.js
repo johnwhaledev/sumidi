@@ -28,6 +28,7 @@
     import { applyGrooveLock } from './GrooveLock.js';
     import { playTracks, stopAll as stopPlayback } from './Playback.js';
     import { STYLES } from './Styles.js';
+    import { nomeAccordo } from './ChordTheory.js';
 
     // ── State ─────────────────────────────────────────────────────
     const disabled = new Set();
@@ -638,7 +639,7 @@
           `<span class="ep ${i < s.energy ? (s.energy >= 8 ? 'hi' : 'on') : ''}"></span>`).join('');
         const mods = MKEYS.map((k, i) =>
           `<span class="mm ${s.modules[k]?.active ? 'on' : 'off'}" title="${k}">${ICONS[i]}</span>`).join('');
-        const prog = s.progression.slice(0, 4).join(' ') + (s.progression.length > 4 ? ` …` : '');
+        const prog = s.progression.slice(0, 4).map(nomeAccordo).join(' ') + (s.progression.length > 4 ? ` …` : '');
         return `<div class="srow">
       <div><span class="badge ${BADGE[s.type] ?? 'bo'}">${s.type}</span>${s.index > 0 ? ` <span style="color:var(--muted);font-size:9px">×${s.index + 1}</span>` : ''}</div>
       <div style="color:var(--muted)">${s.bars}b</div>

@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { CHORD_INTERVALS, SCALE_INTERVALS, PITCH_CLASS } from '../src/ChordTheory.js';
+import { CHORD_INTERVALS, SCALE_INTERVALS, PITCH_CLASS, nomeAccordo, accordiPerBattuta } from '../src/ChordTheory.js';
 import { PROGRESSION_POOLS, PROGRESSIONS } from '../src/SongProgressions.js';
 import { SONG_FORMS } from '../src/SongForms.js';
 import { SECTION_PRESETS } from '../src/SectionPresets.js';
 import { STYLES } from '../src/Styles.js';
+import { buildSong } from '../src/SongArchitect.js';
 
 // Sessione R1 (PLAN35): verifica che i 5 moduli-dati estratti da
 // SongArchitect.js siano importabili in modo indipendente e non vuoti —
@@ -33,6 +34,45 @@ describe('Moduli dati estratti da SongArchitect.js (R1)', () => {
     expect(Object.keys(STYLES).length).toBe(13);
     for (const style of ['punk', 'garage_rock', 'chiptune', 'cinematic']) {
       expect(STYLES[style], `manca STYLES['${style}']`).toBeDefined();
+    }
+  });
+});
+
+// PLAN36 B1 — formato misto delle progressioni: 'Am' (una battuta) oppure
+// ['Am7', 2] (due battute). Trattare la coppia come stringa produce "Am7,2"
+// negli export; ignorarne la durata disallinea la griglia degli accordi.
+describe('Formato delle progressioni (B1)', () => {
+  it('nomeAccordo normalizza entrambe le forme', () => {
+    expect(nomeAccordo('Am')).toBe('Am');
+    expect(nomeAccordo(['Am7', 2])).toBe('Am7');
+    // Il difetto che il fix elimina: la coppia stampata come stringa.
+    expect(`${['Am7', 2]}`).toBe('Am7,2');
+    expect(nomeAccordo(['Am7', 2])).not.toBe('Am7,2');
+  });
+
+  it('accordiPerBattuta rispetta le durate e cicla sulla sezione', () => {
+    expect(accordiPerBattuta(['Am', 'F', 'C', 'G'], 4)).toEqual(['Am', 'F', 'C', 'G']);
+    expect(accordiPerBattuta([['Am7', 2], ['D7', 2]], 4)).toEqual(['Am7', 'Am7', 'D7', 'D7']);
+    // Sezione più lunga della progressione: si ricomincia da capo.
+    expect(accordiPerBattuta([['Am7', 2], ['D7', 2]], 6)).toEqual(['Am7', 'Am7', 'D7', 'D7', 'Am7', 'Am7']);
+    // Casi degeneri: nessuna eccezione, array vuoto.
+    expect(accordiPerBattuta([], 4)).toEqual([]);
+    expect(accordiPerBattuta(['Am'], 0)).toEqual([]);
+  });
+
+  it('concorda con gli accordi che il motore assegna a ogni battuta', () => {
+    // Stessa fonte di verità di buildHarmonicMap: se divergessero, ciò che si
+    // legge negli export non corrisponderebbe a ciò che si sente.
+    for (const stile of ['jazz_ballad', 'blues_rock', 'pop_rock', 'folk']) {
+      const bp = buildSong({ style: stile, seed: 77 });
+      for (const sec of bp.sections) {
+        const attesi = accordiPerBattuta(sec.progression, sec.bars);
+        const barTicks = bp.meta.barTicks;
+        const dalMotore = sec.harmonicMap
+          .filter(r => (r.start_tick - sec.startTick) % barTicks === 0)
+          .map(r => r.chord);
+        expect(dalMotore, `${stile}/${sec.type}`).toEqual(attesi);
+      }
     }
   });
 });

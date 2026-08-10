@@ -17,7 +17,7 @@
 // forme di canzone, preset di sezione e metadati di stile vivono ora in
 // moduli dedicati. Qui restano solo logica di utilità e il builder.
 // ═══════════════════════════════════════════════════════════════════
-import { PITCH_CLASS, CHORD_INTERVALS, SCALE_INTERVALS } from './ChordTheory.js';
+import { PITCH_CLASS, CHORD_INTERVALS, SCALE_INTERVALS, nomeAccordo, accordiPerBattuta } from './ChordTheory.js';
 import { PROGRESSION_POOLS, PROGRESSIONS } from './SongProgressions.js';
 import { SONG_FORMS } from './SongForms.js';
 import { SECTION_PRESETS } from './SectionPresets.js';
@@ -214,19 +214,14 @@ function buildHarmonicMap(progression, startTick, barsCount, ppq, barTicks = ppq
   const windowTicks = barTicks < ppq * 4 ? barTicks : ppq * 2;
   const map = [];
 
-  // Formato misto: 'Am' → ['Am', 1] (retrocompatibile) | ['Am', 2] → invariato
-  const normalized  = progression.map(e => Array.isArray(e) ? e : [e, 1]);
-  const cycleLength = normalized.reduce((s, [, d]) => s + d, 0);
+  // Formato misto: 'Am' → una battuta | ['Am', 2] → due battute.
+  // L'espansione vive in ChordTheory.accordiPerBattuta perché serve anche a
+  // chi mostra gli accordi (export, tab): averne due copie è il modo in cui
+  // nascono le divergenze fra ciò che si sente e ciò che si legge.
+  const chordsByBar = accordiPerBattuta(progression, barsCount);
 
   for (let bar = 0; bar < barsCount; bar++) {
-    // Risolve quale accordo copre questo bar, con loop sul ciclo
-    const posInCycle = bar % cycleLength;
-    let acc = 0, chordStr = normalized[0][0];
-    for (const [chord, dur] of normalized) {
-      if (posInCycle < acc + dur) { chordStr = chord; break; }
-      acc += dur;
-    }
-
+    const chordStr = chordsByBar[bar];
     const parsed = parseChord(chordStr);
     if (!parsed) continue;
 
@@ -830,7 +825,7 @@ function buildSong(params = {}) {
     if (modeAware && QUALITY_FILTERED_FAMILIES.has(progFamily)) {
       const wantMinor = keyInfo.isMinor;
       const filtered = pool.filter(entry => {
-        const firstRaw = Array.isArray(entry[0]) ? entry[0][0] : entry[0];
+        const firstRaw = nomeAccordo(entry[0]);
         return (parseChord(firstRaw)?.quality === 'min') === wantMinor;
       });
       if (filtered.length) pool = filtered;
@@ -879,8 +874,7 @@ function buildSong(params = {}) {
       const nextPool      = PROGRESSION_POOLS[nextPoolKey]
                           ?? PROGRESSION_POOLS[`${progFamily}_verse`]
                           ?? [['Am', 'F', 'C', 'G']];
-      const nextFirstEntry = nextPool[0][0];
-      const nextFirstRaw   = Array.isArray(nextFirstEntry) ? nextFirstEntry[0] : nextFirstEntry;
+      const nextFirstRaw   = nomeAccordo(nextPool[0][0]);
       const nextFirstChord = transposeChord(nextFirstRaw, semitoneShift, preferFlats);
       decoratedStrings = _bridgeChord(decoratedStrings, nextFirstChord, progFamily, rng, preferFlats);
     }

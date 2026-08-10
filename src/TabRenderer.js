@@ -11,6 +11,8 @@
  * ─────────────────────────────────────────────────────────────────
  */
 
+import { accordiPerBattuta } from './ChordTheory.js';
+
 // ── Instrument tunings (MIDI note per open string, low→high) ─────
 const TUNINGS = {
   guitar: [40, 45, 50, 55, 59, 64],  // E2 A2 D3 G3 B3 E4
@@ -262,12 +264,16 @@ export function renderChordChart(sections, totalBars) {
   const svgH  = numRows * (rowH + 12) + 32;
 
   // Build bar→chord map
+  // accordiPerBattuta rispetta la durata degli accordi: `progression[b % len]`
+  // assumeva un accordo per battuta e disallineava la griglia sui pool
+  // jazz/blues_rock, dove un accordo può durarne 2 o 4.
   const chordByBar = new Map();
   for (const sec of sections) {
+    const accordi = accordiPerBattuta(sec.progression, sec.bars);
     for (let b = 0; b < sec.bars; b++) {
       const absBar = sec.startBar + b;
       chordByBar.set(absBar, {
-        chord: sec.progression[b % sec.progression.length],
+        chord: accordi[b],
         type:  sec.type,
         index: sec.index,
         isFirst: b === 0,

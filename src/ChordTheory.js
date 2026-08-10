@@ -81,3 +81,49 @@ export const SCALE_INTERVALS = {
   'pentatonic_minor':[0, 3, 5, 7, 10],
   'pentatonic_major':[0, 2, 4, 7, 9],
 };
+
+// ═══════════════════════════════════════════════════════════════════
+// 2. FORMATO DELLE PROGRESSIONI
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Una progressione usa un formato misto: l'accordo è una stringa quando dura
+ * una battuta ('Am'), oppure una coppia [nome, battute] quando ne dura di più
+ * (['Am7', 2]). La seconda forma compare nei pool jazz e blues_rock.
+ *
+ * Chi deve solo mostrare l'accordo usi nomeAccordo(): trattare la coppia come
+ * stringa produce "Am7,2" a video. Chi deve allineare gli accordi alle battute
+ * usi accordiPerBattuta(), che è anche la logica con cui buildHarmonicMap
+ * decide quale accordo copre quale battuta.
+ */
+export function nomeAccordo(voce) {
+  return Array.isArray(voce) ? voce[0] : voce;
+}
+
+/**
+ * Espande una progressione in un accordo per battuta, ciclando se la sezione è
+ * più lunga della progressione.
+ *
+ * @param {Array<string|[string, number]>} progressione
+ * @param {number} battute  — quante battute coprire
+ * @returns {string[]} un nome di accordo per ogni battuta
+ */
+export function accordiPerBattuta(progressione, battute) {
+  const normalizzata = (progressione ?? []).map(v => (Array.isArray(v) ? v : [v, 1]));
+  if (!normalizzata.length || !(battute > 0)) return [];
+
+  const lunghezzaCiclo = normalizzata.reduce((somma, [, durata]) => somma + durata, 0);
+  if (!(lunghezzaCiclo > 0)) return [];
+
+  const fuori = [];
+  for (let bar = 0; bar < battute; bar++) {
+    const posizione = bar % lunghezzaCiclo;
+    let accumulate = 0, nome = normalizzata[0][0];
+    for (const [accordo, durata] of normalizzata) {
+      if (posizione < accumulate + durata) { nome = accordo; break; }
+      accumulate += durata;
+    }
+    fuori.push(nome);
+  }
+  return fuori;
+}

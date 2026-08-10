@@ -5,6 +5,8 @@
  * Utile per sessioni di studio, condivisione e archivio.
  */
 
+import { nomeAccordo, accordiPerBattuta } from './ChordTheory.js';
+
 // ── Tuning strings (note per corda a vuoto, dalla più bassa) ─────
 const TUNINGS = {
   guitar: ['E', 'A', 'D', 'G', 'B', 'e'],  // E2 A2 D3 G3 B3 E4
@@ -106,7 +108,9 @@ function buildAsciiTab(positions, instrument, startBar, endBar) {
 function buildChordProgression(sections) {
   const lines = [];
   for (const sec of sections) {
-    const chords = sec.progression.join(' | ');
+    // nomeAccordo: nei pool jazz/blues_rock un accordo può essere una coppia
+    // [nome, battute] — senza normalizzare si stampa "Am7,2" invece di "Am7".
+    const chords = sec.progression.map(nomeAccordo).join(' | ');
     lines.push(`### ${sec.type}${sec.index > 0 ? ` ${sec.index + 1}` : ''} (${sec.bars} bars)`);
     lines.push(`\`${chords}\``);
     lines.push('');
@@ -122,7 +126,8 @@ function buildStructureTable(sections, bpm, beatsPerBar = 4) {
     const startTime = (currentBar * beatsPerBar / bpm) * 60;
     const endTime = ((currentBar + sec.bars) * beatsPerBar / bpm) * 60;
     const formatTime = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-    rows.push(`| ${sec.type}${sec.index > 0 ? ` ${sec.index + 1}` : ''} | ${sec.bars} | ${formatTime(startTime)} | ${formatTime(endTime)} | ${sec.progression.slice(0, 4).join(' ')}${sec.progression.length > 4 ? ' …' : ''} |`);
+    const anteprima = sec.progression.slice(0, 4).map(nomeAccordo).join(' ');
+    rows.push(`| ${sec.type}${sec.index > 0 ? ` ${sec.index + 1}` : ''} | ${sec.bars} | ${formatTime(startTime)} | ${formatTime(endTime)} | ${anteprima}${sec.progression.length > 4 ? ' …' : ''} |`);
     currentBar += sec.bars;
   }
   return `| Section | Bars | Start | End | Chords |
@@ -182,7 +187,9 @@ export function exportMarkdown(bp, guitarEvents, bassEvents) {
     const crdLines = [];
     for (const sec of sections) {
       crdLines.push(`[${sec.type.toUpperCase()}${sec.index > 0 ? ` ${sec.index + 1}` : ''}]`);
-      for (const chord of sec.progression) {
+      // Una riga per battuta: un accordo che dura 2 battute va ripetuto, o il
+      // CRD non è allineato al brano (formato pensato per chi suona leggendo).
+      for (const chord of accordiPerBattuta(sec.progression, sec.bars)) {
         crdLines.push(`${chord} ...`);
       }
       crdLines.push('');
