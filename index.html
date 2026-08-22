@@ -4,11 +4,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>suMidi</title>
+  <title>suMidi — Generatore MIDI procedurale online | John Whale</title>
+  <meta name="description" content="Genera brani MIDI completi nel browser: 13 stili musicali, accordi, basso, batteria, chitarra, piano e archi. Nessun account, nessun server, export multi-traccia pronto per il DAW.">
+  <link rel="canonical" href="https://sumidi.johnwhale.com/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sumidi.johnwhale.com/">
+  <meta property="og:title" content="suMidi — Generatore MIDI procedurale online">
+  <meta property="og:description" content="Brani MIDI completi generati nel browser: 13 stili, export multi-traccia per DAW. Gratuito, senza account, tutto lato client.">
+  <meta property="og:image" content="https://sumidi.johnwhale.com/og-cover.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="it_IT">
+  <meta property="og:site_name" content="suMidi">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="suMidi — Generatore MIDI procedurale online">
+  <meta name="twitter:description" content="Brani MIDI completi generati nel browser: 13 stili, export multi-traccia per DAW.">
+  <meta name="twitter:image" content="https://sumidi.johnwhale.com/og-cover.png">
+
   <link rel="icon" type="image/x-icon" href="logo.ico">
   <link rel="icon" type="image/png" href="logo.png">
-  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="fonts/fonts.css">
   <link rel="stylesheet" href="styles.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "suMidi",
+    "url": "https://sumidi.johnwhale.com/",
+    "applicationCategory": "MultimediaApplication",
+    "applicationSubCategory": "Generatore musicale MIDI",
+    "operatingSystem": "Web browser",
+    "inLanguage": "it",
+    "isAccessibleForFree": true,
+    "description": "Generatore procedurale di brani MIDI completi che gira interamente nel browser: 13 stili musicali, struttura di canzone, accordi, basso, batteria, chitarra, piano ed ensemble di archi, con export multi-traccia per DAW.",
+    "featureList": [
+      "13 stili musicali con progressioni armoniche dedicate",
+      "Generazione di struttura, accordi, basso, batteria, chitarra, piano ed ensemble",
+      "Ascolto in-app di singole sezioni e del brano intero",
+      "Export MIDI multi-traccia e griglia accordi",
+      "Elaborazione interamente lato client: nessun dato inviato a un server"
+    ],
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+    "author": {
+      "@type": "Person",
+      "name": "Gianluca Savona",
+      "alternateName": "John Whale",
+      "url": "https://www.johnwhale.com"
+    }
+  }
+  </script>
 </head>
 
 <body>
@@ -445,6 +491,36 @@
       <!-- Questi pannelli sono stati nascosti per S18 punto 9 -->
 
     </div><!-- /session-panel -->
+
+    <!-- ── Cos'è suMidi — testo descrittivo indicizzabile ─────────── -->
+    <div class="card" style="margin-top:32px">
+      <h2 class="card-title">Cos'è suMidi</h2>
+      <div style="font-size:13px;color:var(--muted);line-height:1.75">
+        <p style="margin:0 0 10px">
+          <strong style="color:var(--text)">suMidi</strong> è un generatore di brani MIDI che gira interamente
+          nel tuo browser. Scegli tonalità, BPM e stile: il motore costruisce la struttura della canzone —
+          intro, strofa, ritornello, bridge, outro — e la riempie con accordi, basso, batteria, chitarra,
+          piano ed ensemble di archi, ognuno con il fraseggio del genere scelto.
+        </p>
+        <p style="margin:0 0 10px">
+          I <strong style="color:var(--text)">13 stili</strong> disponibili sono MTV Unplugged, Folk Acoustic,
+          Jazz Ballad, Neo Soul, Classical Chamber, Pop Rock, Blues Rock, Singer/Songwriter,
+          Cinematic/Orchestral, Lo-Fi, Punk, Garage Rock e 8-Bit/Chiptune. Ognuno ha progressioni armoniche,
+          groove e umanizzazione propri: non è lo stesso pattern con un suono diverso sopra.
+        </p>
+        <p style="margin:0 0 10px">
+          Puoi ascoltare in pagina una singola sezione o il brano intero, poi esportare un file MIDI
+          multi-traccia da aprire in qualsiasi DAW — Reaper, Ableton, Logic, FL Studio, Cubase — per
+          cambiare i suoni, modificare le parti o usarlo come base di partenza.
+        </p>
+        <p style="margin:0">
+          Non serve registrarsi, non c'è niente da installare e non viene inviato nulla a un server: la
+          generazione avviene sul tuo dispositivo. La musica nasce da regole di teoria musicale e da un
+          generatore pseudo-casuale con seed, <strong style="color:var(--text)">non da un modello di
+          intelligenza artificiale</strong> addestrato su brani esistenti.
+        </p>
+      </div>
+    </div>
 
     <!-- ── Footer ─────────────────────────────────────────────────── -->
     <footer class="sm-footer">

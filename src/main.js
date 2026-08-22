@@ -1836,18 +1836,10 @@
       const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
       const style = pick(styleValues);
-      // Tonalità pescata solo dal gruppo compatibile con lo stile (vedi
-      // _smApplyKeyConstraint) — così il Random resta vario invece di
-      // ricadere sempre sulla tonalità di default dello stile. Per gli
-      // stili mode-aware (vedi sotto) entrambi i gruppi sono validi.
-      let keyValues;
-      if (MODE_AWARE_STYLES.has(style)) {
-        keyValues = Array.from(keySel.options).map(o => o.value);
-      } else {
-        const wantMinor = _smKeyIsMinor(STYLES[style]?.defaultScale);
-        const groupLabel = wantMinor ? 'Minori' : 'Maggiori';
-        keyValues = Array.from(keySel.querySelectorAll(`optgroup[label="${groupLabel}"] option`)).map(o => o.value);
-      }
+      // Tonalità pescata da TUTTE le option: nessuno stile vincola la tonalità
+      // (decisione 2026-08-20). Prima il Random restringeva al gruppo Minori o
+      // Maggiori secondo defaultScale dello stile.
+      const keyValues = Array.from(keySel.options).map(o => o.value);
       const [bLo, bHi] = SM_STYLE_BPM_RANGES[style] ?? [70, 130];
       const bpm = Math.floor(Math.random() * (bHi - bLo + 1)) + bLo;
 
@@ -1873,11 +1865,11 @@
       blues:      'Blues',
     };
 
-    // Stili il cui pool ha GIÀ (o ha ora) progressioni scritte sia a tonica
-    // maggiore che minore (vedi MODE_AWARE_FAMILIES in SongArchitect.js) —
-    // per questi la Tonalità scelta pilota davvero il modo, quindi non li
-    // limitiamo. Gli altri restano sotto il vincolo auto-imposto descritto
-    // sotto, finché non verranno composte progressioni minori dedicate.
+    // Stili il cui pool ha progressioni scritte sia a tonica maggiore che
+    // minore (vedi MODE_AWARE_FAMILIES in SongArchitect.js) — per questi la
+    // Tonalità scelta pilota davvero il modo. Per gli altri il modo resta
+    // quello dello stile: dal 2026-08-20 la tonalità è comunque libera, e
+    // l'unica differenza è cosa mostra il suggerimento della scala qui sotto.
     const MODE_AWARE_STYLES = new Set([
       'pop_rock', 'folk', 'classical', 'singer_songwriter', 'punk', 'garage_rock', 'chiptune',
     ]);
@@ -1895,52 +1887,29 @@
       hintEl.textContent = scale ? `Scala: ${SCALE_LABELS[scale] ?? scale}` : '';
     }
 
-    // ── Vincolo Tonalità↔Stile ────────────────────────────────────────
-    // ATTENZIONE: questo è un limite AUTO-IMPOSTATO dal nostro motore di
-    // generazione, non un vincolo di teoria musicale reale — nella realtà
-    // un pezzo "pop rock" può benissimo essere scritto in tonalità minore.
-    // Il limite esiste solo perché QUI ogni stile ha UNA scala fissa
-    // (STYLES[style].defaultScale) usata per l'intera pipeline (progressioni
-    // + pool di note dei generatori), quindi selezionare una tonalità della
-    // qualità "sbagliata" produce un brano internamente incoerente. Filtriamo
-    // quindi le opzioni del menu Tonalità in base allo stile corrente per
-    // evitare la combinazione impossibile-per-QUESTO-motore.
-    // Gli stili in MODE_AWARE_STYLES (sopra) sono già stati liberati da
-    // questo vincolo: per loro entrambe le qualità sono davvero supportate.
-    // Man mano che altri stili vengono resi mode-aware, aggiungerli a
-    // MODE_AWARE_STYLES rimuove automaticamente il filtro anche per loro.
-    const MINOR_ISH_SCALES = new Set(['minor', 'dorian']);
-    function _smKeyIsMinor(scale) { return MINOR_ISH_SCALES.has(scale); }
+    // ── Tonalità sempre libere ────────────────────────────────────────
+    // Fino al 2026-08-20 questa funzione restringeva le tonalità selezionabili
+    // per gli stili non mode-aware. Il vincolo era un limite auto-imposto dal
+    // motore, non di teoria musicale: serviva a nascondere il fatto che con la
+    // qualità "sbagliata" il brano usciva internamente incoerente.
+    //
+    // Due ragioni per rimuoverlo:
+    //  1. Decisione di prodotto: nessun genere deve vincolare la tonalità.
+    //  2. Non ha mai funzionato comunque. Leggeva `g.options` su elementi
+    //     <optgroup>, ma `.options` esiste solo su <select>: `Array.from(undefined)`
+    //     lanciava un TypeError ad ogni caricamento, interrompendo smInit() prima
+    //     di creare il SessionManager e lasciando smSyncMeta() inerte.
+    //
+    // L'incoerenza che il vincolo mascherava è stata corretta alla radice in
+    // SongArchitect.js (allineamento fra tonalità degli accordi e keyScaleNotes).
+    // La funzione resta come unico punto in cui garantire che nessun optgroup
+    // sia rimasto nascosto o disabilitato da stati precedenti.
 
     function _smApplyKeyConstraint() {
-      const styleSel = document.getElementById('sm-style');
       const keySel = document.getElementById('sm-key');
-      if (!styleSel || !keySel) return;
-
-      if (MODE_AWARE_STYLES.has(styleSel.value)) {
-        keySel.querySelectorAll('optgroup').forEach(g => {
-          g.hidden = false;
-          Array.from(g.options).forEach(o => { o.disabled = false; });
-        });
-        return;
-      }
-
-      const wantMinor = _smKeyIsMinor(STYLES[styleSel.value]?.defaultScale);
-      keySel.querySelectorAll('optgroup').forEach(g => {
-        const isMinorGroup = g.label === 'Minori';
-        const compatible = isMinorGroup === wantMinor;
-        g.hidden = !compatible;
-        Array.from(g.options).forEach(o => { o.disabled = !compatible; });
-      });
-      // La tonalità selezionata non è più valida per lo stile corrente →
-      // passa alla tonalità di default dello stile (Styles.js defaultKey).
-      const selectedOpt = keySel.options[keySel.selectedIndex];
-      if (!selectedOpt || selectedOpt.disabled) {
-        const fallback = STYLES[styleSel.value]?.defaultKey;
-        if (fallback && Array.from(keySel.options).some(o => o.value === fallback)) {
-          keySel.value = fallback;
-        }
-      }
+      if (!keySel) return;
+      keySel.querySelectorAll('optgroup').forEach(g => { g.hidden = false; });
+      keySel.querySelectorAll('option').forEach(o => { o.disabled = false; });
     }
 
     function smInit() {

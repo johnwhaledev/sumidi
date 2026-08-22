@@ -764,6 +764,27 @@ function buildSong(params = {}) {
     ? (keyInfo.isMinor ? 'minor' : 'major')
     : (styleDef.defaultScale ?? (keyInfo.isMinor ? 'minor' : 'major'));
 
+  // ── Tonica EFFETTIVA del materiale prodotto ───────────────────────────────
+  // Per gli stili non mode-aware il modo scelto dall'utente non può pilotare i
+  // pool (esistono in un modo solo), quindi `refPc` sopra usa il riferimento
+  // RELATIVO: pool scritti in Am mappano su Do se si chiede maggiore, e le note
+  // restano quelle della tonalità richiesta. Gli ACCORDI finiscono però sulla
+  // relativa (Am), non sulla radice scelta (C).
+  //
+  // Fino al 2026-08-20 `keyScaleNotes` restava invece ancorata a
+  // `keyInfo.rootPc` con la scala dello stile: con unplugged in Do maggiore gli
+  // accordi erano in La minore e la scala melodica in Do minore — due tonalità
+  // diverse contemporaneamente, il 48% delle note d'accordo fuori scala
+  // (misurato su 13 stili × 8 seed). Stessa classe di bug del "punk stonato"
+  // documentato sopra, ma sul versante scala anziché accordi.
+  //
+  // La tonica effettiva è quella del pool DOPO la trasposizione: si calcola col
+  // riferimento del modo del MATERIALE (resolvedScale), non di quello chiesto.
+  const MINOR_ISH_SCALES = new Set(['minor', 'dorian', 'phrygian', 'aeolian']);
+  const materialIsMinor = MINOR_ISH_SCALES.has(resolvedScale);
+  const poolTonicPc = PROG_FAMILY_REF_PC[progFamily] ?? (materialIsMinor ? 9 : 0);
+  const effectiveTonicPc = (poolTonicPc + semitoneShift) % 12;
+
   // Preferisce bemolle nelle tonalità con armatura di bemolli
   // PC flat keys: F(5), Bb(10), Eb(3), Ab(8), Db(1), Gb(6) e relativi minori
   const FLAT_PCS_MAJOR = new Set([5, 10, 3, 8, 1, 6]);
@@ -786,8 +807,10 @@ function buildSong(params = {}) {
   // Modulazione: pre-conta le occorrenze per tipo per identificare l'ultimo chorus/bridge
   const typeTotals = {};
   for (const fe of form) typeTotals[fe.type] = (typeTotals[fe.type] ?? 0) + 1;
-  // Shift modulazione: +2 semitoni in maggiore, +3 in minore (verso la relativa maggiore)
-  const modShift = keyInfo.isMinor ? 3 : 2;
+  // Shift modulazione: +2 semitoni in maggiore, +3 in minore (verso la relativa maggiore).
+  // Segue il modo del materiale, non quello richiesto: su uno stile non mode-aware
+  // gli accordi da modulare sono quelli della relativa, non della radice scelta.
+  const modShift = materialIsMinor ? 3 : 2;
   const MOD_TYPES = new Set(['chorus', 'bridge']);
 
   let fi = -1;          // indice assoluto sezione nel brano (per sectionIdx)
@@ -864,7 +887,10 @@ function buildSong(params = {}) {
     // Decorazione procedurale: opera sulle sole stringhe, poi re-zippa con le durate
     // sectionIdx = fi garantisce che verse1 e verse2 ricevano decorazioni diverse
     let decoratedStrings = _decorateProgression(
-      pairs.map(([c]) => c), progFamily, energy, rng, preferFlats, keyInfo.isMinor, fi
+      // materialIsMinor, non keyInfo.isMinor: la decorazione (prestiti, settime
+      // alzate, V7♭9) deve seguire il modo del MATERIALE, altrimenti applica
+      // logica minore sopra progressioni maggiori e viceversa.
+      pairs.map(([c]) => c), progFamily, energy, rng, preferFlats, materialIsMinor, fi
     );
 
     // Q1: Bridge chord — se la prossima sezione è tonalmente lontana, inserisce V7 di raccordo
@@ -954,7 +980,11 @@ function buildSong(params = {}) {
       // — o della tonalità scelta per gli stili mode-aware (vedi resolvedScale sopra).
       scale:          resolvedScale,
       // Pool MIDI della scala globale — usato dai generatori per rimanere in tonalità
-      keyScaleNotes:  buildScalePool(keyInfo.rootPc, resolvedScale, 36, 96),
+      // Ancorata alla tonica EFFETTIVA del materiale (vedi effectiveTonicPc):
+      // per gli stili non mode-aware coincide con la relativa della tonalità
+      // scelta, cioè con le stesse note — non con la radice richiesta.
+      keyScaleNotes:  buildScalePool(effectiveTonicPc, resolvedScale, 36, 96),
+      effectiveTonicPc,
       bpm,
       ppq,
       beatsPerBar,

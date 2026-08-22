@@ -6,9 +6,9 @@ Generatore procedurale di brani MIDI multi-traccia, interamente client-side: nes
 
 ## Caratteristiche
 
-- **16 stili musicali**: MTV Unplugged, Folk Acoustic, Jazz Ballad, Neo Soul, Classical Chamber, Pop Rock, Bossa Nova, Blues Rock, Singer/Songwriter, Latin/Afro-Cuban, Cinematic/Orchestral, Reggae/Dub, Lo-Fi, Punk, Garage Rock, 8-Bit/Chiptune.
+- **13 stili musicali**: MTV Unplugged, Folk Acoustic, Jazz Ballad, Neo Soul, Classical Chamber, Pop Rock, Blues Rock, Singer/Songwriter, Cinematic/Orchestral, Lo-Fi, Punk, Garage Rock, 8-Bit/Chiptune.
 - **Session Mode**: interfaccia DAW-inspired con arrangement lanes a blocchi per sezione, flyout per strumento/sezione, chord track interattiva con editor accordi (incluse slash chord) e voice-leading automatico.
-- **Roster di 33 personaggi**: ogni strumento (batteria, drum machine, percussioni etniche, basso, chitarra, piano, ensemble) può essere assegnato a un personaggio con stile e "feel" propri.
+- **Roster di 31 personaggi**: ogni strumento (batteria, drum machine, percussioni etniche, basso, chitarra, piano, ensemble) può essere assegnato a un personaggio con stile e "feel" propri.
 - **Drum machine**: step sequencer a 16 step con preset Trap, Lo-Fi, Electro, editabili passo per passo.
 - **Seed deterministico**: stesso seed, stesso stile/tonalità/BPM ⇒ stesso brano identico, sempre. Blocco seed e randomizzazione rapida di stile/tonalità/BPM dalla composer bar.
 - **Export**: file MIDI multi-traccia su canali separati, più un export in Markdown con struttura del brano, accordi e tablature per chitarra/basso.
