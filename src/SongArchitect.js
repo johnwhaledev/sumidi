@@ -152,11 +152,23 @@ function buildChordTonePool(parsedChord, loMidi = 48, hiMidi = 84) {
 
 /**
  * Clamp a pitch into a register by octave shifting.
+ *
+ * Trovato 2026-08-28 (ascolto reale, piano "stonato"): il vecchio
+ * `Math.max(lo, Math.min(hi, pitch))` finale clampava per VALORE assoluto,
+ * non per ottava — se lo/hi delimitano una finestra più stretta di
+ * un'ottava (es. LH.lo=48/hi=57 di PianoGenerator, 9 semitoni) e pitch
+ * finiva un semitono sotto lo dopo lo shift d'ottava, veniva spinto fino a
+ * lo cambiando la PITCH CLASS (es. B=59 → 47 → clampato a 48 = C). Un
+ * accordo B in registro LH stretto usciva sistematicamente come C, non
+ * come B un'ottava sotto. Rimosso il clamp finale: se la finestra non ha
+ * un rappresentante esatto per quella pitch class, il risultato può
+ * restare leggermente fuori da [lo,hi] (un'ottava «sbagliata», udibile
+ * molto meno di una nota sbagliata) ma non cambia mai nota.
  */
 function clampToRegister(pitch, lo, hi) {
   while (pitch < lo) pitch += 12;
   while (pitch > hi) pitch -= 12;
-  return Math.max(lo, Math.min(hi, pitch));
+  return pitch;
 }
 
 /**

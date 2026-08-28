@@ -409,10 +409,7 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
             // Oom-pah beat 2&4: 3a + 5a nel registro medio LH (omit root bassa)
             const degs = region.chord_degrees.slice(1, 3);
             degs.forEach(dg => {
-              let n = 60 + ((region.rootPc + dg) % 12);
-              while (n < 48) n += 12;
-              while (n > 57) n -= 12;
-              n = Math.max(48, Math.min(57, n));
+              const n = clampToRegister(60 + ((region.rootPc + dg) % 12), LH.lo, LH.hi);
               events.push({ tick, note: n, velocity: Math.max(1, vel - 4), duration: dur });
             });
             break;
@@ -427,6 +424,9 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
           const targetRoot = clampToRegister(nextRegion.root, LH.lo, LH.hi);
           const below = targetRoot - 1, above = targetRoot + 1;
           const approach = Math.abs(below - lhRoot) <= Math.abs(above - lhRoot) ? below : above;
+          // Nota: qui il clamp finale per VALORE (non per ottava) è corretto —
+          // approach è già a ±1 semitono da targetRoot (in registro), non va
+          // fatto scattare di un'ottava intera se sfora di 1 solo semitono.
           events.push({
             tick:     appTick,
             note:     Math.max(LH.lo, Math.min(LH.hi, approach)),
@@ -465,10 +465,7 @@ function _coreVoicing(region, lo, hi, prevVoicing = null) {
 
   // Costruisce una voce a partire dal grado bassIdx come nota più bassa
   const buildInv = (bassIdx) => {
-    let bassNote = 60 + ((rootPc + d[bassIdx]) % 12);
-    while (bassNote < lo) bassNote += 12;
-    while (bassNote > hi) bassNote -= 12;
-    bassNote = Math.max(lo, Math.min(hi, bassNote));
+    const bassNote = clampToRegister(60 + ((rootPc + d[bassIdx]) % 12), lo, hi);
     const notes = [bassNote];
     for (let i = 1; i < d.length; i++) {
       const deg = d[(bassIdx + i) % d.length];
@@ -516,10 +513,7 @@ function _buildShellVoicing(region, energy = 5, scaleNotes = [], tension = 0) {
   const shellDegs = [0, third, seventh];
   const notes = [];
   for (const deg of shellDegs) {
-    let p = 60 + ((rootPc + deg) % 12);
-    while (p < RH.lo) p += 12;
-    while (p > RH.hi) p -= 12;
-    notes.push(Math.max(RH.lo, Math.min(RH.hi, p)));
+    notes.push(clampToRegister(60 + ((rootPc + deg) % 12), RH.lo, RH.hi));
   }
   const baseNotes = [...new Set(notes)].sort((a, b) => a - b);
 
@@ -587,10 +581,7 @@ function _buildQuartalVoicing(region, lo, hi) {
   const rootPc = region.rootPc;
   const notes  = [];
   for (const d of [0, 5, 10]) {
-    let p = 60 + ((rootPc + d) % 12);
-    while (p < lo) p += 12;
-    while (p > hi) p -= 12;
-    notes.push(Math.max(lo, Math.min(hi, p)));
+    notes.push(clampToRegister(60 + ((rootPc + d) % 12), lo, hi));
   }
   return [...new Set(notes)].sort((a, b) => a - b);
 }
@@ -601,12 +592,7 @@ function _buildLhVoicing(region, LH) {
   const lhRoot  = clampToRegister(region.root, LH.lo, LH.hi);
   const lhFifth = clampToRegister(region.root + 7, LH.lo, LH.hi);
   const degs    = region.chord_degrees.slice(0, 3);
-  const lhChord = degs.map(d => {
-    let n = lhRoot + d;
-    while (n > LH.hi) n -= 12;
-    while (n < LH.lo) n += 12;
-    return Math.max(LH.lo, Math.min(LH.hi, n));
-  }).sort((a, b) => a - b);
+  const lhChord = degs.map(d => clampToRegister(lhRoot + d, LH.lo, LH.hi)).sort((a, b) => a - b);
   return { lhRoot, lhFifth, lhChord };
 }
 
