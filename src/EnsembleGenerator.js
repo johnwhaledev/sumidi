@@ -19,7 +19,7 @@
  * ─────────────────────────────────────────────────────────────────
  */
 
-import { makeRng } from './SongArchitect.js';
+import { makeRng, clampToRegister } from './SongArchitect.js';
 import { msToTick, arcVelocity } from './FlowCore.js';
 import { createGlide, STRINGS_GLIDE_PROFILE } from './Ornaments.js';
 
@@ -559,11 +559,7 @@ function _buildVoicing(region, ranges, prevVoicing) {
 
     for (let vi = 0; vi < 3; vi++) {
       const range = ranges[voiceKeys[vi]];
-      let pitch   = rootPc + degMap[vi];
-
-      while (pitch < range.lo) pitch += 12;
-      while (pitch > range.hi) pitch -= 12;
-      pitch = Math.max(range.lo, Math.min(range.hi, pitch));
+      let pitch   = clampToRegister(rootPc + degMap[vi], range.lo, range.hi);
 
       if (prevVoicing?.[vi] != null) {
         const candidates = [pitch, pitch + 12, pitch - 12]
@@ -599,7 +595,7 @@ function _buildVoicing(region, ranges, prevVoicing) {
           );
         }
       }
-      pitch = Math.max(range.lo, Math.min(range.hi, pitch));
+      pitch = clampToRegister(pitch, range.lo, range.hi);
       v.push(pitch);
     }
     return v;
