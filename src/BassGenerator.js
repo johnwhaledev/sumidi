@@ -31,7 +31,7 @@
 
 import { makeRng, clampToRegister } from './SongArchitect.js';
 import { PhraseMemory, chromaticApproach, arcVelocity, msToTick } from './FlowCore.js';
-import { createGlide, BASS_GLIDE_PROFILE } from './Ornaments.js';
+import { createBassSlide } from './Ornaments.js';
 
 export const BASS_PROGRAMS = {
   fingerstyle:   33,
@@ -55,54 +55,6 @@ const BASS_RANGES = {
 // ═══════════════════════════════════════════════════════════════════
 // BASS EXPRESSION ENGINE — Slides & Articulations
 // ═══════════════════════════════════════════════════════════════════
-
-/**
- * Crea uno slide tra due note con overlap realistico.
- * R4 (PLAN35): wrapper sottile su createGlide() — la logica vera è nel
- * motore condiviso Ornaments.js, qui resta solo il profilo del basso.
- * @param {number} fromNote — nota di partenza (MIDI)
- * @param {number} toNote — nota di arrivo (MIDI)
- * @param {number} startTick — tick di inizio
- * @param {number} duration — durata totale dello slide in tick
- * @param {number} velocity — velocity della nota
- * @param {number} bpm — tempo per timing
- * @param {number} ppq — pulses per quarter
- * @returns {Array} — array di eventi note
- */
-function createSlide(fromNote, toNote, startTick, duration, velocity, bpm, ppq) {
-  return createGlide(fromNote, toNote, startTick, duration, velocity, bpm, ppq, BASS_GLIDE_PROFILE);
-}
-
-/**
- * Crea hammer-on o pull-off: due note legate, seconda senza attack
- * @param {number} firstNote — prima nota (attack)
- * @param {number} secondNote — seconda nota (legata)
- * @param {number} startTick — tick inizio
- * @param {number} totalDuration — durata totale
- * @param {number} velocity — velocity prima nota
- * @param {number} bpm — tempo
- * @param {number} ppq — pulses per quarter
- * @returns {Array} — [prima nota, seconda nota]
- */
-function createHammerOn(firstNote, secondNote, startTick, totalDuration, velocity, bpm, ppq) {
-  const splitPoint = Math.round(totalDuration * 0.55); // leggermente più lunga la prima
-  const overlap = Math.round(msToTick(8, bpm, ppq)); // overlap per legato
-  
-  return [
-    {
-      tick: startTick,
-      note: firstNote,
-      velocity: velocity,
-      duration: splitPoint + overlap
-    },
-    {
-      tick: startTick + splitPoint,
-      note: secondNote,
-      velocity: Math.round(velocity * 0.4), // ghost attack per legato
-      duration: totalDuration - splitPoint
-    }
-  ];
-}
 
 /**
  * Applica variazioni al rilascio delle note per umanizzazione
@@ -158,8 +110,19 @@ export function generateBass(blueprint, drumContext = null, seedOverride = null)
         r.start_tick <= barStart && r.end_tick > barStart
       ) ?? section.harmonicMap[0];
       if (!region) continue;
+      // A5: l'eco dell'hook cade tardi nel bar (vedi addHookEcho, ppq*3.75) —
+      // in 4/4 l'harmonicMap ha una finestra per metà bar, quindi l'accordo lì
+      // può essere diverso da quello a inizio bar. Serve la regione ESATTA a
+      // quel tick, non quella di `region` (bar-start), per sapere se in quel
+      // punto sta suonando la dominante.
+      const echoTick   = barStart + Math.round(meta.ppq * 3.75);
+      const echoRegion = section.harmonicMap.find(r =>
+        r.start_tick <= echoTick && r.end_tick > echoTick
+      ) ?? region;
       allBars.push({
         barStart, region,
+        echoRegionRootPc: echoRegion.rootPc,
+        echoRegionThirdDeg: echoRegion.chord_degrees?.[1] ?? null,
         style:             section.modules.bass.style   ?? 'fingerstyle',
         density:           section.modules.bass.density ?? 0.4,
         energy:            section.energy,
@@ -187,9 +150,16 @@ export function generateBass(blueprint, drumContext = null, seedOverride = null)
   // distinguersi come "voce" separata (call & response), non raddoppio.
   const seedMotive = meta.seedMotive ?? null;
   const hookPool = (meta.keyScaleNotes ?? []).filter(n => n >= 43 && n <= 60);
+  // A5 (2026-08-26): keyScaleNotes resta minore naturale per tenere l'hook
+  // sempre riconoscibile (stessa nota a ogni ricorrenza) — ma se cade sul 7°
+  // naturale proprio mentre suona la dominante, clasherebbe con la sensibile
+  // che è la terza di quell'accordo. Misurato: succede in ~3% delle occorrenze
+  // dell'eco. Correzione mirata sotto (addHookEcho), non un cambio di pool.
+  const dominantPc = meta.keyInfo?.isMinor ? (meta.keyInfo.rootPc + 7) % 12 : null;
+  const natural7Pc = meta.keyInfo?.isMinor ? (meta.keyInfo.rootPc + 10) % 12 : null;
 
   for (let i = 0; i < allBars.length; i++) {
-    const { barStart, region, style, density, energy,
+    const { barStart, region, echoRegionRootPc, echoRegionThirdDeg, style, density, energy,
             velocityBase, velocityArcType,
             barIdxInSection, totalBarsInSection, sectionId, sectionType } = allBars[i];
     const nextRegion = allBars[i + 1]?.region ?? null;
@@ -259,6 +229,7 @@ export function generateBass(blueprint, drumContext = null, seedOverride = null)
       avoidNotes: region.avoid_notes ?? [],  // Sessione C S2-B
       kickSteps,                              // S5-A
       seedMotive, hookPool,                   // basso in dialogo con l'hook del piano
+      echoRegionRootPc, echoRegionThirdDeg, dominantPc, natural7Pc, // A5: correzione mirata sull'eco
     });
 
     // v0.8: Applica variazioni note-off
@@ -303,7 +274,6 @@ function _nearestChordTone(tones, anchor, lo, hi) {
  * Se beat1 era root → beat3 = fifth; se fifth → beat3 = seventh o third; altrimenti root.
  */
 function _selectBeat3(beat1Note, root, fifth, third, seventh, lo, hi) {
-  const b1pc = beat1Note % 12;
   const rpc  = root % 12;
   const candidates = [
     beat1Note % 12 === rpc         ? fifth              : null,
@@ -340,7 +310,8 @@ function _genBassBar(barStart, ppq, rng, memory, ctx) {
           nextRoot, chordChanging, approachNote, isBar2ofPhrase,
           sectionType, barIdxInSection, totalBarsInSection, barTicks,
           canSlideFromPrev, prevLastNote, lo: LO, hi: HI,
-          seedMotive, hookPool } = ctx;
+          seedMotive, hookPool,
+          echoRegionRootPc, echoRegionThirdDeg, dominantPc, natural7Pc } = ctx;
 
   // Basso in dialogo con l'hook: a fine battuta (seconda di ogni coppia), nel
   // ritornello, il basso risponde con una piccola coda che segue lo STESSO
@@ -354,7 +325,18 @@ function _genBassBar(barStart, ppq, rng, memory, ctx) {
     const degOffset = seedMotive[hookIdx];
     const idx       = Math.max(0, Math.min(hookPool.length - 1,
       Math.floor(hookPool.length / 2) + degOffset));
-    const echoNote  = hookPool[idx];
+    let echoNote    = hookPool[idx];
+    // A5: se l'eco cade sul 7° naturale proprio mentre in quel punto (non a
+    // inizio bar: l'eco è tardi nel bar, l'accordo può essere già cambiato)
+    // suona la dominante ALTERATA (terza maggiore — E7/E, non Em: il v
+    // naturale della minore ha la stessa radice ma terza minore, e il suo
+    // Sol naturale è il suo stesso accordo, non un errore), alzarlo di un
+    // semitono verso la sensibile. Pool globale invariato (motivo sempre
+    // riconoscibile), si corregge solo la singola nota che clasherebbe.
+    if (dominantPc != null && echoRegionRootPc === dominantPc && echoRegionThirdDeg === 4
+        && echoNote % 12 === natural7Pc) {
+      echoNote += 1;
+    }
     const echoTick  = barStart + Math.round(ppq * 3.75); // dopo beat4, prima del bar succ.
     events.push({ tick: echoTick, note: echoNote,
       velocity: Math.max(1, Math.min(127, arcBase - 18)), duration: Math.round(ppq / 4 * 0.55) });
@@ -374,7 +356,7 @@ function _genBassBar(barStart, ppq, rng, memory, ctx) {
   if (sectionType === 'bridge' && barIdxInSection < halfSec) {
     // v0.8: Slide into pedal point se possibile
     if (canSlideFromPrev && prevLastNote) {
-      const slideEvents = createSlide(prevLastNote, root, barStart, ppq / 2, vel(8), bpm, ppqVal);
+      const slideEvents = createBassSlide(prevLastNote, root, barStart, ppq / 2, vel(8), bpm, ppqVal);
       barEvents.push(...slideEvents);
       // Nota lunga di pedal point
       barEvents.push({ 
@@ -470,7 +452,7 @@ function _genBassBar(barStart, ppq, rng, memory, ctx) {
     if (canSlideFromPrev && prevLastNote) {
       const slideStartTick = barStart - Math.round(ppq / 6);
       if (slideStartTick >= 0) { // TIMING-1: Guard tick negativo
-        const slideEvents = createSlide(prevLastNote, root, slideStartTick, ppq / 6, vel(4), bpm, ppqVal);
+        const slideEvents = createBassSlide(prevLastNote, root, slideStartTick, ppq / 6, vel(4), bpm, ppqVal);
         // Rimuovi l'ultimo evento dello slide (sarebbe la root, la aggiungiamo sotto)
         slideEvents.pop();
         barEvents.push(...slideEvents);
@@ -496,7 +478,7 @@ function _genBassBar(barStart, ppq, rng, memory, ctx) {
       const beat3Tick = barStart + ppq * 2;
       // TIMING-2: Slide da lastPlayed (beat 2 o root) a beat3note, anticipando il beat
       if (canSlide(lastPlayed, beat3note) && rng.bool(0.20)) {
-        const slideEvents = createSlide(lastPlayed, beat3note, beat3Tick - Math.round(ppq / 6), ppq / 6, vel(), bpm, ppqVal);
+        const slideEvents = createBassSlide(lastPlayed, beat3note, beat3Tick - Math.round(ppq / 6), ppq / 6, vel(), bpm, ppqVal);
         slideEvents.pop(); // Rimuove il target generato in ritardo
         barEvents.push(...slideEvents);
       }
@@ -522,7 +504,7 @@ function _genBassBar(barStart, ppq, rng, memory, ctx) {
       const beat4Tick = barStart + ppq * 3;
       // v0.8: Slide verso approach note se cambio accordo, anticipando il beat
       if (chordChanging && approachNote && canSlide(fifth, approachNote) && rng.bool(0.35)) {
-        const slideEvents = createSlide(fifth, approachNote, beat4Tick - Math.round(ppq / 6), ppq / 6, vel(-8), bpm, ppqVal);
+        const slideEvents = createBassSlide(fifth, approachNote, beat4Tick - Math.round(ppq / 6), ppq / 6, vel(-8), bpm, ppqVal);
         slideEvents.pop();
         barEvents.push(...slideEvents);
       }

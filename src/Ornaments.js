@@ -87,8 +87,14 @@ export function createGlide(fromNote, toNote, startTick, duration, velocity, bpm
   const semitones = Math.abs(toNote - fromNote);
   const direction = toNote > fromNote ? 1 : -1;
 
+  // Fix 2026-08-26 (B6): le note del glissando cadono su suddivisioni interne
+  // (spesso terzine, es. ppq/6 lato bass slide), non sulla griglia dritta a
+  // sedicesimi — `ornament: true` dice ad Humanizer.applySwing() di non
+  // trattarle come note di griglia e swingarle una seconda volta sopra al
+  // proprio offset già intenzionale (causa del basso che restava a swing
+  // gonfiato su blues_rock/lo_fi anche dopo il fix B4 su GrooveLock).
   if (profile.minSemitonesToGlide > 0 && semitones <= profile.minSemitonesToGlide) {
-    events.push({ tick: startTick, note: toNote, velocity, duration });
+    events.push({ tick: startTick, note: toNote, velocity, duration, ornament: true });
     return events;
   }
 
@@ -101,6 +107,7 @@ export function createGlide(fromNote, toNote, startTick, duration, velocity, bpm
     note: fromNote,
     velocity: Math.round(profile.firstNote.velocity(velocity)),
     duration: stepDuration + Math.round(msToTick(profile.firstNote.overlapMs, bpm, ppq)),
+    ornament: true,
   });
 
   // Note intermedie
@@ -117,6 +124,7 @@ export function createGlide(fromNote, toNote, startTick, duration, velocity, bpm
         note: interNote,
         velocity: profile.innerNote.velocity(velocity, i, steps),
         duration: stepDuration + Math.round(msToTick(profile.innerNote.overlapMs, bpm, ppq)),
+        ornament: true,
       });
     }
   }
@@ -129,6 +137,7 @@ export function createGlide(fromNote, toNote, startTick, duration, velocity, bpm
       note: toNote,
       velocity: Math.round(profile.finalNote.velocity(velocity)),
       duration: tailDur,
+      ornament: true,
     });
   } else {
     events.push({
@@ -136,8 +145,26 @@ export function createGlide(fromNote, toNote, startTick, duration, velocity, bpm
       note: toNote,
       velocity: Math.round(profile.finalNote.velocity(velocity)),
       duration: Math.round(duration / steps),
+      ornament: true,
     });
   }
 
   return events;
+}
+
+/**
+ * Crea uno slide del basso tra due note (wrapper su createGlide() col
+ * profilo del basso — completa qui lo spostamento avviato in R4/PLAN35,
+ * che aveva consolidato la logica ma lasciato il wrapper in BassGenerator.js).
+ * @param {number} fromNote — nota di partenza (MIDI)
+ * @param {number} toNote — nota di arrivo (MIDI)
+ * @param {number} startTick — tick di inizio
+ * @param {number} duration — durata totale dello slide in tick
+ * @param {number} velocity — velocity della nota
+ * @param {number} bpm — tempo per timing
+ * @param {number} ppq — pulses per quarter
+ * @returns {Array} — array di eventi note
+ */
+export function createBassSlide(fromNote, toNote, startTick, duration, velocity, bpm, ppq) {
+  return createGlide(fromNote, toNote, startTick, duration, velocity, bpm, ppq, BASS_GLIDE_PROFILE);
 }

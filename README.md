@@ -1,6 +1,6 @@
 # suMidi
 
-Generatore procedurale di brani MIDI multi-traccia, interamente client-side: nessun server, nessuna dipendenza esterna in esecuzione. Apri `index.html` nel browser, scegli stile/tonalità/BPM, genera un brano completo (batteria, basso, chitarra, piano, ensemble) ed esportalo in `.mid` pronto per il tuo DAW.
+Generatore procedurale di brani MIDI multi-traccia, client-side (nessun server applicativo, nessun backend). Apri l'app da un server statico, scegli stile/tonalità/BPM, genera un brano completo (batteria, basso, chitarra, piano, ensemble), ascoltalo in-app ed esportalo in `.mid` pronto per il tuo DAW.
 
 [![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/johnwhale)
 
@@ -11,18 +11,19 @@ Generatore procedurale di brani MIDI multi-traccia, interamente client-side: nes
 - **Roster di 31 personaggi**: ogni strumento (batteria, drum machine, percussioni etniche, basso, chitarra, piano, ensemble) può essere assegnato a un personaggio con stile e "feel" propri.
 - **Drum machine**: step sequencer a 16 step con preset Trap, Lo-Fi, Electro, editabili passo per passo.
 - **Seed deterministico**: stesso seed, stesso stile/tonalità/BPM ⇒ stesso brano identico, sempre. Blocco seed e randomizzazione rapida di stile/tonalità/BPM dalla composer bar.
-- **Export**: file MIDI multi-traccia su canali separati, più un export in Markdown con struttura del brano, accordi e tablature per chitarra/basso.
+- **Playback in-app**: ascolto di sezione o del brano intero via WebAudioFont, senza dover prima esportare.
+- **Export**: file MIDI multi-traccia su canali separati.
 - **Undo** fino a 10 passi, umanizzazione regolabile del timing/velocity.
 
 ## Come si usa
 
-Non serve build né server: `index.html` è un'app statica.
+Non serve build, ma **serve un server statico**: l'app usa moduli ES (`import`/`export`), bloccati dal browser se apri `index.html` direttamente da `file://`.
 
 ```bash
 git clone https://github.com/johnwhaledev/sumidi.git
 cd sumidi
-# apri index.html nel browser, oppure servilo con un server statico qualsiasi, es.:
 npx serve .
+# poi apri l'URL che stampa (es. http://localhost:3000)
 ```
 
 Per lo sviluppo (test, lint):
@@ -36,23 +37,33 @@ npm run lint     # ESLint
 ## Struttura del progetto
 
 ```
-index.html         punto d'ingresso dell'app
-manual.html         manuale utente
-styles.css          stili dell'interfaccia
-src/                 moduli JS (motore di generazione + UI)
-  SongArchitect.js   costruisce la struttura del brano (sezioni, armonia)
-  *Generator.js      un generatore per strumento (Bass, Guitar, Piano, Drums, Ensemble, Chord)
-  Ornaments.js        motore condiviso per glissandi/portamento
-  FlowCore.js         utility condivise (RNG, dinamiche, memoria di frase)
-  main.js             logica UI
-design/              componenti UI (DesignSystem.js) e materiale di design
-tests/               suite di regressione (vitest)
-img/                 icone strumenti e personaggi
+index.html          punto d'ingresso dell'app
+manual.html          manuale utente
+styles.css           stili dell'interfaccia
+fonts/               font self-hostati (Ubuntu, woff2)
+soundfonts/          preset audio locali per il playback (non versionati, vedi sotto)
+scripts/             script di supporto (es. download-soundfonts.mjs)
+src/                  moduli JS (motore di generazione + UI)
+  SongArchitect.js    costruisce la struttura del brano (sezioni, armonia)
+  ChordTheory.js, SongProgressions.js, SongForms.js,
+  SectionPresets.js, Styles.js    dati musicali (accordi, pool, forme, stili)
+  *Generator.js       un generatore per strumento (Bass, Guitar, Piano, Drums, Ensemble, Chord)
+  Ornaments.js         motore condiviso per glissandi/portamento
+  FlowCore.js          utility condivise (RNG, dinamiche, memoria di frase)
+  Playback.js          motore di ascolto in-app (WebAudioFont)
+  CharacterRoster.js, GrooveLock.js, Humanizer.js  personaggi, groove, umanizzazione
+  MidiWriter.js, TabRenderer.js, MarkdownExporter.js   export MIDI/tablature/Markdown
+  SessionManager.js, AppState.js, main.js   stato e logica UI
+design/               componenti UI (DesignSystem.js) e materiale di design
+tests/                suite di regressione (vitest)
+img/                  icone strumenti e personaggi
 ```
 
 ## Note tecniche
 
-L'app non salva automaticamente il lavoro in corso tra una sessione e l'altra: esporta il `.mid` (e, se ti interessa, il Markdown con accordi e tablature) prima di chiudere la pagina. È pensata per browser desktop moderni aggiornati (Chrome, Edge, Firefox); l'unica risorsa caricata da remoto è il font Google "Ubuntu" — senza connessione l'app resta comunque utilizzabile con un font di sistema equivalente.
+L'app non salva automaticamente il lavoro in corso tra una sessione e l'altra: esporta il `.mid` prima di chiudere la pagina. È pensata per browser desktop moderni aggiornati (Chrome, Edge, Firefox).
+
+Il playback carica la libreria [WebAudioFont](https://github.com/surikov/webaudiofont) e i preset sonori da `surikov.github.io`: serve una connessione a Internet la prima volta (i preset, se già scaricati in una cartella locale `soundfonts/` non versionata, vengono riletti da lì). Font e resto dell'interfaccia sono self-hostati, nessun'altra risorsa parte in rete.
 
 ## Supporta il progetto
 

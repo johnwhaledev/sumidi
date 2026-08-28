@@ -61,9 +61,59 @@ export const DIATONIC_DEGREES = {
 export const PROGRESSION_POOLS = {
 
   // ══════════════════════════════════════════════════════════════
-  // MTV UNPLUGGED — reference key Am (minor feel)
+  // MTV UNPLUGGED — reference key C (major) / Am (minor)
+  // Fino al 2026-08-24 esisteva solo il pool minore: richiedere unplugged
+  // in maggiore dava comunque la relativa (Am), non la tonica scelta.
   // ══════════════════════════════════════════════════════════════
   unplugged_intro: [
+    ['C', 'G', 'Am', 'F'],            // I V vi IV — apertura chiara
+    ['C', 'F', 'C', 'G'],             // I IV I V
+    ['Am', 'F', 'C', 'G'],            // vi IV I V — parte dal relativo
+    ['C', 'Em', 'F', 'G'],            // I iii IV V
+    ['F', 'C', 'G', 'C'],             // IV I V I
+    ['C', 'G', 'F', 'G'],             // I V IV V — loop aperto
+    ['Dm', 'G', 'C', 'G'],            // ii V I V
+  ],
+  unplugged_verse: [
+    ['C', 'G', 'Am', 'F'],            // I V vi IV
+    ['C', 'Am', 'F', 'G'],            // I vi IV V
+    ['F', 'C', 'G', 'Am'],            // IV I V vi
+    ['C', 'F', 'G', 'C'],             // I IV V I
+    ['Am', 'G', 'F', 'C'],            // vi V IV I
+    ['C', 'Em', 'Am', 'F'],           // I iii vi IV
+    ['Dm', 'C', 'F', 'G'],            // ii I IV V
+    ['C', 'G', 'F', 'Am'],            // I V IV vi
+    ['F', 'G', 'C', 'Em'],            // IV V I iii
+    ['C', 'Am', 'Dm', 'G'],           // I vi ii V
+  ],
+  unplugged_chorus: [
+    ['F', 'C', 'G', 'Am'],            // IV I V vi
+    ['C', 'G', 'F', 'C'],             // I V IV I
+    ['Am', 'F', 'C', 'G'],            // vi IV I V — apertura anthem
+    ['F', 'G', 'Am', 'C'],            // IV V vi I
+    ['C', 'F', 'Am', 'G'],            // I IV vi V
+    ['G', 'Am', 'F', 'C'],            // V vi IV I
+    ['C', 'Am', 'F', 'G'],            // I vi IV V — risoluzione forte
+    ['F', 'C', 'Dm', 'G'],            // IV I ii V
+  ],
+  unplugged_bridge: [
+    ['Dm', 'G', 'C', 'Am'],           // ii V I vi
+    ['Am', 'F', 'G', 'C'],            // vi IV V I
+    ['F', 'G', 'Em', 'Am'],           // IV V iii vi
+    ['Dm', 'Am', 'G', 'C'],           // ii vi V I
+    ['C', 'Am', 'Dm', 'G'],           // I vi ii V — tensione crescente
+    ['G', 'F', 'C', 'Am'],            // V IV I vi
+  ],
+  unplugged_outro: [
+    ['C', 'G', 'Am', 'F'],            // ripresa verse
+    ['F', 'C', 'G', 'C'],             // IV I V I
+    ['C', 'C', 'C', 'C'],             // I I I I — hold, come l'originale minore
+    ['Am', 'F', 'C', 'C'],            // vi IV I I
+    ['F', 'G', 'C', 'C'],             // IV V I I — coda
+  ],
+
+  // ── UNPLUGGED in minore (Am — contenuto originale, invariato) ──
+  unplugged_intro_minor: [
     ['Am', 'G', 'F', 'E'],            // dark descending
     ['Am', 'F', 'C', 'G'],            // standard
     ['Am', 'Am', 'F', 'G'],           // linger on tonic
@@ -75,7 +125,7 @@ export const PROGRESSION_POOLS = {
     ['F', 'Am', 'G', 'Am'],          // VI i VII i
     ['C', 'G', 'Am', 'G'],           // III VII i VII
   ],
-  unplugged_verse: [
+  unplugged_verse_minor: [
     ['Am', 'F', 'C', 'G'],            // i VI III VII — classic
     ['Am', 'Em', 'F', 'G'],           // i v VI VII
     ['Am', 'G', 'F', 'G'],            // i VII VI VII loop
@@ -95,7 +145,7 @@ export const PROGRESSION_POOLS = {
     ['F', 'G', 'Am', 'E'],           // VI VII i V
     ['Am', 'F', 'G', 'F'],           // i VI VII VI — loop
   ],
-  unplugged_chorus: [
+  unplugged_chorus_minor: [
     ['F', 'C', 'G', 'Am'],            // VI III VII i
     ['C', 'G', 'Am', 'F'],            // III VII i VI
     ['F', 'G', 'Am', 'Em'],           // VI VII i v
@@ -115,7 +165,7 @@ export const PROGRESSION_POOLS = {
     ['C', 'G', 'F', 'Am'],           // III VII VI i
     ['Am', 'C', 'G', 'Em'],          // i III VII v
   ],
-  unplugged_bridge: [
+  unplugged_bridge_minor: [
     ['Dm', 'Am', 'E', 'Am'],          // iv i V i — harmonic
     ['F', 'C', 'G', 'Em'],            // VI III VII v
     ['Dm', 'G', 'C', 'Am'],           // iv VII III i
@@ -129,7 +179,7 @@ export const PROGRESSION_POOLS = {
     ['Am', 'Bm7b5', 'E7', 'Am'],    // i ii°7 V7 i — harmonic minor
     ['Dm', 'E', 'F', 'G'],           // iv V VI VII — tensione ascendente
   ],
-  unplugged_outro: [
+  unplugged_outro_minor: [
     ['Am', 'F', 'C', 'G'],            // verse reprise
     ['Am', 'G', 'F', 'E'],            // intro descend, slow fade
     ['Am', 'Am', 'Am', 'Am'],         // hold on tonic — very sparse
@@ -348,10 +398,109 @@ export const PROGRESSION_POOLS = {
     ['Cmaj7', 'Am7', 'Dm7', 'Cmaj7'],  // I vi ii I — risoluzione aperta
   ],
 
+  // ── JAZZ in minore (Am — ii°7-V7-i, giro alla Autumn Leaves) ──
+  // Fino al 2026-08-24 il jazz minore non era generabile: il selettore
+  // permetteva la tonalità ma il pool esisteva solo in maggiore (A4/PLAN36).
+  jazz_intro_minor: [
+    ['Am7', 'Bm7b5', 'E7', 'Am7'],        // i ii°7 V7 i — turnaround classico
+    ['Dm7', 'G7', 'Cmaj7', 'Am7'],        // iv7 bVII7 IIImaj7 i — modale verso il relativo
+    ['Fmaj7', 'E7', 'Am7', 'Am7'],        // VImaj7 V7 i i
+    ['Am7', 'Dm7', 'E7', 'Am7'],          // i iv7 V7 i
+    ['Em7', 'A7', 'Dm7', 'G7'],           // v7 V7/iv iv7 bVII7 — discesa per quinte
+  ],
+  jazz_verse_minor: [
+    ['Am7', 'Bm7b5', 'E7', 'Am7'],        // i ii°7 V7 i
+    ['Dm7', 'G7', 'Cmaj7', 'Fmaj7'],      // iv7 bVII7 IIImaj7 VImaj7 — giro alla Autumn Leaves
+    ['Bm7b5', 'E7', 'Am7', 'Am7'],        // ii°7 V7 i i
+    ['Am7', 'Dm7', 'Bm7b5', 'E7'],        // i iv7 ii°7 V7
+    ['Cmaj7', 'Bm7b5', 'E7', 'Am7'],      // III ii°7 V7 i — dal relativo maggiore alla tonica
+    ['Fmaj7', 'Bm7b5', 'E7', 'Am7'],      // VImaj7 ii°7 V7 i
+    ['Am7', 'E7', 'Am7', 'Dm7'],          // i V7 i iv7 — vamp
+    ['Dm7', 'Em7', 'Fmaj7', 'E7'],        // iv7 v7 VImaj7 V7 — tensione ascendente
+    [['Dm7', 2], ['G7', 2], ['Cmaj7', 4]], // ii-V verso il relativo, tonica lunga
+  ],
+  jazz_chorus_minor: [
+    ['Fmaj7', 'E7', 'Am7', 'Dm7'],        // VImaj7 V7 i iv7
+    ['Am7', 'Fmaj7', 'Bm7b5', 'E7'],      // i VImaj7 ii°7 V7 — salita
+    ['Dm7', 'G7', 'Cmaj7', 'E7'],         // iv7 bVII7 IIImaj7 V7 — verso la tonica
+    ['Bm7b5', 'E7', 'Am7', 'Fmaj7'],      // ii°7 V7 i VImaj7
+    ['Am7', 'Dm7', 'E7', 'Am7'],          // i iv7 V7 i — chiusura forte
+    [['Fmaj7', 2], ['Bm7b5', 2], ['E7', 2], ['Am7', 2]], // discesa per turnaround
+  ],
+  jazz_bridge_minor: [
+    ['Dm7', 'E7', 'Am7', 'Fmaj7'],        // iv7 V7 i VImaj7
+    ['Bm7b5', 'E7', 'Am7', 'Dm7'],        // ii°7 V7 i iv7
+    ['Cmaj7', 'Fmaj7', 'Bm7b5', 'E7'],    // III VImaj7 ii°7 V7 — rincorsa
+    ['Ebm7', 'Ab7', 'Am7', 'Am7'],        // bii7 bV7 (tritone sub del ii-V) i i
+    [['Bm7b5', 2], ['E7', 2], ['Am7', 4]], // ii-V lungo verso la tonica
+  ],
+  jazz_outro_minor: [
+    ['Bm7b5', 'E7', 'Am7', 'Am7'],        // ii°7 V7 i i — chiusura da manuale
+    ['Dm7', 'E7', 'Am7', 'Am7'],          // iv7 V7 i i
+    ['Am7', 'Dm7', 'E7', 'Am7'],          // i iv7 V7 i — ripresa
+    ['Fmaj7', 'E7', 'Am7', 'Am7'],        // VImaj7 V7 i i
+    ['Am7', 'E7', 'Am7', 'Am7'],          // i V7 i i — pedale finale
+  ],
+
   // ══════════════════════════════════════════════════════════════
-  // NEO SOUL — reference key Dm (dorian minor feel)
+  // NEO SOUL — reference key D (major) / Dm (dorian minor feel)
+  // Il dorian è il suono caratteristico dello stile: resta la scelta per le
+  // richieste in tonalità minore (pool sotto, invariato). Fino al 2026-08-24
+  // le richieste in maggiore ricevevano comunque colore dorian sulla radice
+  // giusta — qui il maggiore genuino (ionico), nuovo.
   // ══════════════════════════════════════════════════════════════
   neo_soul_intro: [
+    ['Dmaj9', 'Gmaj7', 'Em7', 'A7'],      // I IV ii V — versione maggiore aperta
+    ['Dmaj7', 'Bm7', 'Em7', 'A7'],        // I vi ii V
+    ['Gmaj7', 'A7', 'Dmaj9', 'Bm7'],      // IV V I vi
+    ['Dmaj9', 'F#m7', 'Bm7', 'Em7'],      // I iii vi ii — discesa per terze
+    ['Emaj7', 'Dmaj7', 'Gmaj7', 'A13'],   // bIII(mediante) I IV V — colore cromatico neo-soul
+    ['Dmaj9', 'Fmaj7', 'Bbmaj7', 'Cmaj7'],// I bIII bVI bVII — medianti prese in prestito
+    ['Gm7', 'Dmaj9', 'Cmaj7', 'Bm7'],     // iv(borrowed) I bVII vi
+  ],
+  neo_soul_verse: [
+    ['Dmaj9', 'Gmaj7', 'Em7', 'A7'],      // I IV ii V
+    ['Bm7', 'Em7', 'Gmaj7', 'A7'],        // vi ii IV V
+    ['Dmaj9', 'F#m7', 'Gmaj7', 'A13'],    // I iii IV V
+    ['Gmaj7', 'A7', 'Bm7', 'F#m7'],       // IV V vi iii
+    ['Dmaj7', 'Cmaj7', 'Gmaj7', 'A7'],    // I bVII(borrowed) IV V — mediante neo-soul
+    ['Em9', 'A13', 'Dmaj9', 'Bm7'],       // ii V I vi
+    ['Dmaj9', 'Em9', 'F#m7', 'Gmaj7'],    // I ii iii IV — ascendente
+    ['Fmaj7', 'Cmaj7', 'Gm7', 'Dmaj9'],   // bIII bVII iv(borrowed) I — Erykah Badu feel in maggiore
+    ['Dmaj9', 'Bbmaj7', 'Fmaj7', 'Cmaj7'],// I bVI bIII bVII — discesa modale
+    ['Gm7', 'Bm7', 'Em7', 'A7'],          // iv(borrowed) vi ii V — colore scuro passeggero
+    ['Bbmaj7', 'Fmaj7', 'Gm7', 'Cmaj7'],  // bVI bIII iv(borrowed) bVII — quasi tutta presa in prestito
+  ],
+  neo_soul_chorus: [
+    ['Gmaj7', 'A7', 'Dmaj9', 'Bm7'],      // IV V I vi
+    ['Dmaj7', 'Bm7', 'Gmaj7', 'A7'],      // I vi IV V — anthem
+    ['Bm7', 'Gmaj7', 'Dmaj7', 'A7'],      // vi IV I V
+    ['Em7', 'A13', 'Dmaj9', 'Gmaj7'],     // ii V I IV
+    ['Dmaj9', 'Gmaj7', 'Bm7', 'A7'],      // I IV vi V
+    ['Cmaj7', 'Gmaj7', 'Dmaj9', 'A7'],    // bVII IV I V — colore mediante
+    ['Fmaj7', 'Gm7', 'Dmaj9', 'Cmaj7'],   // bIII iv(borrowed) I bVII — apertura scura
+    ['Dmaj9', 'Bbmaj7', 'Cmaj7', 'Gmaj7'],// I bVI bVII IV
+    ['Gm7', 'Cmaj7', 'Fmaj7', 'Dmaj9'],   // iv(borrowed) bVII bIII I — giro quasi tutto in prestito
+  ],
+  neo_soul_bridge: [
+    ['Em7', 'A7', 'Dmaj9', 'Gmaj7'],      // ii V I IV
+    ['Bm7', 'Em7', 'Gmaj7', 'A7'],        // vi ii IV V
+    ['F#m7', 'Bm7', 'Em7', 'A13'],        // iii vi ii V — discesa
+    ['Gmaj7', 'F#m7', 'Em7', 'A7'],       // IV iii ii V
+    ['Emaj7', 'Dmaj7', 'Em7', 'A7'],      // bIII I ii V — cromatico neo-soul
+    ['Gm7', 'Fmaj7', 'Cmaj7', 'Bm7'],     // iv(borrowed) bIII bVII vi — tensione modale
+  ],
+  neo_soul_outro: [
+    ['Dmaj9', 'Gmaj7', 'Bm7', 'A7'],      // I IV vi V
+    ['Gmaj7', 'A7', 'Dmaj9', 'Dmaj9'],    // IV V I I — chiusura ampia
+    ['Bm7', 'Gmaj7', 'Dmaj9', 'Dmaj9'],   // vi IV I I
+    ['Dmaj9', 'Em7', 'Gmaj7', 'Dmaj9'],   // I ii IV I
+    ['Cmaj7', 'Gmaj7', 'Dmaj9', 'Dmaj9'], // bVII IV I I — discesa finale
+    ['Fmaj7', 'Dmaj9', 'Bm7', 'Dmaj9'],   // bIII I vi I — mediante che rientra
+  ],
+
+  // ── NEO SOUL in minore (Dm dorian — contenuto originale, invariato) ──
+  neo_soul_intro_minor: [
     ['Dm9', 'Gmaj7', 'Em7', 'Am7'],
     ['Am9', 'Dm9', 'Gmaj7', 'Em7'],
     ['Dm7', 'Em7', 'Fmaj7', 'Em7'],
@@ -363,7 +512,7 @@ export const PROGRESSION_POOLS = {
     ['Gmaj7', 'Em7', 'Am9', 'Dm9'],    // IV ii v i
     ['Fmaj9', 'Am9', 'Dm9', 'Gmaj7'],  // bIII v i IV
   ],
-  neo_soul_verse: [
+  neo_soul_verse_minor: [
     ['Dm9', 'Gmaj7', 'Em7', 'Am7'],   // i IV ii v — dorian
     ['Am7', 'Dm7', 'Gmaj7', 'Cmaj7'], // v i IV bVII
     ['Dm9', 'Em7', 'Am9', 'Gmaj7'],   // i ii v IV
@@ -387,7 +536,7 @@ export const PROGRESSION_POOLS = {
     ['Gm9', 'Cmaj7', 'Fmaj9', 'Am9'],  // iv bVII bIII v — borrowed iv
     ['Em11', 'Fmaj9', 'Dm9', 'Cmaj7'], // ii bIII i bVII — discendente
   ],
-  neo_soul_chorus: [
+  neo_soul_chorus_minor: [
     ['Fmaj7', 'Em7', 'Dm9', 'Cmaj7'],
     ['Am9', 'Dm9', 'Gmaj7', 'Fmaj7'],
     ['Gmaj7', 'Fmaj7', 'Em7', 'Dm9'],
@@ -405,7 +554,7 @@ export const PROGRESSION_POOLS = {
     ['Dm9', 'Am9', 'Em7', 'Fmaj7'],    // i v ii bIII
     ['Fmaj9', 'Gmaj7', 'Em11', 'Am9'], // bIII IV ii v
   ],
-  neo_soul_bridge: [
+  neo_soul_bridge_minor: [
     ['Em7', 'A7', 'Dm9', 'Gmaj7'],
     ['Bm7b5', 'E7', 'Am9', 'Dm9'],
     ['Fmaj7', 'Em7', 'Am9', 'Dm7'],
@@ -419,7 +568,7 @@ export const PROGRESSION_POOLS = {
     ['Em11', 'Ebmaj7', 'Dm9', 'Am9'],  // ii bII i v — cromatico
     ['Cmaj7', 'Bm7b5', 'Am9', 'Gmaj7'],// bVII #v° v IV
   ],
-  neo_soul_outro: [
+  neo_soul_outro_minor: [
     ['Dm9', 'Gmaj7', 'Em7', 'Am7'],
     ['Am9', 'Dm9', 'Gmaj7', 'Gmaj7'],
     ['Fmaj7', 'Em7', 'Dm9', 'Dm9'],       // bIII ii i i — discesa verso tonica
@@ -541,66 +690,84 @@ export const PROGRESSION_POOLS = {
   ],
 
   // ══════════════════════════════════════════════════════════════
-  // POP ROCK — reference key A major / Am minor
+  // POP ROCK — reference key A (major) / Am (minor)
+  // Fino al 2026-08-25 un unico pool combinato, filtrato a runtime sulla
+  // qualità superficiale del primo accordo (A1/PLAN36): il filtro sbagliava
+  // bucket su entry che non iniziano sulla propria tonica (es. bridge che
+  // parte su vi o iv). Qui il catalogo originale, INVARIATO nel contenuto,
+  // ribucketato sulla tonica reale di ogni entry (dedotta dal commento) e
+  // spacchettato in pool dedicati come tutti gli altri stili mode-aware.
   // ══════════════════════════════════════════════════════════════
   pop_rock_intro: [
     ['A', 'E', 'F#m', 'D'],           // I V vi IV — Axis
-    ['Am', 'F', 'C', 'G'],            // i bVI bIII bVII — minor rock
     ['A', 'D', 'A', 'E'],             // I IV I V — classic rock
-    ['Am', 'G', 'F', 'G'],            // i bVII bVI bVII — driving
     ['A', 'F#m', 'D', 'E'],           // I vi IV V
-    ['Am', 'Am', 'F', 'G'],           // i i bVI bVII — simple
   ],
   pop_rock_verse: [
     ['A', 'E', 'F#m', 'D'],           // I V vi IV — Axis
-    ['Am', 'F', 'C', 'G'],            // i bVI bIII bVII
     ['A', 'D', 'F#m', 'E'],           // I IV vi V
-    ['Am', 'G', 'F', 'E'],            // i bVII bVI V — Andalusian
     ['A', 'A', 'D', 'E'],             // I I IV V — country rock
-    ['Am', 'C', 'G', 'F'],            // i bIII bVII bVI
     ['A', 'E', 'D', 'A'],             // I V IV I — classic
-    ['Am', 'Dm', 'G', 'C'],           // i iv bVII bIII
     ['A', 'F#m', 'D', 'A'],           // I vi IV I
-    ['Am', 'G', 'Am', 'F'],           // i bVII i bVI — riff loop
     ['A', 'D', 'E', 'A'],             // I IV V I
-    ['Am', 'F', 'G', 'Am'],           // i bVI bVII i
     ['A', 'Bm', 'D', 'E'],            // I ii IV V — pop anthem
-    ['Am', 'Em', 'F', 'G'],           // i v bVI bVII
     ['A', 'G', 'D', 'A'],             // I bVII IV I — mixolydian rock
-    ['Am', 'Dm', 'Am', 'E'],          // i iv i V — flamenco-rock
   ],
   pop_rock_chorus: [
     ['D', 'A', 'E', 'F#m'],           // IV I V vi — power chorus
-    ['F', 'C', 'G', 'Am'],            // bVI bIII bVII i
     ['D', 'E', 'A', 'F#m'],           // IV V I vi
-    ['F', 'G', 'Am', 'G'],            // bVI bVII i bVII — driving
     ['A', 'E', 'F#m', 'D'],           // I V vi IV — anthemic
-    ['Am', 'F', 'C', 'G'],            // i bVI bIII bVII — loud
     ['D', 'A', 'F#m', 'E'],           // IV I vi V
-    ['F', 'C', 'Am', 'G'],            // bVI bIII i bVII
     ['A', 'D', 'E', 'E'],             // I IV V V — punk push
-    ['Am', 'G', 'F', 'G'],            // i bVII bVI bVII — repeat
     ['E', 'D', 'A', 'A'],             // V IV I I — rock resolution
-    ['G', 'D', 'Am', 'F'],            // bVII IV i bVI
   ],
   pop_rock_bridge: [
     ['F#m', 'D', 'A', 'E'],           // vi IV I V
-    ['F', 'Am', 'G', 'E'],            // bVI i bVII V
     ['Bm', 'E', 'A', 'D'],            // ii V I IV
-    ['Dm', 'Am', 'E', 'Am'],          // iv i V i
     ['D', 'E', 'F#m', 'E'],           // IV V vi V — tension
-    ['F', 'G', 'Em', 'Am'],           // bVI bVII v i
     ['A', 'C#m', 'D', 'E'],           // I iii IV V — big build
-    ['Am', 'E', 'F', 'G'],            // i V bVI bVII
     ['F#m', 'A', 'D', 'E'],           // vi I IV V
-    ['Dm', 'G', 'Am', 'E'],           // iv bVII i V
   ],
   pop_rock_outro: [
     ['A', 'E', 'F#m', 'D'],           // I V vi IV — ripresa chorus
-    ['Am', 'F', 'C', 'G'],            // i bVI bIII bVII
     ['A', 'D', 'A', 'A'],             // I IV I I — fade
-    ['Am', 'G', 'Am', 'Am'],          // i bVII i i — coda
     ['D', 'A', 'D', 'A'],             // IV I IV I — gospel close
+  ],
+
+  // ── POP ROCK in minore (Am — stesso catalogo, ribucketato per tonica) ──
+  pop_rock_intro_minor: [
+    ['Am', 'F', 'C', 'G'],            // i bVI bIII bVII — minor rock
+    ['Am', 'G', 'F', 'G'],            // i bVII bVI bVII — driving
+    ['Am', 'Am', 'F', 'G'],           // i i bVI bVII — simple
+  ],
+  pop_rock_verse_minor: [
+    ['Am', 'F', 'C', 'G'],            // i bVI bIII bVII
+    ['Am', 'G', 'F', 'E'],            // i bVII bVI V — Andalusian
+    ['Am', 'C', 'G', 'F'],            // i bIII bVII bVI
+    ['Am', 'Dm', 'G', 'C'],           // i iv bVII bIII
+    ['Am', 'G', 'Am', 'F'],           // i bVII i bVI — riff loop
+    ['Am', 'F', 'G', 'Am'],           // i bVI bVII i
+    ['Am', 'Em', 'F', 'G'],           // i v bVI bVII
+    ['Am', 'Dm', 'Am', 'E'],          // i iv i V — flamenco-rock
+  ],
+  pop_rock_chorus_minor: [
+    ['F', 'C', 'G', 'Am'],            // bVI bIII bVII i
+    ['F', 'G', 'Am', 'G'],            // bVI bVII i bVII — driving
+    ['Am', 'F', 'C', 'G'],            // i bVI bIII bVII — loud
+    ['F', 'C', 'Am', 'G'],            // bVI bIII i bVII
+    ['Am', 'G', 'F', 'G'],            // i bVII bVI bVII — repeat
+    ['G', 'D', 'Am', 'F'],            // bVII IV i bVI
+  ],
+  pop_rock_bridge_minor: [
+    ['F', 'Am', 'G', 'E'],            // bVI i bVII V
+    ['Dm', 'Am', 'E', 'Am'],          // iv i V i
+    ['F', 'G', 'Em', 'Am'],           // bVI bVII v i
+    ['Am', 'E', 'F', 'G'],            // i V bVI bVII
+    ['Dm', 'G', 'Am', 'E'],           // iv bVII i V
+  ],
+  pop_rock_outro_minor: [
+    ['Am', 'F', 'C', 'G'],            // i bVI bIII bVII
+    ['Am', 'G', 'Am', 'Am'],          // i bVII i i — coda
     ['F', 'G', 'Am', 'Am'],           // bVI bVII i i — slow out
   ],
 
@@ -654,6 +821,51 @@ export const PROGRESSION_POOLS = {
     ['C7', 'C7', 'F7', 'C7'],                 // I I IV I — bluesy close
     ['F', 'C', 'F', 'C'],                     // IV I IV I — plagale
     ['C7', 'G7', 'F7', 'C7'],                 // I7 V7 IV7 I7
+  ],
+
+  // ── BLUES ROCK in minore (Am — minor blues genuino) ──────────────
+  // Fino al 2026-08-24 il pool sopra mescolava qualche Cm di passaggio ma
+  // non bastava a coprire una richiesta in tonalità minore (0-1 entry
+  // minori su 5 sezioni): qui un pool minor-blues dedicato. La scala resta
+  // 'blues' in entrambi i modi — funziona idiomaticamente su tonica sia
+  // maggiore che minore, non va sostituita con 'minor' (vedi SongArchitect.js).
+  blues_rock_intro_minor: [
+    ['Am7', 'Am7', 'Dm7', 'E7'],              // i7 i7 iv7 V7 — apertura 12-bar minore
+    ['Am', 'Dm', 'Am', 'Am'],                 // i iv i i — vamp
+    ['Am', 'G', 'F', 'E7'],                   // i bVII bVI V7 — discesa cromatica al V
+    ['Am7', 'Dm7', 'Am7', 'E7'],              // i7 iv7 i7 V7
+  ],
+  blues_rock_verse_minor: [
+    ['Am7', 'Dm7', 'Am7', 'Am7'],             // i7 iv7 i7 i7 — quick change
+    ['Am7', 'Am7', 'Dm7', 'Dm7'],             // i7 i7 iv7 iv7 — apertura 12-bar
+    ['Am', 'G', 'F', 'Am'],                   // i bVII bVI i — rock-minore
+    ['Am7', 'C7', 'Dm7', 'E7'],               // i7 bIII7 iv7 V7 — esteso
+    ['Dm7', 'Am7', 'E7', 'Am7'],              // iv7 i7 V7 i7
+    ['Am', 'Dm', 'E7', 'Dm'],                 // i iv V7 iv
+    ['Am7', 'Dm7', 'E7', 'Dm7'],              // i7 iv7 V7 iv7
+    [['Am7', 2], ['Dm7', 2], ['Am7', 2], ['E7', 2]], // timed 8-bar shuffle minore
+  ],
+  blues_rock_chorus_minor: [
+    ['Am7', 'Dm7', 'E7', 'Am7'],              // i7 iv7 V7 i7 — full cadence minore
+    ['Am', 'F', 'G', 'Am'],                   // i bVI bVII i — rock anthem minore
+    ['Am7', 'G7', 'Dm7', 'Am7'],              // i7 bVII7 iv7 i7
+    ['Am', 'Dm', 'F', 'E7'],                  // i iv bVI V7
+    ['Dm7', 'Am7', 'F7', 'E7'],               // iv7 i7 bVI7 V7
+    [['Am7', 2], ['Dm7', 2], ['E7', 4]],      // cadenza timed
+  ],
+  blues_rock_bridge_minor: [
+    ['Dm7', 'Am7', 'Dm7', 'E7'],              // iv7 i7 iv7 V7
+    ['F', 'C', 'Dm', 'E7'],                   // bVI bIII iv V7
+    ['Fm7', 'Bb7', 'Am7', 'E7'],              // ivm bVII7(sub) i7 V7 — colore in prestito
+    ['Am', 'Em', 'Dm', 'E7'],                 // i v iv V7
+    ['Dm7', 'E7', 'Am7', 'Am7'],              // iv7 V7 i7 i7 — risoluzione
+  ],
+  blues_rock_outro_minor: [
+    ['Am7', 'Dm7', 'Am7', 'Am7'],             // i7 iv7 i i — fade
+    ['Am', 'G', 'F', 'Am'],                   // i bVII bVI i — rock out minore
+    ['Am7', 'Am7', 'Dm7', 'Am7'],             // i i iv i — bluesy close
+    ['Dm', 'Am', 'Dm', 'Am'],                 // iv i iv i — plagale minore
+    ['Am7', 'E7', 'Dm7', 'Am7'],              // i7 V7 iv7 i7
   ],
 
   // ══════════════════════════════════════════════════════════════
@@ -745,35 +957,72 @@ export const PROGRESSION_POOLS = {
     ['F', 'C', 'G', 'Am'],                    // VI III VII i — finale aperto
   ],
 
-  // ── CINEMATIC / Orchestral — reference key Am/C ─────────────────
+  // ── CINEMATIC / Orchestral — reference key C (major) / Am (minor) ──
+  // Fino al 2026-08-24 esisteva solo il pool minore (fix 2026-08-23, vedi
+  // docs/BUG_CINEMATIC_MINORE.md Bug 1): richiedere il maggiore dava comunque
+  // la relativa Am, non la tonica scelta. Il pool minore sotto è invariato.
   cinematic_intro: [
-    ['C', 'Bb', 'F', 'C'],          // I bVII IV I — modale
-    ['Am', 'F', 'C', 'G'],
-    ['C', 'F', 'Am', 'G'],
+    ['C', 'Bb', 'F', 'C'],           // I bVII IV I — colore modale epico
+    ['C', 'F', 'G', 'C'],            // I IV V I
+    ['C', 'Am', 'F', 'G'],           // I vi IV V — apertura a mezza cadenza
   ],
   cinematic_verse: [
-    ['C', 'Bb', 'F', 'C'],          // I bVII IV I
-    ['Am', 'Em', 'F', 'G'],         // vi iii IV V
-    ['C', 'Am', 'Em', 'F'],         // I vi iii IV
-    ['F', 'Am', 'C', 'G'],
-    ['C', 'G', 'Am', 'Em'],         // I V vi iii
-    ['Am', 'G', 'F', 'E'],          // i VII VI V — discesa cromatica
+    ['C', 'Bb', 'F', 'C'],           // I bVII IV I — modale
+    ['C', 'G', 'Am', 'F'],           // I V vi IV
+    ['C', 'F', 'Dm', 'G'],           // I IV ii V — tensione narrativa
+    ['F', 'C', 'G', 'Am'],           // IV I V vi
+    ['C', 'Em', 'F', 'G'],           // I iii IV V — arco che sale
+    ['C', 'G', 'F', 'E'],            // I V IV III — colore cromatico discendente
   ],
   cinematic_chorus: [
-    ['Am', 'F', 'C', 'G'],
-    ['C', 'F', 'G', 'Am'],
-    ['F', 'C', 'G', 'Am'],
-    ['Am', 'Em', 'F', 'C'],
+    ['C', 'F', 'G', 'Am'],           // I IV V vi
+    ['C', 'Am', 'F', 'G'],           // I vi IV V — build
+    ['F', 'G', 'C', 'Em'],           // IV V I iii
+    ['C', 'Em', 'F', 'Am'],          // I iii IV vi
   ],
   cinematic_bridge: [
-    ['Am', 'G', 'F', 'E'],
-    ['Dm', 'Am', 'G', 'C'],
-    ['F', 'G', 'Am', 'C'],
+    ['C', 'G', 'F', 'E'],            // I V IV III
+    ['Dm', 'C', 'G', 'F'],           // ii I V IV
+    ['F', 'G', 'C', 'Am'],           // IV V I vi
   ],
   cinematic_outro: [
-    ['C', 'Am', 'F', 'G'],
-    ['Am', 'F', 'C', 'C'],
-    ['C', 'Bb', 'F', 'C'],
+    ['F', 'G', 'C', 'C'],            // IV V I I — cadenza forte
+    ['C', 'F', 'G', 'G'],            // I IV V V
+    ['Dm', 'G', 'C', 'C'],           // ii V I I — plagale-funzionale
+  ],
+
+  // ── CINEMATIC in minore (Am — contenuto originale, invariato) ──
+  // Tutte le entry genuinamente radicate su Am come tonica i (fix 2026-08-23,
+  // vedi docs/BUG_CINEMATIC_MINORE.md Bug 1): le vecchie entry in logica
+  // maggiore mascherata da "minore" sono state riscritte, non solo rilabellate.
+  cinematic_intro_minor: [
+    ['Am', 'G', 'Dm', 'Am'],         // i bVII iv i — modale
+    ['Am', 'F', 'C', 'G'],           // i VI III VII
+    ['Am', 'Dm', 'F', 'Em'],         // i iv VI v — apertura a mezza cadenza
+  ],
+  cinematic_verse_minor: [
+    ['Am', 'G', 'Dm', 'Am'],         // i bVII iv i — modale
+    ['Am', 'Em', 'F', 'G'],          // i v VI VII
+    ['Am', 'F', 'Dm', 'Em'],         // i VI iv v — discesa narrativa
+    ['Dm', 'Am', 'F', 'Em'],         // iv i VI v
+    ['Am', 'C', 'G', 'Am'],          // i III VII i — arco che ritorna alla tonica
+    ['Am', 'G', 'F', 'E'],           // i VII VI V — discesa cromatica
+  ],
+  cinematic_chorus_minor: [
+    ['Am', 'F', 'C', 'G'],           // i VI III VII
+    ['Am', 'Dm', 'G', 'C'],          // i iv VII III — build verso la relativa
+    ['F', 'G', 'Am', 'Em'],          // VI VII i v
+    ['Am', 'Em', 'F', 'C'],          // i v VI III
+  ],
+  cinematic_bridge_minor: [
+    ['Am', 'G', 'F', 'E'],           // i VII VI V
+    ['Dm', 'Am', 'G', 'C'],          // iv i VII III
+    ['F', 'G', 'Am', 'C'],           // VI VII i III
+  ],
+  cinematic_outro_minor: [
+    ['F', 'G', 'Am', 'Am'],          // VI VII i i — cadenza forte
+    ['Am', 'F', 'C', 'C'],           // i VI III III
+    ['Dm', 'G', 'Am', 'Am'],         // iv VII i i — plagale-modale
   ],
 
   // ── WALTZ 3/4 — reference key C ────────────────────────────────
@@ -816,16 +1065,55 @@ export const PROGRESSION_POOLS = {
   ],
 
   // ══════════════════════════════════════════════════════════════
-  // LO-FI — reference key Dm (dorian, m7/maj7 loop-based, poche mosse)
+  // LO-FI — reference key D (major) / Dm (dorian, m7/maj7 loop-based)
+  // Il dorian resta la scelta per le richieste in tonalità minore (pool
+  // sotto, invariato). Il maggiore genuino (ionico) è nuovo (2026-08-24).
   // ══════════════════════════════════════════════════════════════
   lo_fi_intro: [
+    ['Dmaj7', 'Gmaj7', 'Dmaj7', 'Gmaj7'],   // loop I IV
+    ['Dmaj9', 'Bm7', 'Dmaj9', 'Bm7'],       // loop I vi
+    ['Gmaj7', 'F#m7', 'Em7', 'F#m7'],       // IV iii ii iii
+    ['Dmaj7', 'Em7', 'Dmaj7', 'Em7'],       // loop I ii
+    ['Dmaj9', 'Cmaj7', 'Bm7', 'Cmaj7'],     // I bVII vi bVII — colore lo-fi
+  ],
+  lo_fi_verse: [
+    ['Dmaj7', 'Gmaj7', 'Bm7', 'Gmaj7'],     // I IV vi IV
+    ['Dmaj9', 'Bm7', 'Gmaj7', 'Em7'],       // I vi IV ii
+    ['Gmaj7', 'Dmaj7', 'Em7', 'Bm7'],       // IV I ii vi
+    ['Dmaj7', 'F#m7', 'Gmaj7', 'Em7'],      // I iii IV ii
+    ['Dmaj9', 'Em7', 'F#m7', 'Bm7'],        // I ii iii vi
+    ['Bm7', 'Gmaj7', 'Dmaj7', 'Dmaj7'],     // vi IV I I
+    ['Dmaj7', 'Cmaj7', 'Gmaj7', 'Em7'],     // I bVII IV ii — colore lo-fi
+  ],
+  lo_fi_chorus: [
+    ['Gmaj7', 'Dmaj7', 'Bm7', 'Em7'],       // IV I vi ii
+    ['Dmaj9', 'Cmaj7', 'Gmaj7', 'Dmaj7'],   // I bVII IV I
+    ['Bm7', 'Em7', 'Gmaj7', 'Dmaj7'],       // vi ii IV I
+    ['Dmaj7', 'Bm7', 'Em7', 'Gmaj7'],       // I vi ii IV
+    ['Gmaj7', 'Em7', 'Dmaj7', 'Cmaj7'],     // IV ii I bVII
+    ['Dmaj9', 'F#m9', 'Bm7', 'Gmaj7'],      // I iii vi IV
+  ],
+  lo_fi_bridge: [
+    ['Cmaj7', 'Bm7', 'Em7', 'Bm7'],         // bVII vi ii vi
+    ['Gmaj7', 'F#m7', 'Bm7', 'Em7'],        // IV iii vi ii
+    ['Em7', 'Dmaj7', 'Gmaj7', 'Cmaj7'],     // ii I IV bVII
+    ['Dmaj7', 'Cmaj7', 'Bm7', 'Em7'],       // I bVII vi ii
+  ],
+  lo_fi_outro: [
+    ['Dmaj7', 'Gmaj7', 'Dmaj7', 'Dmaj7'],   // I IV I I — dissolve
+    ['Cmaj7', 'Gmaj7', 'Dmaj7', 'Dmaj7'],   // bVII IV I I
+    ['Dmaj9', 'Bm7', 'Dmaj7', 'Dmaj7'],     // I vi I I
+  ],
+
+  // ── LO-FI in dorian (Dm — contenuto originale, invariato) ──
+  lo_fi_intro_minor: [
     ['Dm7', 'Cmaj7', 'Dm7', 'Cmaj7'],       // loop i bVII
     ['Dm9', 'Gm7', 'Dm9', 'Gm7'],           // loop i iv
     ['Fmaj7', 'Em7', 'Dm7', 'Em7'],         // bIII ii i ii
     ['Dm7', 'Am7', 'Dm7', 'Am7'],           // loop i v
     ['Dm9', 'Cmaj7', 'Bbmaj7', 'Cmaj7'],    // i bVII bVI bVII
   ],
-  lo_fi_verse: [
+  lo_fi_verse_minor: [
     ['Dm7', 'Cmaj7', 'Bbmaj7', 'Cmaj7'],    // i bVII bVI bVII
     ['Dm9', 'Gm7', 'Cmaj7', 'Am7'],         // i iv bVII v
     ['Fmaj7', 'Cmaj7', 'Dm7', 'Bbmaj7'],    // bIII bVII i bVI
@@ -834,7 +1122,7 @@ export const PROGRESSION_POOLS = {
     ['Bbmaj7', 'Cmaj7', 'Dm7', 'Dm7'],      // bVI bVII i i
     ['Dm7', 'Fmaj7', 'Gm7', 'Am7'],         // i bIII iv v
   ],
-  lo_fi_chorus: [
+  lo_fi_chorus_minor: [
     ['Fmaj7', 'Cmaj7', 'Gm7', 'Am7'],       // bIII bVII iv v — apertura
     ['Dm9', 'Bbmaj7', 'Fmaj7', 'Cmaj7'],    // i bVI bIII bVII
     ['Cmaj7', 'Dm7', 'Bbmaj7', 'Cmaj7'],    // bVII i bVI bVII
@@ -842,13 +1130,13 @@ export const PROGRESSION_POOLS = {
     ['Fmaj7', 'Gm7', 'Dm7', 'Cmaj7'],       // bIII iv i bVII
     ['Dm9', 'Fmaj9', 'Am7', 'Gm7'],         // i bIII v iv
   ],
-  lo_fi_bridge: [
+  lo_fi_bridge_minor: [
     ['Bbmaj7', 'Am7', 'Gm7', 'Am7'],        // bVI v iv v
     ['Fmaj7', 'Em7', 'Am7', 'Dm7'],         // bIII ii v i
     ['Gm7', 'Cmaj7', 'Fmaj7', 'Bbmaj7'],    // iv bVII bIII bVI
     ['Dm7', 'Bbmaj7', 'Am7', 'Gm7'],        // i bVI v iv
   ],
-  lo_fi_outro: [
+  lo_fi_outro_minor: [
     ['Dm7', 'Cmaj7', 'Dm7', 'Dm7'],         // i bVII i i — dissolve
     ['Bbmaj7', 'Cmaj7', 'Dm7', 'Dm7'],      // bVI bVII i i
     ['Dm9', 'Gm7', 'Dm7', 'Dm7'],           // i iv i i
@@ -861,7 +1149,11 @@ export const PROGRESSION_POOLS = {
     ['A', 'D', 'A', 'D'],                   // I IV loop — driving
     ['A', 'G', 'D', 'A'],                   // I bVII IV I
     ['A', 'A', 'D', 'E'],                   // I I IV V
-    ['Am', 'G', 'D', 'A'],                  // i bVII IV I (Ramones-style)
+    ['Am', 'G', 'D', 'A'],                  // i bVII IV I (Ramones-style, apertura presa in prestito)
+    ['A', 'E', 'A', 'E'],                   // I V loop
+    ['D', 'A', 'D', 'A'],                   // IV I loop
+    ['A', 'D', 'E', 'A'],                   // I IV V I
+    ['G', 'D', 'A', 'A'],                   // bVII IV I I
   ],
   punk_verse: [
     ['A', 'D', 'E', 'A'],                   // I IV V I — three chord
@@ -870,6 +1162,11 @@ export const PROGRESSION_POOLS = {
     ['D', 'A', 'G', 'A'],                   // IV I bVII I
     ['A', 'E', 'D', 'A'],                   // I V IV I
     ['A', 'A', 'D', 'D'],                   // I I IV IV — palm-mute push
+    ['A', 'G', 'A', 'D'],                   // I bVII I IV
+    ['E', 'D', 'A', 'A'],                   // V IV I I
+    ['A', 'Bm', 'D', 'A'],                  // I ii IV I
+    ['D', 'G', 'A', 'A'],                   // IV bVII I I
+    ['A', 'D', 'G', 'D'],                   // I IV bVII IV
   ],
   punk_chorus: [
     ['D', 'A', 'E', 'A'],                   // IV I V I — gang vocal
@@ -877,16 +1174,26 @@ export const PROGRESSION_POOLS = {
     ['D', 'G', 'A', 'A'],                   // IV bVII I I
     ['A', 'E', 'A', 'D'],                   // I V I IV
     ['G', 'D', 'A', 'A'],                   // bVII IV I I
+    ['A', 'D', 'A', 'E'],                   // I IV I V
+    ['E', 'A', 'D', 'A'],                   // V I IV I
+    ['D', 'A', 'G', 'A'],                   // IV I bVII I
+    ['A', 'G', 'D', 'E'],                   // I bVII IV V
   ],
   punk_bridge: [
     ['Bm', 'D', 'A', 'E'],                  // ii IV I V
     ['D', 'E', 'A', 'A'],                   // IV V I I
     ['G', 'A', 'D', 'E'],                   // bVII I IV V
+    ['F#m', 'D', 'A', 'E'],                 // vi IV I V
+    ['A', 'E', 'D', 'A'],                   // I V IV I
+    ['G', 'A', 'D', 'A'],                   // bVII I IV I
   ],
   punk_outro: [
     ['A', 'D', 'A', 'A'],                   // I IV I I — hard stop
     ['A', 'G', 'D', 'A'],                   // I bVII IV I
     ['D', 'A', 'D', 'A'],                   // IV I IV I
+    ['A', 'A', 'A', 'A'],                   // I I I I — stop secco
+    ['A', 'Bm', 'A', 'A'],                   // I ii I I
+    ['A', 'D', 'G', 'A'],                   // I IV bVII I
   ],
 
   // ── PUNK in minore (Am — stesse forme, tonica minore, refPc fisso 9) ──
@@ -894,6 +1201,10 @@ export const PROGRESSION_POOLS = {
     ['Am', 'Dm', 'Am', 'Dm'],                // i iv loop — driving
     ['Am', 'G', 'Dm', 'Am'],                 // i VII iv i
     ['Am', 'Am', 'Dm', 'Em'],                // i i iv v
+    ['Am', 'Em', 'Am', 'Em'],                // i v loop
+    ['Dm', 'Am', 'Dm', 'Am'],                // iv i loop
+    ['Am', 'Dm', 'Em', 'Am'],                // i iv v i
+    ['G', 'Dm', 'Am', 'Am'],                 // VII iv i i
   ],
   punk_verse_minor: [
     ['Am', 'Dm', 'Em', 'Am'],                // i iv v i — three chord minore
@@ -902,6 +1213,11 @@ export const PROGRESSION_POOLS = {
     ['Dm', 'Am', 'G', 'Am'],                 // iv i VII i
     ['Am', 'Em', 'Dm', 'Am'],                // i v iv i
     ['Am', 'Am', 'Dm', 'Dm'],                // i i iv iv — palm-mute push
+    ['Am', 'G', 'Am', 'Dm'],                 // i VII i iv
+    ['Em', 'Dm', 'Am', 'Am'],                // v iv i i
+    ['Am', 'F', 'Dm', 'Am'],                 // i VI iv i — VI maggiore preso in prestito
+    ['Dm', 'G', 'Am', 'Am'],                 // iv VII i i
+    ['Am', 'Dm', 'G', 'Dm'],                 // i iv VII iv
   ],
   punk_chorus_minor: [
     ['Dm', 'Am', 'Em', 'Am'],                // iv i v i — gang vocal
@@ -909,16 +1225,26 @@ export const PROGRESSION_POOLS = {
     ['Dm', 'G', 'Am', 'Am'],                 // iv VII i i
     ['Am', 'Em', 'Am', 'Dm'],                // i v i iv
     ['G', 'Dm', 'Am', 'Am'],                 // VII iv i i
+    ['Am', 'Dm', 'Am', 'Em'],                // i iv i v
+    ['Em', 'Am', 'Dm', 'Am'],                // v i iv i
+    ['Dm', 'Am', 'G', 'Am'],                 // iv i VII i
+    ['Am', 'G', 'Dm', 'Em'],                 // i VII iv v
   ],
   punk_bridge_minor: [
     ['F', 'Dm', 'Am', 'Em'],                 // VI iv i v
     ['Dm', 'Em', 'Am', 'Am'],                // iv v i i
     ['G', 'Am', 'Dm', 'Em'],                 // VII i iv v
+    ['Am', 'Em', 'Dm', 'Am'],                // i v iv i
+    ['Dm', 'Am', 'Em', 'Am'],                // iv i v i
+    ['G', 'Dm', 'Am', 'Am'],                 // VII iv i i
   ],
   punk_outro_minor: [
     ['Am', 'Dm', 'Am', 'Am'],                // i iv i i — hard stop
     ['Am', 'G', 'Dm', 'Am'],                 // i VII iv i
     ['Dm', 'Am', 'Dm', 'Am'],                // iv i iv i
+    ['Am', 'Am', 'Am', 'Am'],                // i i i i — stop secco
+    ['Am', 'Bdim', 'Am', 'Am'],               // i ii° i i
+    ['Am', 'Dm', 'G', 'Am'],                 // i iv VII i
   ],
 
   // ══════════════════════════════════════════════════════════════

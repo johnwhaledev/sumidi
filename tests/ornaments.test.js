@@ -10,6 +10,11 @@ import { createGlide, BASS_GLIDE_PROFILE, STRINGS_GLIDE_PROFILE } from '../src/O
 // nuovo motore con l'output catturato dalle funzioni originali PRIMA del
 // refactor (tests/fixtures/golden_ornaments.json), per garantire zero
 // scostamento sonoro: stessa musica, codice non duplicato.
+//
+// Fixture rigenerata il 2026-08-26 (B6): ogni evento ora porta `ornament:
+// true`, letto da Humanizer.applySwing() per non ri-swingare note che hanno
+// già una micro-temporizzazione intenzionale (spesso a terzine). Unico
+// cambiamento nella rigenerazione: tick/note/velocity/duration invariati.
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const golden = JSON.parse(
@@ -35,7 +40,7 @@ describe('R4 — createGlide() riproduce esattamente createSlide()/createPortame
 describe('R4 — comportamento generico del motore createGlide()', () => {
   it('sotto la soglia minima di semitoni (profilo archi) produce una singola nota diretta', () => {
     const events = createGlide(60, 61, 0, 480, 90, 120, 480, STRINGS_GLIDE_PROFILE);
-    expect(events).toEqual([{ tick: 0, note: 61, velocity: 90, duration: 480 }]);
+    expect(events).toEqual([{ tick: 0, note: 61, velocity: 90, duration: 480, ornament: true }]);
   });
 
   it('il profilo del basso non ha soglia minima: anche 1 semitono genera un glissando a piu note', () => {

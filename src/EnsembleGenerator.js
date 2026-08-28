@@ -19,7 +19,7 @@
  * ─────────────────────────────────────────────────────────────────
  */
 
-import { makeRng, clampToRegister } from './SongArchitect.js';
+import { makeRng } from './SongArchitect.js';
 import { msToTick, arcVelocity } from './FlowCore.js';
 import { createGlide, STRINGS_GLIDE_PROFILE } from './Ornaments.js';
 

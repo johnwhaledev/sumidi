@@ -7,6 +7,9 @@
 // bare) che il parser "module" di ESLint segnala come falsi no-undef.
 // Restano comunque coperti dal controllo sintattico `node --check` e da
 // uno smoke test nel browser eseguiti ad ogni sessione di modifica.
+// T4/B3: main.js è stato scorporato in SongEngine.js (gen() + ponte
+// Classic/lab.html) e Session.js (Session Mode) — stesso pattern, stessa
+// esclusione.
 // design/DesignSystem.js resta escluso allo stesso modo (componenti SVG
 // generati, non ancora passati al lint in questa prima fase).
 
@@ -20,6 +23,8 @@ export default [
       'design/**',
       '*.html',
       'src/main.js',
+      'src/SongEngine.js',
+      'src/Session.js',
     ],
   },
   {

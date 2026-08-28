@@ -2,19 +2,21 @@
  * AppState.js — Stato globale centralizzato
  * ─────────────────────────────────────────────────────────
  * Sostituisce le variabili globali sparse in index.html.
- * 
+ *
  * Regola: nessuna variabile let _sm* rimane in index.html dopo R1.
- * 
+ *
  * API pubblica:
  *   AppState.preview.*     — stato preview audio
  *   AppState.ui.*          — stato UI (flyout, panel, chip editing)
  *   AppState.cache.*       — cache eventi e blueprint
- *   AppState.session.*      — stato sessione (playing, undo available)
- * 
+ *   AppState.session.*     — SessionManager + memoria melodica inter-sezione
+ *
  * Usage:
  *   import { AppState } from './AppState.js';
  *   AppState.cache.smCache[`${sid}:drums`] = events;
  */
+
+import { CrossSectionMemory } from './FlowCore.js';
 
 export const AppState = {
   
@@ -45,6 +47,15 @@ export const AppState = {
   cache: {
     sm:    {},  // era _smCache        key = `${sectionId}:${instrument}` → { events, program }
     bp:    {},  // era _smBpCache      key = `${sectionId}:_bp` → SongBlueprint
+  },
+
+  // ── Session (T4/B3) ──────────────────────────────────────────
+  // Centralizzato dallo scorporo di main.js in SongEngine.js/Session.js:
+  // _smgr e _smCrossMemory erano `let` di modulo lette/scritte da funzioni
+  // che ora vivono in file diversi.
+  session: {
+    manager:     null,                     // era _smgr — istanza di SessionManager
+    crossMemory: new CrossSectionMemory(), // era _smCrossMemory — persiste tra sezioni, si ricrea a ogni full rebuild/undo
   },
 
   // ── Helpers ────────────────────────────────────────────────

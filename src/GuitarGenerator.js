@@ -161,9 +161,6 @@ const RIFF_STEPS = {
   dense:  [0, 1, 2, 4, 6, 8, 9, 10, 12, 14],
 };
 
-// Groove con swing — s16 dispari ricevono nudge +20%
-const SWING_GROOVES = new Set(['jazz_swing', 'folk_swing']);
-
 const STYLE_MAP = {
   fingerpicking: {
     low:  { pattern: 'ballad',    grid: 'travis' },
@@ -636,7 +633,8 @@ function _genStrumBar(events, ctx) {
                 : Math.round(ppq * 0.30);
   const muteVelOffset = palmMute ? -22 : partialMute ? -10 : 0;
 
-  for (const { step16, dir } of pattern) {
+  for (let pi = 0; pi < pattern.length; pi++) {
+    const { step16, dir } = pattern[pi];
     const isDown = dir === 'D';
     // Skip upstroke occasionale su bar non accented — rompe la meccanicità
     if (!isDown && !isPhraseFill && rng.bool(isBar2 ? 0.15 : 0.25)) continue;
@@ -657,12 +655,23 @@ function _genStrumBar(events, ctx) {
       ? Math.min(127, velBase + muteVelOffset + phaseOff + rng.int(2, 8))
       : Math.max(1,   velBase + muteVelOffset + phaseOff - rng.int(10, 20));
 
+    // Fix 2026-08-26 (B5): durDown (~2.2×s16 a energia bassa/media) superava il
+    // gap fra due colpi ravvicinati (es. pattern 'rock', 2 step) — la nota root,
+    // presente in ogni colpo, restava accesa quando il colpo dopo riattaccava
+    // sulla stessa corda (overlap misurato nell'audit timing, B5). Ora la
+    // durata non supera mai il gap al prossimo colpo del pattern, al netto
+    // dello stagger fra le corde dello stesso colpo.
+    const nextStep16 = pi < pattern.length - 1 ? pattern[pi + 1].step16 : 16;
+    const gapTicks    = (nextStep16 - step16) * s16 - staggerTick * notesFiltered.length;
+    const durDownEff  = Math.max(Math.round(s16 * 0.15), Math.min(durDown, gapTicks - 4));
+    const durUpEff    = Math.max(Math.round(s16 * 0.15), Math.min(durUp,   gapTicks - 4));
+
     notesFiltered.forEach((note, i) => {
       const tick = baseTime + i * staggerTick;
       const v    = isDown
         ? Math.max(1, velStroke - i * 4)
         : Math.max(1, velStroke - i * 3);
-      events.push({ tick, note, velocity: v, duration: isDown ? durDown : durUp });
+      events.push({ tick, note, velocity: v, duration: isDown ? durDownEff : durUpEff });
     });
   }
 }
@@ -678,14 +687,15 @@ function _genPowerBar(events, ctx) {
   const fifth = root + 7;
   const oct   = root + 12;
 
-  const durFull = palmMute
+  const durWanted = palmMute
     ? Math.round(s16 * 0.30)
     : energyKey === 'high'
       ? Math.round(s16 * 1.6)
       : Math.round(s16 * 2.4);
   const stagger = 6;
 
-  for (const step16 of pattern) {
+  for (let pi = 0; pi < pattern.length; pi++) {
+    const step16 = pattern[pi];
     const isAccentBeat = step16 % 4 === 0;
     // rest_probability: salta i colpi sincopati non accentati
     if (!isAccentBeat && restProb > 0 && rng.bool(restProb)) continue;
@@ -694,6 +704,15 @@ function _genPowerBar(events, ctx) {
     const velR = Math.min(127, velBase + 20 + phaseOff + accentOff);
     const velF = Math.min(127, velBase + 14 + phaseOff + (isAccentBeat ? rng.int(2, 6) : rng.int(-6, 0)));
     const velO = Math.min(127, velBase + 8  + phaseOff + rng.int(-4, 4));
+
+    // Fix 2026-08-26 (B5): durFull era fissa (2.4×s16 a energia bassa/media),
+    // più larga del gap fra due colpi ravvicinati nei pattern 'dense' (1 step)
+    // e 'mid' (2 step) — root e fifth restavano accesi quando il colpo dopo
+    // riattaccava sulla stessa nota (overlap misurato nell'audit timing, B5).
+    // Ora la durata non supera mai il gap al prossimo colpo del pattern.
+    const nextStep16 = pi < pattern.length - 1 ? pattern[pi + 1] : 16;
+    const gapTicks    = (nextStep16 - step16) * s16;
+    const durFull     = Math.max(Math.round(s16 * 0.3), Math.min(durWanted, gapTicks - 4));
 
     events.push({ tick,                note: root,  velocity: velR, duration: durFull });
     events.push({ tick: tick + stagger, note: fifth, velocity: velF, duration: durFull });

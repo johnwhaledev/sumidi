@@ -179,30 +179,6 @@ export const GM = {
   CLAVES:         75,
 };
 
-// ── Velocity Ranges Legacy (mantenuti per compatibilità) ──────────
-const VEL = {
-  kick_heavy:   [100, 115],
-  kick_normal:  [85,  100],
-  snare_heavy:  [100, 115],
-  snare_normal: [80,  100],
-  snare_ghost:  [20,   40],
-  hh_accent:    [70,   85],
-  hh_normal:    [50,   68],
-  hh_brush:     [30,   50],
-  ride_accent:  [75,   90],
-  ride_normal:  [55,   70],
-  tom:          [80,  105],
-  crash:        [100, 120],
-  cajon_slap:   [90,  110],
-  cajon_tone:   [65,   85],
-  cajon_ghost:  [25,   45],
-};
-
-function vel(key, rng) {
-  const [lo, hi] = VEL[key] ?? [60, 80];
-  return rng.int(lo, hi);
-}
-
 // ── Groove Params ─────────────────────────────────────────────────
 // Esportati (R3) per permettere test di regressione sui pattern per stile/energia.
 export const GROOVE_PARAMS = {
@@ -512,8 +488,7 @@ export function generateDrums(blueprint, seedOverride = null) {
 
       // S3-C: Fill lunghezza variabile: 0.5/1/2 bar
       const fillLength = isFill ? _selectFillLength(nextSectionType, energy, rng) : 0;
-      const isPreFill2 = fillLength === 2 && fillBars.has(b + 2); // if 2 bar fill
-      
+
       const anticipationTicks = isFill && stepsPerBar === 16 ? Math.round(s16 * 0.5) : 0;
       const effectiveBarStart = barStart - anticipationTicks;
 
@@ -611,7 +586,6 @@ function _genBar(events, barStart, s16, ppq, rng, gp, barIdx, opts = {}, stepsPe
 
   // Backbeat principale: SNARE_RIMSHOT per timbro realistico
   const mainSnare = useCrossStick ? GM.CROSS_STICK : GM.SNARE_RIMSHOT;
-  const velSuffix = useBrushes   ? 'hh_brush'     : 'hh_normal';
   const durHH     = Math.round(s16 * 0.5);
   const durKick   = Math.round(s16 * 0.7);
   const durSnare  = Math.round(s16 * 0.6);

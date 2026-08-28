@@ -92,6 +92,11 @@ export function applySwing(events, ppq, swingAmount = 0) {
 
   for (const e of events) {
     if (e.note == null || e.cc != null) continue;
+    // Fix 2026-08-26 (B6): le note di createGlide() (slide del basso,
+    // portamento archi) hanno già una micro-temporizzazione intenzionale
+    // (spesso a terzine, fuori dalla griglia a sedicesimi) — trattarle come
+    // note di griglia sommava lo swing sopra a quell'offset, gonfiandolo.
+    if (e.ornament) continue;
     // Posizione nel bar in sedicesimi (0-15 per 4/4)
     const posInBar = e.tick % (ppq * 4);
     const step16   = Math.round(posInBar / s16) % 16;

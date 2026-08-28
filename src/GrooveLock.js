@@ -9,8 +9,7 @@
  *
  * Principio architetturale:
  *   - kickMap:  Map<barAbsoluteTick, kickTick>  (beat 1 e beat 3 per bar)
- *   - snareMap: Map<barAbsoluteTick, snareTick> (beat 2 e beat 4 per bar)
- *   - lockToBeat: sposta le note vicine al kick/snare di un offset ms deterministico
+ *   - lockToBeat: sposta le note vicine al kick di un offset ms deterministico
  *
  * NOTE:
  *   - Non sposta note CC (automazione), solo note_on/note_off
@@ -21,7 +20,6 @@
 
 // Costanti GM drum notes (specchio di Percussionist.js)
 const KICK_NOTES  = new Set([35, 36]);
-const SNARE_NOTES = new Set([38, 40]);
 
 // Utility: ms → tick
 function _ms2tick(ms, bpm, ppq) {
@@ -34,8 +32,7 @@ function buildKickMap(drumEvents, ppq, barTicks) {
   const map = new Map();
   if (!drumEvents?.length) return map;
 
-  const ppqBeat = ppq;           // 1 beat = ppq tick
-  const beat3off = ppqBeat * 2;  // Beat 3 = barStart + 2 quarti
+  const s16 = ppq / 4;
 
   for (const ev of drumEvents) {
     if (ev.cc != null) continue;
@@ -43,48 +40,16 @@ function buildKickMap(drumEvents, ppq, barTicks) {
 
     const barStart = Math.floor(ev.tick / barTicks) * barTicks;
     const posInBar = ev.tick - barStart;
+    // Stesso arrotondamento di Humanizer.applySwing (Math.round(posInBar/s16)),
+    // ma SENZA modulo: un kick a fine bar (posInBar vicino a barTicks) deve
+    // arrotondare a "step 16", non avvolgersi su "step 0" del bar sbagliato.
+    const step16   = Math.round(posInBar / s16);
 
     if (!map.has(barStart)) map.set(barStart, { beat1: null, beat3: null });
     const entry = map.get(barStart);
 
-    // beat 1: posizione 0 → ppq (primo quarto)
-    if (posInBar < ppqBeat && entry.beat1 === null) {
-      entry.beat1 = ev.tick;
-    }
-    // beat 3: posizione beat3off ± ppq
-    if (posInBar >= beat3off - ppq / 2 && posInBar < beat3off + ppqBeat && entry.beat3 === null) {
-      entry.beat3 = ev.tick;
-    }
-  }
-  return map;
-}
-
-// ── Costruisce la mappa snare per ogni bar ────────────────────────
-// Ritorna Map<barAbsoluteTick, { beat2: tick|null, beat4: tick|null }>
-function buildSnareMap(drumEvents, ppq, barTicks) {
-  const map = new Map();
-  if (!drumEvents?.length) return map;
-
-  const ppqBeat = ppq;
-  const beat2off = ppqBeat;       // Beat 2 = barStart + 1 quarto
-  const beat4off = ppqBeat * 3;   // Beat 4 = barStart + 3 quarti
-
-  for (const ev of drumEvents) {
-    if (ev.cc != null) continue;
-    if (!SNARE_NOTES.has(ev.note)) continue;
-
-    const barStart = Math.floor(ev.tick / barTicks) * barTicks;
-    const posInBar = ev.tick - barStart;
-
-    if (!map.has(barStart)) map.set(barStart, { beat2: null, beat4: null });
-    const entry = map.get(barStart);
-
-    if (posInBar >= beat2off - ppq / 2 && posInBar < beat2off + ppqBeat && entry.beat2 === null) {
-      entry.beat2 = ev.tick;
-    }
-    if (posInBar >= beat4off - ppq / 2 && posInBar < beat4off + ppqBeat && entry.beat4 === null) {
-      entry.beat4 = ev.tick;
-    }
+    if (step16 === 0 && entry.beat1 === null) entry.beat1 = ev.tick;
+    if (step16 === 8 && entry.beat3 === null) entry.beat3 = ev.tick;
   }
   return map;
 }
@@ -92,6 +57,16 @@ function buildSnareMap(drumEvents, ppq, barTicks) {
 // ── Applica pocket offset a un set di eventi ─────────────────────
 // Solo note non-CC, solo note non già anticipate (tick >= barStart)
 // offset_lo/hi in ms, trasformati in tick via bpm/ppq
+//
+// Fix 2026-08-26 (B4): la finestra di match era larga un intero quarto
+// (`posInBar < ppqBeat`), quindi catturava anche i sedicesimi dispari già
+// ritardati da Humanizer.applySwing e ne sovrascriveva il tick con
+// anchorTick+offset, buttando via lo swing invece di rispettarlo — causa
+// del basso che swingava il 50-65% più degli altri strumenti (misurato
+// nell'audit timing, sessione 7). Ora il match è sullo step16 arrotondato
+// (stessa tecnica di applySwing/humanize) e scatta SOLO su step 0/8 esatti:
+// il pocket lock riguarda solo le note davvero sulla battuta, gli upbeat
+// swingati non vengono più toccati.
 function _lockEvents(events, kickMap, opts) {
   const {
     beat1_ms_lo, beat1_ms_hi,
@@ -100,28 +75,33 @@ function _lockEvents(events, kickMap, opts) {
     bpm, ppq, barTicks, rng,
   } = opts;
 
+  const s16 = ppq / 4;
+
   for (const ev of events) {
     if (ev.cc != null) continue;
     if (bass_string_only && ev.note >= 57) continue;  // solo note basse < A3
 
     const barStart  = Math.floor(ev.tick / barTicks) * barTicks;
     const posInBar  = ev.tick - barStart;
-    const ppqBeat   = ppq;
     const entry     = kickMap.get(barStart);
     if (!entry) continue;
 
     // Note già anticipate (tick < barStart): non toccare — rispetta Fase C
     if (ev.tick < barStart) continue;
 
+    // Senza modulo: una nota a fine bar (posInBar vicino a barTicks) arrotonda
+    // a "step 16", non si avvolge su "step 0" del bar sbagliato (vedi buildKickMap).
+    const step16 = Math.round(posInBar / s16);
+
     let anchorTick = null;
     let lo = 0, hi = 0;
 
-    if (posInBar < ppqBeat && entry.beat1 !== null) {
-      // Vicino al beat 1
+    if (step16 === 0 && entry.beat1 !== null) {
+      // Sulla battuta 1
       anchorTick = entry.beat1;
       lo = beat1_ms_lo; hi = beat1_ms_hi;
-    } else if (beat3_ms_hi > 0 && posInBar >= ppqBeat * 1.5 && posInBar < ppqBeat * 2.5 && entry.beat3 !== null) {
-      // Vicino al beat 3
+    } else if (beat3_ms_hi > 0 && step16 === 8 && entry.beat3 !== null) {
+      // Sulla battuta 3
       anchorTick = entry.beat3;
       lo = beat3_ms_lo; hi = beat3_ms_hi;
     }

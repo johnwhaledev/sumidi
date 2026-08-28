@@ -150,6 +150,13 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
   // contour del motivo su note reali, sempre in tonalità e sempre nello stesso
   // registro (così l'hook resta riconoscibile identico ad ogni ritornello).
   const hookScalePool = (meta.keyScaleNotes ?? []).filter(n => n >= RH.lo && n <= RH.hi + 12);
+  // A5 (2026-08-26): keyScaleNotes resta minore naturale per tenere l'hook
+  // sempre riconoscibile (stessa nota a ogni ricorrenza) — ma se cade sul 7°
+  // naturale proprio mentre suona la dominante, clasherebbe con la sensibile
+  // che è la terza di quell'accordo. Misurato: succede in ~3% delle occorrenze
+  // dell'hook. Correzione mirata sotto, non un cambio di pool.
+  const dominantPc = meta.keyInfo?.isMinor ? (meta.keyInfo.rootPc + 7) % 12 : null;
+  const natural7Pc = meta.keyInfo?.isMinor ? (meta.keyInfo.rootPc + 10) % 12 : null;
   // T11: RNG rest — stesso seed del BassGenerator per coerenza inter-strumentale
   const rngRest     = makeRng((seedOverride ?? meta.seed) ^ 0x5A23);
   // Carattere melodico per stile (cromatismo/stepBias) — usato dallo stile 'freely',
@@ -322,7 +329,16 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
             const degOffset = seedMotive[hookIdx];
             const scaleIdx  = Math.max(0, Math.min(hookScalePool.length - 1,
               Math.floor(hookScalePool.length / 2) + degOffset));
-            const hookNote  = hookScalePool[scaleIdx];
+            let hookNote    = hookScalePool[scaleIdx];
+            // A5: vedi commento sopra hookScalePool — corregge solo la nota
+            // che altrimenti clasherebbe con la sensibile del V. Controlla
+            // anche la terza (chord_degrees[1] === 4, maggiore): un accordo
+            // sulla stessa radice ma con terza minore è il v naturale (es. Em
+            // in Am), il cui Sol naturale è il suo stesso accordo, non un errore.
+            if (dominantPc != null && region.rootPc === dominantPc
+                && region.chord_degrees?.[1] === 4 && hookNote % 12 === natural7Pc) {
+              hookNote += 1;
+            }
             if (!notesToPlay.includes(hookNote)) notesToPlay = [...notesToPlay, hookNote];
           }
         }

@@ -62,6 +62,7 @@ function parseChord(chordStr) {
     'dim':  'dim', 'o':    'dim', '°':    'dim',
     'aug':  'aug', '+':    'aug',
     'sus':  'sus4',
+    'm7b5': 'hdim7',  // semidiminuito — senza alias letto come 'maj' (fallback CHORD_INTERVALS)
     '':     'maj',  // no suffix = major
   };
 
@@ -743,26 +744,51 @@ function buildSong(params = {}) {
 
   // Stili per cui la scelta Minori/Maggiori dell'utente pilota davvero sia
   // quale progressione pescare sia la scala diatonica globale, invece di
-  // essere ignorata (bug corretto qui). Due meccanismi diversi a seconda
-  // di come sono fatti i dati in SongProgressions.js:
-  //  - QUALITY_FILTERED: il pool combinato contiene GIÀ entrambe le
-  //    qualità, etichettate correttamente come tonica vera (non solo un
-  //    vi/iii di passaggio) — es. pop_rock_verse ha 8 entry 'A...' e 8
-  //    'Am...' con "i" esplicito nel commento. Filtriamo il pool esistente
-  //    per qualità del primo accordo.
-  //  - Tutti gli altri in MODE_AWARE_FAMILIES: pool minore scritto ex novo
-  //    in `${progFamily}_${type}_minor` (i pool maggiori esistenti NON sono
-  //    dual-labeled in modo affidabile — es. folk_verse ha 'Am' usato come
-  //    vi di passaggio in Do maggiore, non come vera tonica i — quindi
-  //    filtrarli per qualità darebbe risultati sbagliati).
-  const QUALITY_FILTERED_FAMILIES = new Set(['pop_rock']);
+  // essere ignorata (bug corretto qui): pool minore scritto ex novo in
+  // `${progFamily}_${type}_minor` (i pool maggiori esistenti NON sono
+  // dual-labeled in modo affidabile — es. folk_verse ha 'Am' usato come
+  // vi di passaggio in Do maggiore, non come vera tonica i — quindi
+  // filtrarli per qualità darebbe risultati sbagliati).
+  //
+  // 2026-08-24: generalizzata la "pool nel modo mancante" (PLAN36 A4) ai 6
+  // stili che prima esistevano in un modo solo — jazz, unplugged, cinematic,
+  // blues_rock (pool minore aggiunto ex novo), neo_soul, lo_fi (pool
+  // maggiore aggiunto ex novo, il dorian resta per le richieste in minore).
+  // unplugged e cinematic avevano il pool esistente scritto in minore: quel
+  // contenuto è stato rinominato in `_minor`, non riscritto.
+  //
+  // 2026-08-25 (A1): pop_rock è passato da filtro-qualità (pool combinato,
+  // filtrato a runtime sulla qualità del primo accordo) a pool dedicati come
+  // tutti gli altri. Il filtro era più impreciso del previsto: bucketava
+  // sulla qualità SUPERFICIALE del primo accordo, non sulla tonica reale
+  // dell'entry — es. `pop_rock_bridge` aveva `['F#m','A','D','E']` ("vi I IV
+  // V", contesto maggiore, I=A) esclusa dal pool maggiore perché F#m è
+  // "min" di qualità, e `['F','Am','G','E']` ("bVI i bVII V", contesto
+  // minore, i=Am) inclusa nel pool maggiore perché F è "maj" di qualità.
+  // Ribucketando sulla tonica reale di ciascuna entry (non sul primo
+  // accordo) il catalogo era già bilanciato su tutte le sezioni (intro 3/3,
+  // verse 8/8, chorus 6/6, bridge 5/5, outro 3/3) — il "2 chorus su 12" di
+  // PLAN36 era in parte un artefatto del filtro, non solo un buco di
+  // contenuto. Pool dedicati ora, nessun filtro a runtime.
   const MODE_AWARE_FAMILIES = new Set([
     'pop_rock', 'folk', 'classical', 'singer_songwriter', 'punk', 'garage_rock', 'chiptune',
+    'jazz', 'unplugged', 'cinematic', 'blues_rock', 'neo_soul', 'lo_fi',
   ]);
   const modeAware = MODE_AWARE_FAMILIES.has(progFamily);
-  const resolvedScale = modeAware
-    ? (keyInfo.isMinor ? 'minor' : 'major')
-    : (styleDef.defaultScale ?? (keyInfo.isMinor ? 'minor' : 'major'));
+  // blues_rock: la scala 'blues' è idiomaticamente corretta su tonica sia
+  // maggiore che minore (è già una scala "minore" nella sua struttura, R
+  // b3 4 b5 5 b7) — non va sostituita da 'minor'/'major' quando il modo
+  // diventa selezionabile, altrimenti la hook globale perde la blue note.
+  // neo_soul/lo_fi: il dorian resta il colore per le richieste in minore
+  // (scelta del committente, non un bug) — solo il maggiore diventa 'major'.
+  const DORIAN_ON_MINOR_FAMILIES = new Set(['neo_soul', 'lo_fi']);
+  const resolvedScale = progFamily === 'blues_rock'
+    ? 'blues'
+    : (DORIAN_ON_MINOR_FAMILIES.has(progFamily) && keyInfo.isMinor)
+      ? 'dorian'
+      : modeAware
+        ? (keyInfo.isMinor ? 'minor' : 'major')
+        : (styleDef.defaultScale ?? (keyInfo.isMinor ? 'minor' : 'major'));
 
   // ── Tonica EFFETTIVA del materiale prodotto ───────────────────────────────
   // Per gli stili non mode-aware il modo scelto dall'utente non può pilotare i
@@ -781,7 +807,13 @@ function buildSong(params = {}) {
   // La tonica effettiva è quella del pool DOPO la trasposizione: si calcola col
   // riferimento del modo del MATERIALE (resolvedScale), non di quello chiesto.
   const MINOR_ISH_SCALES = new Set(['minor', 'dorian', 'phrygian', 'aeolian']);
-  const materialIsMinor = MINOR_ISH_SCALES.has(resolvedScale);
+  // blues_rock: 'blues' non è in MINOR_ISH_SCALES (giusto, vedi sopra), ma
+  // qui serve sapere quale POOL è stato scelto (i7/iv7/V7 minore vs I7/IV7/V7
+  // maggiore) per pilotare cadenza finale, modulazione e decorazione: segue
+  // keyInfo.isMinor direttamente, non il nome della scala.
+  const materialIsMinor = progFamily === 'blues_rock'
+    ? keyInfo.isMinor
+    : MINOR_ISH_SCALES.has(resolvedScale);
   const poolTonicPc = PROG_FAMILY_REF_PC[progFamily] ?? (materialIsMinor ? 9 : 0);
   const effectiveTonicPc = (poolTonicPc + semitoneShift) % 12;
 
@@ -831,28 +863,14 @@ function buildSong(params = {}) {
     occurrenceCount[type] = idx + 1;
 
     // ── Pick progression from pool ────────────────────────────
-    // Per gli stili mode-aware con pool minore dedicato (tutti tranne
-    // pop_rock, vedi QUALITY_FILTERED_FAMILIES sopra), in tonalità minore
-    // si pesca direttamente dalla chiave `_minor` separata.
-    const useSeparateMinorPool = modeAware && keyInfo.isMinor && !QUALITY_FILTERED_FAMILIES.has(progFamily);
+    // Per gli stili mode-aware, in tonalità minore si pesca direttamente
+    // dalla chiave `_minor` separata — pool dedicato, nessun filtro a
+    // runtime (vedi commento su MODE_AWARE_FAMILIES sopra).
+    const useSeparateMinorPool = modeAware && keyInfo.isMinor;
     const poolKey = useSeparateMinorPool ? `${progFamily}_${type}_minor` : `${progFamily}_${type}`;
     let pool = PROGRESSION_POOLS[poolKey]
             ?? PROGRESSION_POOLS[useSeparateMinorPool ? `${progFamily}_verse_minor` : `${progFamily}_verse`]
             ?? [['C', 'G', 'Am', 'F']];
-
-    // Filtra per modo (tonica maggiore/minore) solo per gli stili in
-    // QUALITY_FILTERED_FAMILIES (pool combinato già dual-labeled — vedi
-    // commento sopra). Fallback al pool intero se il filtro azzera le
-    // opzioni (safety, non dovrebbe mai accadere dato che questi pool
-    // sono composti 50/50).
-    if (modeAware && QUALITY_FILTERED_FAMILIES.has(progFamily)) {
-      const wantMinor = keyInfo.isMinor;
-      const filtered = pool.filter(entry => {
-        const firstRaw = nomeAccordo(entry[0]);
-        return (parseChord(firstRaw)?.quality === 'min') === wantMinor;
-      });
-      if (filtered.length) pool = filtered;
-    }
 
     // Avoid repeating the same progression on same section type
     // (e.g. verse 1 and verse 2 get different progressions)
@@ -879,8 +897,17 @@ function buildSong(params = {}) {
 
     // Modulazione: probabilità ridotta (25%) per non disturbare il workflow DAW.
     // Solo sull'ultimo chorus/bridge — mai sull'intro o outro.
+    // Disattivata quando il materiale è minore (fix 2026-08-23, vedi
+    // docs/BUG_CINEMATIC_MINORE.md Bug 2): transposeChord trasla il pitch ma
+    // preserva la qualità originale, che è corretto per una modulazione
+    // maggiore→maggiore (stesso modo, +2 semitoni) ma NON per una modulazione
+    // verso la relativa maggiore (+3 semitoni), dove tonica e gradi vanno
+    // ricostruiti per grado di scala, non semplicemente traslati — accordi
+    // fuori chiave sull'ultimo chorus/bridge. Riparare per davvero richiede
+    // ricostruire l'accordo sul nuovo centro tonale (root e qualità), non
+    // solo il pitch: rimandato a una sessione a sé.
     const isLastOccurrence = idx > 0 && idx === (typeTotals[type] ?? 0) - 1;
-    if (MOD_TYPES.has(type) && _shouldModulate(isLastOccurrence, energy, prevEnergy, rng)) {
+    if (MOD_TYPES.has(type) && !materialIsMinor && _shouldModulate(isLastOccurrence, energy, prevEnergy, rng)) {
       pairs = pairs.map(([c, d]) => [transposeChord(c, modShift, preferFlats), d]);
     }
 
@@ -903,6 +930,17 @@ function buildSong(params = {}) {
       const nextFirstRaw   = nomeAccordo(nextPool[0][0]);
       const nextFirstChord = transposeChord(nextFirstRaw, semitoneShift, preferFlats);
       decoratedStrings = _bridgeChord(decoratedStrings, nextFirstChord, progFamily, rng, preferFlats);
+    }
+
+    // A3: l'outro deve sempre risolvere sulla tonica — forza l'ultimo accordo
+    // sulla tonica effettiva del materiale (root + qualità coerente col modo).
+    // Misurato 2026-08-10: solo il 65% dei brani chiudeva su tonica (cinematic 0%).
+    if (type === 'outro' && decoratedStrings.length > 0) {
+      const cadenceNoteNames = preferFlats
+        ? ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B']
+        : ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+      const tonicQuality = materialIsMinor ? 'm' : '';
+      decoratedStrings[decoratedStrings.length - 1] = `${cadenceNoteNames[effectiveTonicPc]}${tonicQuality}`;
     }
 
     // Ricostruisce il formato originale: dur=1 → stringa semplice, dur>1 → [stringa, dur]
@@ -1039,7 +1077,7 @@ function modulatePresetByEnergy(preset, energy, sectionType = 'verse') {
     outro:  'decrescendo',
   };
 
-  for (const [name, mod] of Object.entries(clone)) {
+  for (const [, mod] of Object.entries(clone)) {
     if (!mod.active) continue;
 
     // Density: shift allargato a ±0.25 (era ±0.15) — lo scarto verse→chorus

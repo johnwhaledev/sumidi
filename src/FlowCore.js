@@ -24,9 +24,6 @@ const GROOVE_OFFSETS = {
              0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08],
 };
 
-// ── Peso per ogni sub-step all'interno di un beat (4 sedicesimi) ─────────
-const SUBSTEP_W = [null, 0.15, 0.50, 0.15]; // indice 0 = peso del beat (dinamico)
-
 // Pesi beat per metro: [beat0, beat1, beat2, ...]
 const BEAT_STRENGTH = {
   4: [1.0, 0.30, 0.70, 0.30],   // 4/4: forte – debole – medio-forte – debole

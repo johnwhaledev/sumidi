@@ -1167,6 +1167,7 @@
     }
 
     .lane-block {
+      position: relative;
       height: 32px;
       border-radius: 5px;
       cursor: pointer;
@@ -1184,8 +1185,125 @@
       padding: 0 4px;
     }
 
+    /* Sessione 9: mute/riattiva uno strumento per sezione — icona sempre
+       presente ma discreta (si accende in opacità all'hover della lane),
+       per non affollare blocchi larghi anche solo 40px */
+    .lane-mute-btn {
+      position: absolute;
+      top: 1px;
+      right: 1px;
+      width: 14px;
+      height: 14px;
+      line-height: 14px;
+      font-size: 8px;
+      padding: 0;
+      border: none;
+      border-radius: 3px;
+      background: rgba(0, 0, 0, .25);
+      color: inherit;
+      cursor: pointer;
+      opacity: .35;
+      transition: opacity .12s;
+    }
+
+    .lane-block:hover .lane-mute-btn {
+      opacity: 1;
+    }
+
+    .lane-block.inactive .lane-mute-btn {
+      opacity: .8;
+    }
+
     .lane-block:hover {
       filter: brightness(1.2);
+    }
+
+    /* Sessione 9: popup export avanzato — tab per strumento + chord chart */
+    .sm-adv-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .6);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .sm-adv-modal {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: min(1100px, 100%);
+      max-height: min(760px, 90vh);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
+    }
+
+    .sm-adv-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: var(--s2);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .sm-adv-modal-tabs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .sm-adv-tab-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: background .12s, color .12s;
+    }
+
+    .sm-adv-tab-btn:hover {
+      background: var(--s3);
+      color: var(--text);
+    }
+
+    .sm-adv-tab-btn.active {
+      background: var(--teal);
+      color: #06251a;
+      border-color: var(--teal);
+      font-weight: 700;
+    }
+
+    .sm-adv-modal-close {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 5px;
+    }
+
+    .sm-adv-modal-close:hover {
+      background: var(--s3);
+      color: var(--text);
+    }
+
+    .sm-adv-modal-body {
+      overflow: auto;
+      padding: 12px;
+      background: var(--bg);
+    }
+
+    .sm-adv-modal-body svg {
+      max-width: 100%;
+      display: block;
     }
 
     .lane-block.inactive {
