@@ -264,11 +264,15 @@
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <span class="card-title" style="margin-bottom:0">Arrangement</span>
-          <span id="sm-count" style="color:var(--muted);font-size:10px">0 sezioni</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="sm-count" style="color:var(--muted);font-size:10px">0 sezioni</span>
+            <button id="sm-solo-toggle-btn" class="btn btn-s btn-sm" onclick="smToggleSoloMode()"
+              title="Ascolta un solo strumento sull'intera progressione di accordi, senza toccare l'arrangiamento">🎯 Solo Mode</button>
+          </div>
         </div>
 
         <!-- Toolbar aggiungi sezione -->
-        <div class="lanes-toolbar">
+        <div id="sm-add-toolbar" class="lanes-toolbar">
           <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">+ Sezione</span>
           <button class="lanes-add-btn" onclick="smAddSection('intro')">Intro</button>
           <button class="lanes-add-btn" onclick="smAddSection('verse')">Verse</button>
@@ -294,6 +298,9 @@
 
         <!-- Flyout pannello strumento (aperto da click su lane-block) -->
         <div id="sm-flyout" style="display:none"></div>
+
+        <!-- Solo Mode: voce singola sull'intera progressione, indipendente dall'arrangiamento -->
+        <div id="sm-solo-panel" style="display:none"></div>
       </div>
 
       <!-- Pannelli strumento (per-sezione, iniettati dal flyout) -->

@@ -1443,6 +1443,17 @@
       color: #fff;
     }
 
+    /* Solo Mode (standalone) — toggle + pannello, sostituisce l'Arrangement */
+    #sm-solo-toggle-btn.active {
+      background: var(--gold);
+      color: #2b2200;
+      border-color: var(--gold);
+    }
+
+    #sm-solo-panel {
+      padding-top: 4px;
+    }
+
     /* Toolbar sezioni sopra le lanes */
     .lanes-toolbar {
       display: flex;

@@ -722,6 +722,16 @@ function _getSeedOptionsHTML(skipSecId, skipInst) {
 // Salt per seed isolation per strumento
 const SM_SALT = { drums: 0xDEAD, bass: 0xBEEF, guitar: 0xCAFE, piano: 0x7EA5, ensemble: 0xF00D };
 
+// Adattamento stile quando resta un solo strumento attivo — condivisa da
+// smGenerateSection() (solo per-sezione, dentro l'Arrangement) e da Solo
+// Mode standalone più sotto.
+const SOLO_STYLES = {
+  guitar:   { intro: 'arpeggio', verse: 'arpeggio', chorus: 'strumming', bridge: 'fingerpicking', outro: 'arpeggio' },
+  piano:    { intro: 'ballad',   verse: 'ballad',   chorus: 'ballad',    bridge: 'comping',       outro: 'ballad' },
+  bass:     { intro: 'walking',  verse: 'walking',  chorus: 'walking',   bridge: 'walking',       outro: 'walking' },
+  ensemble: { intro: 'pad',      verse: 'melodic',  chorus: 'melodic',   bridge: 'melodic',       outro: 'pad' },
+};
+
 /**
  * Genera tutti gli strumenti attivi per una sezione.
  * Rispetta la cache: se un strumento è locked + cached, lo riutilizza.
@@ -748,24 +758,17 @@ async function smGenerateSection(sectionId, humAmt = 0.35) {
   // sempre il default fisso 0.35 indipendentemente dal genere.
   humAmt = bp.meta.humanize ?? humAmt;
 
-  // ── Solo Mode (sessione 9) ────────────────────────────────────────
+  // ── Solo Mode per-sezione (sessione 9) ─────────────────────────────
   // Se in questa sezione resta un solo modulo attivo, adatta il suo stile
-  // al tipo di sezione (stessa tabella di SOLO_STYLES in gen()/Classic Mode,
-  // portata qui perché Session Mode non aveva questa logica — gli on/off
-  // per strumento c'erano già, mancava solo l'adattamento dello stile).
-  // Se l'utente ha scelto esplicitamente uno stile per quel modulo (dal
-  // suo selettore per-sezione), quella scelta vince e non viene sovrascritta.
+  // al tipo di sezione (tabella SOLO_STYLES, a livello di modulo — la
+  // condivide anche Solo Mode standalone più sotto). Se l'utente ha scelto
+  // esplicitamente uno stile per quel modulo (dal suo selettore
+  // per-sezione), quella scelta vince e non viene sovrascritta.
   {
     const activeMods = ['drums', 'bass', 'guitar', 'piano', 'ensemble']
       .filter(m => section.instruments[m]?.active);
     if (activeMods.length === 1) {
       const soloMod = activeMods[0];
-      const SOLO_STYLES = {
-        guitar:   { intro: 'arpeggio', verse: 'arpeggio', chorus: 'strumming', bridge: 'fingerpicking', outro: 'arpeggio' },
-        piano:    { intro: 'ballad',   verse: 'ballad',   chorus: 'ballad',    bridge: 'comping',       outro: 'ballad' },
-        bass:     { intro: 'walking',  verse: 'walking',  chorus: 'walking',   bridge: 'walking',       outro: 'walking' },
-        ensemble: { intro: 'pad',      verse: 'melodic',  chorus: 'melodic',   bridge: 'melodic',       outro: 'pad' },
-      };
       const styleMap = SOLO_STYLES[soloMod];
       const mod      = bp.sections[0].modules[soloMod];
       // Trappola nota (PLAN36): a livello UI l'ensemble usa `params.playStyle`,
@@ -1168,26 +1171,41 @@ const SCALE_LABELS = {
   blues:      'Blues',
 };
 
-// Stili il cui pool ha progressioni scritte sia a tonica maggiore che
-// minore (vedi MODE_AWARE_FAMILIES in SongArchitect.js) — per questi la
-// Tonalità scelta pilota davvero il modo. Per gli altri il modo resta
-// quello dello stile: dal 2026-08-20 la tonalità è comunque libera, e
-// l'unica differenza è cosa mostra il suggerimento della scala qui sotto.
-const MODE_AWARE_STYLES = new Set([
-  'pop_rock', 'folk', 'classical', 'singer_songwriter', 'punk', 'garage_rock', 'chiptune',
-]);
+// Dal 2026-08-24 (A4, "Pool nel modo mancante") tutti e 13 gli stili hanno
+// pool scritti sia a tonica maggiore che minore (MODE_AWARE_FAMILIES in
+// SongArchitect.js) — la Tonalità scelta pilota davvero il modo per tutti,
+// non solo per i 7 storici. Restano due eccezioni sulla SCALA (non sul
+// pool, che segue comunque la tonalità per entrambe le liste):
+//  - blues_rock: la scala resta sempre 'blues' in entrambi i modi (è già
+//    strutturalmente "minore" e idiomatica su tonica sia maggiore che
+//    minore — sostituirla toglierebbe la blue note).
+//  - neo_soul/lo_fi: restano nel colore dorico per le richieste in
+//    tonalità minore (caratteristico dello stile, non un bug); solo il
+//    maggiore diventa 'major'.
+// Trovato il 2026-08-28: l'etichetta qui sotto non era mai stata
+// aggiornata dopo A4 — jazz_ballad/unplugged/cinematic mostravano sempre
+// il loro STYLES[style].defaultScale statico (rispettivamente Maggiore/
+// Minore/Minore) anche quando la tonalità scelta faceva usare l'altra
+// scala al motore. Verificato su buildSong() prima di correggere.
+const SCALE_FIXED_STYLES = new Set(['blues_rock']);
+const DORIAN_ON_MINOR_STYLES = new Set(['neo_soul', 'lo_fi']);
 
 function _smUpdateScaleHint() {
   const hintEl = document.getElementById('sm-scale-hint');
   if (!hintEl) return;
   const style = document.getElementById('sm-style').value;
-  if (MODE_AWARE_STYLES.has(style)) {
-    const isMinor = document.getElementById('sm-key').value.endsWith('m');
-    hintEl.textContent = `Scala: ${isMinor ? SCALE_LABELS.minor : SCALE_LABELS.major} (segue la tonalità)`;
+
+  if (SCALE_FIXED_STYLES.has(style)) {
+    const scale = STYLES[style]?.defaultScale;
+    hintEl.textContent = scale ? `Scala: ${SCALE_LABELS[scale] ?? scale}` : '';
     return;
   }
-  const scale = STYLES[style]?.defaultScale;
-  hintEl.textContent = scale ? `Scala: ${SCALE_LABELS[scale] ?? scale}` : '';
+
+  const isMinor = document.getElementById('sm-key').value.endsWith('m');
+  const scaleKey = DORIAN_ON_MINOR_STYLES.has(style)
+    ? (isMinor ? 'dorian' : 'major')
+    : (isMinor ? 'minor' : 'major');
+  hintEl.textContent = `Scala: ${SCALE_LABELS[scaleKey]} (segue la tonalità)`;
 }
 
 // ── Tonalità sempre libere ────────────────────────────────────────
@@ -1539,6 +1557,14 @@ function smRender() {
 
   document.getElementById('sm-count').textContent =
     n === 0 ? '0 sezioni' : `${n} sezione${n !== 1 ? 'i' : ''}`;
+
+  if (_smSolo.active) {
+    // Solo Mode sostituisce la vista Arrangement (lanes/flyout restano
+    // nascosti): qui basta rinfrescare il suo pannello, la progressione
+    // può essere cambiata (nuova generazione, sezione aggiunta/rimossa).
+    _smRenderSoloPanel();
+    return;
+  }
 
   const emptyEl = document.getElementById('sm-empty');
   const wrapEl = document.getElementById('sm-lanes-wrap');
@@ -2251,4 +2277,285 @@ window.smAdvExportSetTab = tabId => {
 window.smCloseAdvancedExport = () => {
   const modal = document.getElementById('sm-adv-export-modal');
   if (modal) modal.style.display = 'none';
+};
+
+// ── Solo Mode standalone ──────────────────────────────────────────
+// Non è un mute per sezione: sceglie UN solo strumento (Piano/Chitarra/
+// Basso/Ensemble) e lo suona per intero sulla progressione di accordi già
+// costruita in Session Mode (stessa tonalità/BPM/forma/sezioni), senza
+// leggere o toccare lo stato attivo/muto dell'Arrangement. Lo stile è
+// globale: "Auto" varia per tipo di sezione (tabella SOLO_STYLES, la
+// stessa di smGenerateSection), oppure un valore fisso per tutto il
+// brano — mai un mix per-sezione, come richiesto.
+const SOLO_INSTS = ['piano', 'guitar', 'bass', 'ensemble'];
+const SOLO_INST_LABELS = { piano: 'Piano', guitar: 'Chitarra', bass: 'Basso', ensemble: 'Ensemble' };
+const SOLO_INST_CHANNEL = { piano: 3, guitar: 2, bass: 1 }; // ensemble: canali propri da generateEnsemble
+const SOLO_STYLE_LISTS = {
+  piano: char => (char?.id ?? '').startsWith('kb_')
+    ? ['comping', 'hip_hop_keys', 'broken_chords', 'freely', 'ballad', 'new_age_flow']
+    : ['ballad', 'new_age_flow', 'comping', 'alberti_bass', 'freely'],
+  guitar: char => (char?.id ?? '').startsWith('elgtr_')
+    ? ['powerchord', 'riff', 'strumming', 'arpeggio']
+    : ['fingerpicking', 'arpeggio', 'strumming', 'classical', 'powerchord', 'riff'],
+  bass: () => ['walking', 'fingerstyle', 'slap', 'fretless', 'acoustic_bass'],
+  ensemble: () => ['pad', 'melodic'],
+};
+
+let _smSolo = {
+  active: false,
+  inst: 'piano',
+  style: '',          // '' = Auto (varia per tipo di sezione)
+  characterId: null,  // null = nessun personaggio scelto
+  seed: 42,
+  playing: false,
+};
+
+/** Attiva/disattiva Solo Mode — sostituisce la vista Arrangement. */
+window.smToggleSoloMode = () => {
+  _smSolo.active = !_smSolo.active;
+  const addToolbar = document.getElementById('sm-add-toolbar');
+  const lanesWrap  = document.getElementById('sm-lanes-wrap');
+  const flyout     = document.getElementById('sm-flyout');
+  const soloPanel  = document.getElementById('sm-solo-panel');
+  const toggleBtn  = document.getElementById('sm-solo-toggle-btn');
+  if (_smSolo.active) {
+    AppState.ui.flyoutOpen = null;
+    if (addToolbar) addToolbar.style.display = 'none';
+    // smRender() con _smSolo.active esce prima di ridecidere questi display:
+    // vanno nascosti qui, altrimenti restano al valore dell'ultimo render normale.
+    if (lanesWrap) lanesWrap.style.display = 'none';
+    if (flyout) flyout.style.display = 'none';
+    if (toggleBtn) toggleBtn.classList.add('active');
+    if (soloPanel) soloPanel.style.display = 'block';
+    smRender();
+  } else {
+    if (_smSolo.playing) { stopPlayback(); _smSolo.playing = false; }
+    if (addToolbar) addToolbar.style.display = '';
+    if (soloPanel) soloPanel.style.display = 'none';
+    if (toggleBtn) toggleBtn.classList.remove('active');
+    smRender();
+  }
+};
+
+window.smSoloSetInstrument = inst => {
+  _smSolo.inst = inst;
+  _smSolo.characterId = null;
+  _smSolo.style = '';
+  _smRenderSoloPanel();
+};
+
+window.smSoloSetStyle = val => { _smSolo.style = val; };
+
+window.smSoloCycleCharacter = dir => {
+  const roster = CHARACTER_ROSTER[_smSolo.inst] ?? [];
+  if (!roster.length) return;
+  let idx = roster.findIndex(c => c.id === _smSolo.characterId);
+  if (idx < 0) idx = 0;
+  idx = (idx + dir + roster.length) % roster.length;
+  _smSolo.characterId = roster[idx].id;
+  _smRenderSoloPanel();
+};
+
+window.smSoloMutateSeed = () => {
+  _smSolo.seed = Math.floor(Math.random() * 99999) + 1;
+  _smRenderSoloPanel();
+};
+
+function _smRenderSoloPanel() {
+  const panel = document.getElementById('sm-solo-panel');
+  if (!panel) return;
+  const secs = AppState.session.manager?.getSections() ?? [];
+  if (!secs.length) {
+    panel.innerHTML = `<div class="sm-empty">Nessuna sezione: genera un brano o aggiungi sezioni prima di usare Solo Mode.</div>`;
+    return;
+  }
+
+  const roster = CHARACTER_ROSTER[_smSolo.inst] ?? [];
+  let idx = roster.findIndex(c => c.id === _smSolo.characterId);
+  if (idx < 0) idx = 0;
+  const char = roster[idx] ?? null;
+  const styleOptions = SOLO_STYLE_LISTS[_smSolo.inst](char);
+
+  panel.innerHTML = `
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      ${SOLO_INSTS.map(inst => `<button class="sm-adv-tab-btn${inst === _smSolo.inst ? ' active' : ''}"
+        onclick="smSoloSetInstrument('${inst}')">${SOLO_INST_LABELS[inst]}</button>`).join('')}
+    </div>
+    ${char ? `
+    <div class="sm-char-selector">
+      <button class="sm-char-nav-btn" onclick="smSoloCycleCharacter(-1)">◀</button>
+      <img class="sm-char-img" src="${char.img}" alt="${char.name}" onerror="this.style.display='none'">
+      <div class="sm-char-info"><div class="sm-char-name">${char.name}</div><div class="sm-char-bio">${char.bio}</div></div>
+      <button class="sm-char-nav-btn" onclick="smSoloCycleCharacter(1)">▶</button>
+    </div>` : ''}
+    <div class="sm-ctrl-row" style="margin-top:10px">
+      <span class="sm-ctrl-label">Stile</span>
+      <select class="sm-style-sel" onchange="smSoloSetStyle(this.value)">
+        <option value=""${_smSolo.style === '' ? ' selected' : ''}>Auto (varia per tipo di sezione)</option>
+        ${styleOptions.map(s => `<option value="${s}"${s === _smSolo.style ? ' selected' : ''}>${s}</option>`).join('')}
+      </select>
+    </div>
+    <div class="sm-ctrl-row">
+      <span class="sm-ctrl-label">Seed</span>
+      <span style="font-family:monospace;font-size:11px;color:var(--text);width:44px;display:inline-block">#${_smSolo.seed}</span>
+      <button class="sm-icon-btn" onclick="smSoloMutateSeed()" title="Nuovo seed casuale">🎲</button>
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <button id="sm-solo-play-btn" class="btn btn-p" onclick="smSoloPlay()">${_smSolo.playing ? '■ Stop' : '▶ Ascolta'}</button>
+      <button id="sm-solo-export-btn" class="btn btn-d" onclick="smSoloExportMidi()">⬇ Export MIDI</button>
+      <span id="sm-solo-status" style="font-size:11px;color:var(--muted)"></span>
+    </div>
+  `;
+}
+
+/** Genera un solo strumento su una sezione, bypassando active/muto dell'Arrangement. */
+async function _smSoloGenerateSection(sec, state) {
+  const bp = buildSectionBlueprint({ key: state.key, bpm: state.bpm, style: state.style }, sec);
+  const inst = _smSolo.inst;
+  const mod = bp.sections[0].modules[inst];
+  const voices = [];
+  if (!mod) return { bp, voices };
+
+  const roster = CHARACTER_ROSTER[inst] ?? [];
+  const char = roster.find(c => c.id === _smSolo.characterId) ?? null;
+
+  mod.active = true;
+  if (inst === 'ensemble') {
+    // Il personaggio ensemble sceglie la FAMIGLIA di strumento (archi/ottoni/…),
+    // asse indipendente dallo stile pad/melodic — stessa distinzione di
+    // smSelectCharacter (ensStyle vs style) sul pannello per-sezione.
+    if (char?.style) bp.meta.ensemble = { ...(bp.meta.ensemble ?? {}), type: char.style };
+    mod.style = _smSolo.style || (SOLO_STYLES.ensemble[sec.type] ?? mod.style);
+  } else {
+    mod.style = _smSolo.style || char?.style || (SOLO_STYLES[inst]?.[sec.type] ?? mod.style);
+  }
+
+  const seed = _smSolo.seed ^ SM_SALT[inst];
+  const humAmt = bp.meta.humanize ?? 0.35;
+
+  if (inst === 'piano') {
+    const res = generatePiano(bp, null, seed, AppState.session.crossMemory);
+    const evts = res.events.filter(e => e.cc == null);
+    humanize(evts, bp.meta.ppq, humAmt * 0.5, 3, seed + 4, bp.meta.barTicks);
+    applySwing(evts, bp.meta.ppq, bp.meta.swing ?? 0);
+    voices.push({ channel: SOLO_INST_CHANNEL.piano, program: res.program, events: evts });
+  } else if (inst === 'guitar') {
+    const res = generateGuitar(bp, null, seed, AppState.session.crossMemory);
+    humanize(res.events, bp.meta.ppq, humAmt * 0.7, 2, seed + 3, bp.meta.barTicks);
+    applySwing(res.events, bp.meta.ppq, bp.meta.swing ?? 0);
+    voices.push({ channel: SOLO_INST_CHANNEL.guitar, program: res.program, events: res.events });
+  } else if (inst === 'bass') {
+    const res = generateBass(bp, null, seed);
+    humanize(res.events, bp.meta.ppq, humAmt * 0.6, 1, seed + 2, bp.meta.barTicks);
+    applySwing(res.events, bp.meta.ppq, bp.meta.swing ?? 0);
+    voices.push({ channel: SOLO_INST_CHANNEL.bass, program: res.program, events: res.events });
+  } else if (inst === 'ensemble') {
+    const res = generateEnsemble(bp, seed);
+    res.voiceEvents.forEach((evts, vi) => {
+      humanize(evts, bp.meta.ppq, humAmt * 0.3, res.channels[vi], seed + 5 + vi, bp.meta.barTicks);
+      applySwing(evts, bp.meta.ppq, bp.meta.swing ?? 0);
+      const noteEvts = evts.filter(e => e.cc == null);
+      if (noteEvts.length) voices.push({ channel: res.channels[vi], program: res.programs[vi] ?? res.program, events: noteEvts });
+    });
+  }
+  return { bp, voices };
+}
+
+/** Assembla l'intero brano per lo strumento scelto, sezione per sezione (stesso schema di smPlaySong). */
+async function _smSoloAssembleSong() {
+  const state = AppState.session.manager.getState();
+  const secs = AppState.session.manager.getSections();
+  const buckets = new Map(); // "channel:program" -> { channel, program, events }
+  let ppq = 480, globalTick = 0;
+  const bump = (channel, program, events) => {
+    if (!events?.length) return;
+    const key = `${channel}:${program ?? ''}`;
+    if (!buckets.has(key)) buckets.set(key, { channel, program, events: [] });
+    buckets.get(key).events.push(...events);
+  };
+  for (const sec of secs) {
+    const { bp, voices } = await _smSoloGenerateSection(sec, state);
+    ppq = bp.meta.ppq;
+    for (const v of voices) {
+      bump(v.channel, v.program, v.events.map(e => ({ ...e, tick: e.tick + globalTick })));
+    }
+    globalTick += sec.bars * bp.meta.barTicks;
+  }
+  return { tracks: [...buckets.values()], ppq, bpm: state.bpm };
+}
+
+window.smSoloPlay = async () => {
+  if (_smSolo.playing) {
+    stopPlayback();
+    _smSolo.playing = false;
+    _smRenderSoloPanel();
+    return;
+  }
+  const statusEl = document.getElementById('sm-solo-status');
+  const playBtn = document.getElementById('sm-solo-play-btn');
+  if (playBtn) playBtn.disabled = true;
+  if (statusEl) statusEl.textContent = '⏳ Generazione…';
+  try {
+    const { tracks, ppq, bpm } = await _smSoloAssembleSong();
+    if (!tracks.length) {
+      if (statusEl) statusEl.textContent = '⚠️ Nessun evento generato per questo strumento.';
+      return;
+    }
+    _smSolo.playing = true;
+    if (statusEl) statusEl.textContent = '';
+    if (playBtn) playBtn.textContent = '■ Stop';
+    const { durationSec } = await playTracks(tracks, { ppq, bpm });
+    setTimeout(() => {
+      if (_smSolo.playing) { _smSolo.playing = false; _smRenderSoloPanel(); }
+    }, Math.round(durationSec * 1000) + 150);
+  } catch (err) {
+    console.error('[SoloMode] errore playback:', err);
+    if (statusEl) statusEl.textContent = '❌ ' + err.message;
+    _smSolo.playing = false;
+  } finally {
+    if (playBtn) playBtn.disabled = false;
+  }
+};
+
+window.smSoloExportMidi = async () => {
+  const statusEl = document.getElementById('sm-solo-status');
+  const btn = document.getElementById('sm-solo-export-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Esportazione...'; }
+  try {
+    const state = AppState.session.manager.getState();
+    const { tracks, ppq } = await _smSoloAssembleSong();
+    if (!tracks.length) {
+      if (statusEl) statusEl.textContent = '⚠️ Nessun evento generato per questo strumento.';
+      return;
+    }
+    const writer = new MidiWriter(ppq);
+    writer.setTempo(state.bpm);
+    writer.setTimeSignature(4, 4);
+    let globalTick = 0;
+    for (const sec of AppState.session.manager.getSections()) {
+      writer.addMarker(globalTick, sec.label);
+      globalTick += sec.bars * (ppq * 4);
+    }
+    tracks.forEach((t, i) => {
+      const tr = writer.addTrack(tracks.length > 1 ? `${SOLO_INST_LABELS[_smSolo.inst]} ${i + 1}` : SOLO_INST_LABELS[_smSolo.inst]);
+      if (t.program != null) tr.programChange(0, t.program, t.channel);
+      for (const e of t.events) {
+        if (e.cc != null) tr.controlChange(e.tick, e.cc, e.value, t.channel);
+        else { tr.noteOn(e.tick, e.note, e.velocity, t.channel); tr.noteOff(e.tick + e.duration, e.note, t.channel); }
+      }
+    });
+    const blob = writer.toBlob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sumidi_solo_${_smSolo.inst}_${state.style}_${state.bpm}bpm.mid`;
+    a.click();
+    URL.revokeObjectURL(url);
+    smBumpSupportCounter('download');
+  } catch (err) {
+    console.error('[SoloMode] errore export:', err);
+    if (statusEl) statusEl.textContent = '❌ ' + err.message;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⬇ Export MIDI'; }
+  }
 };

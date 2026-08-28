@@ -220,7 +220,7 @@
 <!-- MODULI -->
 <div class="section">
   <h2>Moduli strumentali</h2>
-  <p>Ogni modulo può essere attivato o disattivato con il toggle corrispondente. Se un solo modulo è attivo, copre automaticamente tutte le sezioni adattando lo stile al tipo di sezione (intro → sparse, chorus → fuller, bridge → più espressivo).</p>
+  <p>Ogni modulo può essere attivato o disattivato con l'icona 🔊/🔇 sul suo blocco nell'Arrangement — ma solo <strong>in quella sezione</strong>: se resta un solo strumento attivo <em>in una sezione</em>, il suo stile si adatta automaticamente al tipo di quella sezione, ma per un "solo" sull'intero brano vanno mutati gli altri strumenti sezione per sezione. Per ascoltare un singolo strumento su tutto il brano in un click, senza toccare l'Arrangement, usa <a href="#solo-mode">🎯 Solo Mode</a> descritto più sotto.</p>
 
   <h3>🥁 Drums</h3>
   <p>Batteria GM con 5 tipi di fill (tom run, snare roll, crash accent, flam tom, kick burst). Il groove varia tra le sezioni: hi-hat denso nei chorus, ride/spazzole nei bridge jazz. Pattern a 2 bar con variazione sul bar 2. Pre-fill velocity ramp negli ultimi 2 beat prima di ogni fill.</p>
@@ -276,6 +276,11 @@
   <h3>Arrangement Lanes</h3>
   <p>Il brano viene suddiviso in blocchi visivi ("lanes") corrispondenti alle sezioni logiche (Intro, Verse, Chorus, ecc.). Ogni modulo strumentale ha il suo colore dedicato: <strong>Giallo</strong> (Drums), <strong>Blu</strong> (Bass), <strong>Rosso</strong> (Guitar), <strong>Verde</strong> (Piano), <strong>Arancio</strong> (Ensemble). Cliccando su un blocco strumento si espande il pannello di dettaglio (flyout) di quello strumento in quella sezione, dove puoi cambiarne stile/personaggio/parametri.</p>
   <p>Cliccando invece sull'<strong>etichetta della sezione</strong> (es. "Verse 1") si apre un flyout a livello di intera sezione, con due azioni che riguardano tutti gli strumenti di quella sezione insieme: <strong>🔄 Rigenera sezione</strong> (ricalcola da capo tutti i moduli attivi in quella sezione, con un nuovo esito casuale) e <strong>× Elimina sezione</strong> (rimuove la sezione dal brano). Sono azioni a livello di canzone/sezione, non di singolo strumento — per questo sono state spostate qui e non si trovano più nel flyout dello strumento.</p>
+
+  <h3 id="solo-mode">🎯 Solo Mode</h3>
+  <p>Il bottone <strong>🎯 Solo Mode</strong> in alto a destra sulla card Arrangement sostituisce la vista con un pannello dedicato a <strong>un singolo strumento</strong> (Piano, Chitarra, Basso o Ensemble), che lo suona per intero sulla progressione di accordi già costruita — senza leggere né modificare lo stato attivo/muto per sezione dell'Arrangement. Ributtando il toggle torni alla vista normale esattamente come l'avevi lasciata.</p>
+  <p>Per lo strumento scelto puoi navigare fra i <strong>personaggi</strong> del roster (◀▶) e impostare uno <strong>Stile</strong>: <em>Auto (varia per tipo di sezione)</em> lo adatta automaticamente al tipo di ogni sezione (es. chitarra: arpeggio su intro/verse, strumming sul chorus, fingerpicking sul bridge), oppure puoi fissarne uno solo per l'intero brano. <strong>▶ Ascolta</strong> genera e riproduce l'intera progressione con quel solo strumento; <strong>⬇ Export MIDI</strong> scarica un file con la sola traccia scelta.</p>
+  <p class="muted">Con Stile su "Auto", il valore effettivamente usato cambia sezione per sezione e il menu resta comunque sulla dicitura "Auto" — non mostra quale stile è stato applicato dove. Per giudicare il risultato di "Auto" bisogna ascoltare, il pannello non lo rivela.</p>
 
   <h3>Mixer</h3>
   <p>Sotto la sezione arranger è presente un <strong>Mixer</strong> con una colonna per strumento. Da qui puoi forzare l'<strong>Output MIDI</strong> — cioè lo specifico strumento/patch General MIDI (es. "Slap Bass" o "Electronic Kit") con cui quella traccia verrà esportata, in alternativa alla scelta automatica basata sullo stile. Non essendoci una preview audio in-browser, il mixer serve a preparare l'assegnazione dei suoni per quando importerai il MIDI nel tuo DAW o campionatore.</p>
