@@ -1,0 +1,25 @@
+# Fine riga: LF nel repo e LF nel working tree, su ogni piattaforma.
+# `text` esplicito (non `text=auto`): con `auto` git NON riconverte i file gia'
+# committati con CRLF, ed e' il motivo per cui `git status` restava sporco
+# in permanenza mostrando 2.446 righe di sole differenze di fine riga (S1 di PLAN37).
+* text eol=lf
+
+# Binari: nessuna conversione, nessun diff testuale.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.mid   binary
+*.wav   binary
+*.mp3   binary
+*.ogg   binary
+*.sf2   binary
+*.pdf   binary
+*.zip   binary
+*.xlsx  binary
