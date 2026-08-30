@@ -1,0 +1,23 @@
+# CI di suMidi — S2 di PLAN37.
+# 151 test e un lint pulito esistevano gia' e non li eseguiva nessuno: senza
+# questo workflow una regressione arriva su GitHub Pages senza essere vista, e
+# una pull request esterna non e' valutabile.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
