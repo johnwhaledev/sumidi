@@ -56,6 +56,22 @@ export const AppState = {
   session: {
     manager:     null,                     // era _smgr — istanza di SessionManager
     crossMemory: new CrossSectionMemory(), // era _smCrossMemory — persiste tra sezioni, si ricrea a ogni full rebuild/undo
+
+    // ── Solo Mode (O6 di PLAN37) ─────────────────────────────
+    // Era un `let _smSolo` di modulo in Session.js, quindi fuori da qualunque
+    // stato osservabile: niente undo, e il pannello non sarebbe stato né
+    // salvato né ripristinato dalla persistenza di sessione.
+    // ATTENZIONE per chi implementerà il ripristino: questo oggetto va
+    // aggiornato IN PLACE (Object.assign), mai sostituito — Session.js ne
+    // tiene un alias locale, e una riassegnazione lo lascerebbe indietro.
+    solo: {
+      active:      false,
+      inst:        'piano',
+      style:       '',     // '' = Auto (varia per tipo di sezione)
+      characterId: null,   // null = nessun personaggio scelto
+      seed:        42,
+      playing:     false,  // transitorio: non ha senso salvarlo
+    },
   },
 
   // ── Helpers ────────────────────────────────────────────────

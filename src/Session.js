@@ -2312,14 +2312,10 @@ const SOLO_STYLE_LISTS = {
   ensemble: () => ['pad', 'melodic'],
 };
 
-let _smSolo = {
-  active: false,
-  inst: 'piano',
-  style: '',          // '' = Auto (varia per tipo di sezione)
-  characterId: null,  // null = nessun personaggio scelto
-  seed: 42,
-  playing: false,
-};
+// O6 di PLAN37: lo stato di Solo Mode vive in AppState.session.solo, non più
+// in un `let` di modulo. Qui resta solo un alias sullo stesso oggetto, così il
+// codice sotto non cambia; tutte le scritture sono su proprietà, mai sull'alias.
+const _smSolo = AppState.session.solo;
 
 /** Attiva/disattiva Solo Mode — sostituisce la vista Arrangement. */
 window.smToggleSoloMode = () => {
