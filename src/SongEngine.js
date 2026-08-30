@@ -44,104 +44,44 @@ window.rnd = () => { document.getElementById('p-seed').value = Math.floor(Math.r
 window.tog = el => { el.classList.toggle('on'); const m = el.dataset.m; el.classList.contains('on') ? disabled.delete(m) : disabled.add(m); };
 window.onStyleChange = () => {
   const style = document.getElementById('p-style').value;
-  const formMap = {
-    unplugged: 'unplugged_ballad',
-    folk: 'folk_standard',
-    jazz_ballad: 'jazz_standard',
-    neo_soul: 'neo_soul_standard',
-    classical: 'classical_standard',
-    pop_rock: 'pop_rock_standard',
-    blues_rock: 'blues_rock_standard',
-    singer_songwriter: 'singer_songwriter_standard',
-    cinematic: 'cinematic_standard',
-    lo_fi: 'lo_fi_standard',
-    punk: 'punk_standard',
-    garage_rock: 'garage_rock_standard',
-    chiptune: 'chiptune_standard',
-  };
-  const bpmMap = {
-    unplugged: 72,
-    folk: 95,
-    jazz_ballad: 65,
-    neo_soul: 78,
-    classical: 80,
-    pop_rock: 112,
-    blues_rock: 100,
-    singer_songwriter: 76,
-    cinematic: 72,
-    lo_fi: 80,
-    punk: 175,
-    garage_rock: 132,
-    chiptune: 152,
-  };
-  // Umanizzazione di default per stile (da Styles.js) — prima lo slider
-  // restava sempre a 35% indipendentemente dal genere, quindi jazz_ballad
-  // (dovrebbe essere più "rubato") e stili tirati come punk/chiptune
-  // (dovrebbero restare stretti/rigidi) suonavano con la stessa quantità
-  // di umanizzazione. Resta comunque modificabile manualmente dall'utente.
-  const humMap = {
-    unplugged: 35,
-    folk: 40,
-    jazz_ballad: 50,
-    neo_soul: 45,
-    classical: 30,
-    pop_rock: 30,
-    blues_rock: 40,
-    singer_songwriter: 38,
-    cinematic: 30,
-    lo_fi: 55,
-    punk: 18,
-    garage_rock: 32,
-    chiptune: 0,
-  };
-  document.getElementById('p-form').value = formMap[style] ?? 'unplugged_ballad';
-  const bpm = bpmMap[style] ?? 72;
+  // B3 di PLAN37: forma, BPM e umanizzazione si leggono da Styles.js, che è la
+  // fonte. Prima erano tre mappe copiate a mano qui dentro — allineate per caso
+  // al momento del controllo, ma tenute in sincronia da nessuno. Le stesse tre
+  // verità erano scritte in altri due punti di questo file (randomAll,
+  // smRandomAll) e una di quelle copie era già divergente.
+  const def = STYLES[style] ?? STYLES['unplugged'];
+  const bpm = def.defaultBpm.preferred;
+  const hum = Math.round((def.humanize ?? 0.35) * 100);
+  document.getElementById('p-form').value = def.defaultForm;
   document.getElementById('p-bpm').value = bpm;
   document.getElementById('bpm-v').textContent = bpm;
-  const hum = humMap[style] ?? 35;
   document.getElementById('p-hum').value = hum;
   document.getElementById('hum-v').textContent = hum + '%';
 };
 
 window.randomAll = () => {
-  const STYLES = ['unplugged', 'folk', 'jazz_ballad', 'neo_soul', 'classical', 'pop_rock', 'blues_rock', 'singer_songwriter',
-    'cinematic', 'lo_fi', 'punk', 'garage_rock', 'chiptune'];
-  const KEYS = ['Am', 'Em', 'Dm', 'Bm', 'F#m', 'Cm', 'Gm', 'Fm', 'C#m',
-    'C', 'G', 'F', 'D', 'A', 'E', 'B', 'Bb', 'Eb', 'Ab'];
-  const FORMS = {
-    unplugged: ['unplugged_ballad', 'unplugged_short', 'unplugged_no_bridge', 'unplugged_extended'],
-    folk: ['folk_standard', 'folk_short'],
-    jazz_ballad: ['jazz_standard', 'jazz_aaba'],
-    neo_soul: ['neo_soul_standard'],
-    classical: ['classical_standard'],
-    pop_rock: ['pop_rock_standard', 'pop_rock_short'],
-    blues_rock: ['blues_rock_standard'],
-    singer_songwriter: ['singer_songwriter_standard'],
-    cinematic: ['cinematic_standard'],
-    lo_fi: ['lo_fi_standard'],
-    punk: ['punk_standard', 'punk_short'],
-    garage_rock: ['garage_rock_standard'],
-    chiptune: ['chiptune_standard'],
-  };
-  const BPM_RANGES = {
-    unplugged: [60, 85], folk: [80, 110], jazz_ballad: [55, 90], neo_soul: [70, 100], classical: [60, 80], pop_rock: [100, 130],
-    blues_rock: [85, 115], singer_songwriter: [65, 90],
-    cinematic: [55, 90], lo_fi: [70, 90], punk: [160, 190], garage_rock: [120, 150], chiptune: [140, 165],
-  };
-  const ENS = ['strings', 'woodwinds', 'brass', 'chamber'];
+  // B3 di PLAN37: niente più liste hardcoded qui dentro. Gli stili, le forme e
+  // il range di BPM vengono da Styles.js; tonalità ed ensemble dalle option
+  // realmente presenti nelle select, che è la regola già adottata da
+  // smRandomAll ("mai da liste duplicate hardcoded, per evitare che tornino a
+  // disallinearsi"). Prima questa funzione conteneva la terza copia della
+  // tabella BPM — divergente dalle altre due su classical (60-80 contro
+  // 60-100) — e l'unica copia che elencava folk_short fra le forme di folk,
+  // che Styles.js non prevede.
   const r = (lo, hi) => Math.floor(Math.random() * (hi - lo + 1)) + lo;
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const optionsDi = id => Array.from(document.getElementById(id)?.options ?? []).map(o => o.value);
 
-  const style = pick(STYLES);
-  const [blo, bhi] = BPM_RANGES[style];
-  const bpm = r(blo, bhi);
+  const style = pick(Object.keys(STYLES));
+  const def = STYLES[style];
+  const bpm = r(def.defaultBpm.min, def.defaultBpm.max);
 
   document.getElementById('p-style').value = style;
-  document.getElementById('p-key').value = pick(KEYS);
+  document.getElementById('p-key').value = pick(optionsDi('p-key'));
   document.getElementById('p-bpm').value = bpm;
   document.getElementById('bpm-v').textContent = bpm;
-  document.getElementById('p-form').value = pick(FORMS[style]);
-  document.getElementById('p-ens').value = pick(ENS);
+  document.getElementById('p-form').value = pick(def.availableForms ?? [def.defaultForm]);
+  document.getElementById('p-ens').value = pick(optionsDi('p-ens'));
   document.getElementById('p-seed').value = r(1, 99998);
   document.getElementById('gen-btn').click();
 };
@@ -625,14 +565,6 @@ window.smApplyUrlState = () => {
   return true;
 };
 
-// V2: BPM di default per stile (min/max presi da SongArchitect.js STYLES.defaultBpm)
-const SM_STYLE_BPM_RANGES = {
-  unplugged: [60, 85], folk: [80, 110], jazz_ballad: [55, 90], neo_soul: [70, 100],
-  classical: [60, 100], pop_rock: [100, 130], blues_rock: [85, 115],
-  singer_songwriter: [65, 90], cinematic: [55, 90],
-  lo_fi: [70, 90], punk: [160, 190], garage_rock: [120, 150], chiptune: [140, 165],
-};
-
 /** V2: randomizza stile/tonalità/BPM nella composer bar visibile e rigenera. */
 window.smRandomAll = () => {
   const styleSel = document.getElementById('sm-style');
@@ -651,7 +583,11 @@ window.smRandomAll = () => {
   // (decisione 2026-08-20). Prima il Random restringeva al gruppo Minori o
   // Maggiori secondo defaultScale dello stile.
   const keyValues = Array.from(keySel.options).map(o => o.value);
-  const [bLo, bHi] = SM_STYLE_BPM_RANGES[style] ?? [70, 130];
+  // B3: il range viene da Styles.js, non da una copia locale. La copia diceva
+  // 60-85 per unplugged, 55-90 per jazz_ballad e 70-100 per neo_soul contro i
+  // 60-80, 50-80 e 65-90 dichiarati dagli stili: il dado poteva pescare BPM
+  // che lo stile non prevede.
+  const { min: bLo, max: bHi } = (STYLES[style] ?? STYLES['unplugged']).defaultBpm;
   const bpm = Math.floor(Math.random() * (bHi - bLo + 1)) + bLo;
 
   styleSel.value = style;
