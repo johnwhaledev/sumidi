@@ -271,6 +271,20 @@
   <p class="muted">La tablatura è una stima algoritmica (non conosce le tue preferenze di diteggiatura): è pensata come punto di partenza per lo studio, non come trascrizione professionale.</p>
 </div>
 
+<!-- SALVATAGGIO PROGETTO -->
+<div class="section">
+  <h2>Salvare e riaprire un progetto</h2>
+  <p>Il file <strong>.mid</strong> è il risultato: si apre in una DAW ma non si può più rimettere in suMidi per continuare a lavorarci. Per quello ci sono due strade, con scopi diversi.</p>
+  <table>
+    <tr><th>Cosa</th><th>A cosa serve</th></tr>
+    <tr><td><strong>Ripresa automatica</strong></td><td>suMidi salva da solo l'arrangiamento nel tuo browser a ogni modifica, e lo ripropone alla riapertura della pagina. È una rete di sicurezza contro la scheda chiusa per sbaglio: c'è <strong>un solo slot</strong>, e rispecchia sempre l'ultima cosa che avevi a schermo. Non è un archivio, e sparisce se cancelli i dati del sito.</td></tr>
+    <tr><td>💾 <strong>Salva</strong></td><td>Scrive un file <strong>.sumidi.json</strong> con l'intero progetto: sezioni, battute, personaggi, accordi custom del chord track, strumenti mutati, seed. È il salvataggio vero — quello da tenere, da archiviare e da mandare a qualcun altro.</td></tr>
+    <tr><td>📂 <strong>Apri</strong></td><td>Ricarica un <strong>.sumidi.json</strong> salvato in precedenza, sostituendo quello che c'è a schermo.</td></tr>
+  </table>
+  <p>Il progetto è leggero perché non contiene note: contiene le <em>decisioni</em>, e le note vengono rigenerate identiche da quelle. Per la stessa ragione un <strong>.sumidi.json</strong> è il modo migliore per segnalare un problema: allegandolo, chi legge riproduce esattamente ciò che senti tu.</p>
+  <p class="muted">Aprire un link condiviso (con <code>?seed=</code> nell'indirizzo) mostra il brano del link e <strong>non</strong> tocca la tua ripresa automatica: il lavoro che avevi in corso resta dov'è finché non lo modifichi.</p>
+</div>
+
 <!-- INTERFACCIA E MIXER -->
 <div class="section">
   <h2>Interfaccia Session e Mixer</h2>
@@ -326,8 +340,8 @@
 <div class="section">
   <h2>Note tecniche e risoluzione problemi</h2>
 
-  <h3>Il brano non si salva da solo</h3>
-  <p>suMidi non salva automaticamente il lavoro in corso tra una sessione e l'altra: se chiudi o ricarichi la pagina prima di esportare, il brano va perso. Esporta il <strong>.mid</strong> (e, se ti interessa, il <strong>.md</strong> con accordi e tablature) prima di chiudere la scheda. L'unico "salvataggio" presente è la cronologia <strong>Undo (↩)</strong>, valida solo all'interno della sessione corrente e limitata a 10 passi.</p>
+  <h3>Dove finisce il lavoro in corso</h3>
+  <p>L'arrangiamento viene ripreso da solo alla riapertura della pagina, ma resta nel browser di quel computer: un solo slot, che si perde cancellando i dati del sito o passando a un altro browser. Per tenere davvero un progetto usa <strong>💾 Salva</strong> e conserva il file <strong>.sumidi.json</strong>; per il risultato finito esporta il <strong>.mid</strong> (e, se ti serve, il <strong>.md</strong> con accordi e tablature). La cronologia <strong>Undo (↩)</strong> resta valida solo nella sessione corrente e limitata a 10 passi.</p>
 
   <h3>Compatibilità</h3>
   <p>suMidi è pensato per browser desktop moderni (Chrome, Edge, Firefox aggiornati). Non richiede installazione né connessione a Internet dopo il primo caricamento della pagina, con l'eccezione del font Google (Ubuntu) caricato da remoto: se non c'è connessione, l'app resta comunque utilizzabile con un font di sistema equivalente.</p>

@@ -32,6 +32,7 @@ import { buildGuitarTab, buildBassTab, renderChordChart } from './TabRenderer.js
 import { applyGrooveLock } from './GrooveLock.js';
 import { playTracks, stopAll as stopPlayback } from './Playback.js';
 import { STYLES } from './Styles.js';
+import { costruisciSalvataggio, validaSalvataggio, salvaAutosave, leggiAutosave, nomeFileProgetto } from './SessionStore.js';
 
 const SM_PPQ = 480;   // PPQ standard usato da buildSong
 
@@ -242,7 +243,7 @@ function _buildPanelDrums(section, container, sectionId) {
     l.className = 'sm-pattern-lbl';
     l.textContent = lbl;
     row.appendChild(l);
-    const dotsComp = createPatternDots(row, {
+    createPatternDots(row, {
       pattern: pat,
       label: '',
       onChange: (newPat) => smDmPatternChanged(sectionId, lbl.toLowerCase(), newPat)
@@ -1006,9 +1007,6 @@ const CHIP_QUALITIES = [
   { label: 'add9', val: 'add9' },
 ];
 
-const SM_BADGE = { intro: 'bi', verse: 'bv', chorus: 'bc', bridge: 'bbr', outro: 'bo' };
-const SM_ICONS = { drums: '🥁', bass: '🎸', guitar: '🎵', piano: '🎹', ensemble: '🎻' };
-
 /**
  * Apre/chiude un pannello collassabile.
  * @param {string} bodyId   — ID del div contenuto
@@ -1243,10 +1241,144 @@ function _smApplyKeyConstraint() {
   keySel.querySelectorAll('option').forEach(o => { o.disabled = false; });
 }
 
-/** Bootstrap di Session Mode — chiamato da main.js all'avvio della pagina. */
-export function smInit() {
+// ── B4 di PLAN37 — persistenza della sessione ─────────────────────
+// Con B1 il brano *generato* torna da solo: bastano i quattro parametri
+// dell'URL. Un arrangiamento costruito a mano no — sezioni aggiunte,
+// personaggi scelti, progressioni custom sul chord track, strumenti mutati
+// per lane vivevano solo finché la scheda restava aperta.
+// Due livelli: autosave in localStorage (rete di sicurezza, uno slot solo,
+// rispecchia ciò che è a schermo) e file .sumidi.json (il salvataggio vero,
+// e il formato con cui si condivide un progetto o si allega un bug).
+// La serializzazione e la validazione stanno in SessionStore.js, senza DOM.
+
+let _smAutosaveTimer = null;
+
+// Autosave sospeso: serve quando la pagina e' stata aperta da un link con un
+// brano (B1). Quel brano e' gia' ricostruibile dai quattro parametri dell'URL,
+// quindi non ha bisogno di essere salvato — e salvarlo cancellerebbe
+// l'arrangiamento in corso di chi il link lo ha soltanto aperto, senza aver
+// toccato niente. Riprende appena la generazione dal link e' finita: da li' in
+// poi si sta lavorando davvero su quel brano, e le modifiche vanno protette.
+let _smAutosaveSospeso = false;
+
+/** Riattiva l'autosave dopo la generazione iniziale da un link. */
+window.smRiattivaAutosave = () => { _smAutosaveSospeso = false; };
+
+/** localStorage, o null dove il solo accedervi lancia (modalità privata, iframe). */
+function _smStorage() {
+  try { return window.localStorage; } catch { return null; }
+}
+
+/**
+ * Salva l'arrangiamento corrente. Chiamata a ogni render: le scritture
+ * ravvicinate (trascinare uno slider ne produce decine) vengono raggruppate,
+ * e una sessione vuota non viene mai salvata — aprire la pagina non deve
+ * cancellare il lavoro di ieri prima ancora che si tocchi qualcosa.
+ */
+function _smAutosave() {
+  if (_smAutosaveSospeso) return;
+  if (!AppState.session.manager?.getSections().length) return;
+  clearTimeout(_smAutosaveTimer);
+  _smAutosaveTimer = setTimeout(() => {
+    const st = _smStorage();
+    if (!st) return;
+    salvaAutosave(st, costruisciSalvataggio(AppState.session.manager.toJSON(), AppState.session.solo));
+  }, 400);
+}
+
+/**
+ * Carica nell'app una sessione già validata e ridisegna tutto.
+ * @param {object} sessione — stato del SessionManager
+ * @param {object|null} solo — stato di Solo Mode, se presente
+ */
+function _smApplicaSessione(sessione, solo) {
+  AppState.session.manager = SessionManager.fromJSON(sessione);
+  AppState.session.crossMemory = new CrossSectionMemory();
+  AppState.clearCache();
   AppState.ui.flyoutOpen = null;
+  AppState.ui.expanded.clear();
+  if (solo) {
+    // Object.assign e non una riassegnazione: Session.js tiene un alias su
+    // questo oggetto (v. O6 in AppState.js). `active` resta false perché la
+    // visibilità di Solo Mode la decide smToggleSoloMode toccando il DOM, non
+    // il render: ripristinarla a true lascerebbe pannello e lanes visibili
+    // insieme. Si ritrova comunque strumento, personaggio, stile e seed.
+    Object.assign(AppState.session.solo, solo, { active: false, playing: false });
+  }
+
+  // La composer bar deve dire la verità su ciò che è stato caricato.
+  const keyEl = document.getElementById('sm-key');
+  const bpmEl = document.getElementById('sm-bpm');
+  const bpmVEl = document.getElementById('sm-bpm-v');
+  const styleEl = document.getElementById('sm-style');
+  if (keyEl && Array.from(keyEl.options).some(o => o.value === sessione.key)) keyEl.value = sessione.key;
+  if (bpmEl) { bpmEl.value = String(sessione.bpm); if (bpmVEl) bpmVEl.textContent = String(sessione.bpm); }
+  if (styleEl && Array.from(styleEl.options).some(o => o.value === sessione.style)) styleEl.value = sessione.style;
+  _smUpdateScaleHint();
+  smRender();
+}
+
+/** Salva il progetto in un file .sumidi.json. */
+window.smExportProject = () => {
+  if (!AppState.session.manager?.getSections().length) {
+    smToast('Non c’è ancora niente da salvare: genera un brano o aggiungi una sezione.', { icon: '⚠️' });
+    return;
+  }
+  const dati = costruisciSalvataggio(AppState.session.manager.toJSON(), AppState.session.solo);
+  const blob = new Blob([JSON.stringify(dati, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeFileProgetto(dati.sessione);
+  a.click();
+  URL.revokeObjectURL(url);
+  smToast('Progetto salvato.', { icon: '💾' });
+  smBumpSupportCounter('download');
+};
+
+/** Apre il selettore di file per l'import del progetto. */
+window.smImportProject = () => document.getElementById('sm-project-file')?.click();
+
+/** Legge il file scelto e, se è un progetto valido, lo carica. */
+window.smImportProjectFile = async ev => {
+  const file = ev.target.files?.[0];
+  ev.target.value = '';   // così riscegliere lo stesso file fa scattare di nuovo change
+  if (!file) return;
+  let dati;
+  try {
+    dati = JSON.parse(await file.text());
+  } catch {
+    smToast('Il file non è un JSON leggibile.', { icon: '❌', duration: 4000 });
+    return;
+  }
+  const esito = validaSalvataggio(dati);
+  if (!esito.ok) {
+    smToast(esito.errore, { icon: '❌', duration: 4000 });
+    return;
+  }
+  _smApplicaSessione(esito.sessione, esito.solo);
+  smToast('Progetto caricato.', { icon: '📂' });
+};
+
+/** Bootstrap di Session Mode — chiamato da main.js all'avvio della pagina. */
+export function smInit({ ripristina = true } = {}) {
+  AppState.ui.flyoutOpen = null;
+  _smAutosaveSospeso = !ripristina;
   _smApplyKeyConstraint();
+
+  // Un autosave valido viene ripristinato — a meno che l'URL non porti un
+  // brano preciso (B1): un link condiviso deve far sentire quel brano, non
+  // l'arrangiamento rimasto sul computer di chi lo apre.
+  if (ripristina) {
+    const st = _smStorage();
+    const esito = st ? leggiAutosave(st) : null;
+    if (esito?.ok) {
+      _smApplicaSessione(esito.sessione, esito.solo);
+      smToast('Ripresa la sessione precedente.', { icon: '↩' });
+      return;
+    }
+  }
+
   AppState.session.manager = new SessionManager({
     key: document.getElementById('sm-key').value,
     bpm: parseInt(document.getElementById('sm-bpm').value),
@@ -1562,6 +1694,7 @@ const LANE_LABELS = { drums: 'Drums', bass: 'Bass', guitar: 'Guitar', piano: 'Pi
 
 function smRender() {
   if (!AppState.session.manager) return;
+  _smAutosave();
   const secs = AppState.session.manager.getSections();
   const n = secs.length;
 

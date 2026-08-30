@@ -27,6 +27,14 @@ document.addEventListener('keydown', e => {
 // legge i controlli per costruire il SessionManager. Se il link portava un
 // seed, il brano viene rigenerato subito: è quello che rende condivisibile
 // un brano con un link, e recuperabile dopo aver chiuso la scheda.
+// B4: se il link porta un brano preciso non si ripristina l'autosave — chi
+// apre un link condiviso deve sentire quel brano, non l'arrangiamento rimasto
+// sul suo computer.
 const daLink = window.smApplyUrlState?.() ?? false;
-smInit();
-if (daLink) window.smAutoGenerate();
+smInit({ ripristina: !daLink });
+if (daLink) {
+  // L'autosave resta sospeso finché la generazione dal link non è finita: il
+  // brano del link è già ricostruibile dall'URL e non deve sovrascrivere
+  // l'arrangiamento in corso di chi il link lo ha soltanto aperto.
+  Promise.resolve(window.smAutoGenerate()).finally(() => window.smRiattivaAutosave());
+}

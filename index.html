@@ -172,6 +172,13 @@
       <button id="sm-adv-export-btn" class="btn btn-s btn-sm" onclick="smOpenAdvancedExport()"
         title="Tab chitarra/basso e chord chart in una finestra">📑 Tab &amp; Accordi</button>
       <button id="sm-export-btn" class="btn btn-d btn-sm" onclick="smExportSession()">⬇ MIDI</button>
+      <div class="cb-sep"></div>
+      <button id="sm-save-btn" class="btn btn-s btn-sm" onclick="smExportProject()"
+        title="Salva l'intero progetto (sezioni, personaggi, accordi custom) in un file .sumidi.json">💾 Salva</button>
+      <button id="sm-open-btn" class="btn btn-s btn-sm" onclick="smImportProject()"
+        title="Apri un progetto .sumidi.json salvato in precedenza">📂 Apri</button>
+      <input type="file" id="sm-project-file" accept=".json,application/json"
+        style="display:none" onchange="smImportProjectFile(event)">
     </div>
 
     <!-- ── Session Mode ───────────────────────────────────────────── -->
