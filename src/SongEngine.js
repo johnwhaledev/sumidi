@@ -260,7 +260,6 @@ const gen = async (params, humAmt, disabledSet, isFlat) => {
     }
 
     let totalEv = 0, totalTr = 0;
-    let guitarEvents = [], bassEvents = [];
     // Raccolta eventi per TonePreview e Chord Editor
     const previewVoices = [];
     AppState.preview.tracks = [];
@@ -334,7 +333,6 @@ const gen = async (params, humAmt, disabledSet, isFlat) => {
       bassRes = generateBass(bp, drumContext);  // S5-A
       humanize(bassRes.events, bp.meta.ppq, humAmt * 0.6, 1, params.seed + 2, bp.meta.barTicks);
       applySwing(bassRes.events, bp.meta.ppq, bp.meta.swing ?? 0);
-      bassEvents = bassRes.events;
       AppState.preview.bassEvts = bassRes.events;
       if (!isFlat) _addCCArc(bassRes.events, bp.sections, 100, 95);
       allTrackEvts.bass = bassRes.events;
@@ -348,7 +346,6 @@ const gen = async (params, humAmt, disabledSet, isFlat) => {
       guitarRes = generateGuitar(bp, drumContext, null, genCrossMemory);  // Q2: crossMemory
       humanize(guitarRes.events, bp.meta.ppq, humAmt * 0.7, 2, params.seed + 3, bp.meta.barTicks);
       applySwing(guitarRes.events, bp.meta.ppq, bp.meta.swing ?? 0);
-      guitarEvents = guitarRes.events;
       AppState.preview.guitarEvts = guitarRes.events;
       if (!isFlat) _addCCArc(guitarRes.events, bp.sections, 90, 85);
       allTrackEvts.guitar = guitarRes.events;
@@ -418,13 +415,6 @@ const gen = async (params, humAmt, disabledSet, isFlat) => {
     // gen() dopo S18 — blob e nome restano qui per un bottone di export.
     AppState.preview.lastBlob = blob;
     AppState.preview.lastFilename = fname;
-
-    // ── Build tabs (rimossi in S18 punto 9) ────────────────────
-    // st('info','🎼 Rendering tabs…'); await w();
-    // if (guitarEvents.length) { ... }
-    // if (bassEvents.length) { ... }
-    // document.getElementById('chord-scroll').innerHTML = ...
-    // renderChordEditor(bp);
 
     // ── Render UI ─────────────────────────────────────────────
     // Nota: UI Song Structure, Output MIDI, Notazione, Tabs rimosse in S18 punto 9

@@ -1,17 +1,19 @@
 // Configurazione ESLint minima per suMidi (flat config, ESLint 9+).
-// Copre i moduli in src/ (Bass/Guitar/Piano/Drums/...) e i test.
-// src/main.js (script UI, estratto da index.html nella sessione R2 —
-// PLAN35) resta fuori da questa prima passata di lint, come lo era
-// quando era inline nell'HTML: usa pattern browser
-// (assegnazioni su `window.xxx = ...` richiamate come riferimento globale
-// bare) che il parser "module" di ESLint segnala come falsi no-undef.
-// Restano comunque coperti dal controllo sintattico `node --check` e da
-// uno smoke test nel browser eseguiti ad ogni sessione di modifica.
-// T4/B3: main.js è stato scorporato in SongEngine.js (gen() + ponte
-// Classic/lab.html) e Session.js (Session Mode) — stesso pattern, stessa
-// esclusione.
-// design/DesignSystem.js resta escluso allo stesso modo (componenti SVG
-// generati, non ancora passati al lint in questa prima fase).
+// Copre i moduli in src/ e i test.
+//
+// main.js, SongEngine.js e Session.js erano ESCLUSI del tutto (`ignores`)
+// perché usano il pattern browser `window.xxx = ...` richiamato altrove come
+// riferimento globale bare, che con sourceType "module" produce una valanga di
+// falsi no-undef. L'esclusione però non spegneva una regola: impediva a ESLint
+// di aprire i file, quindi nemmeno di verificarne la SINTASSI — 3.200 righe,
+// le tre unità più grandi del progetto, fuori da ogni controllo. Il commento
+// diceva che restavano "coperti da `node --check` e da uno smoke test nel
+// browser ad ogni sessione": una promessa manuale che nessuno eseguiva, e che
+// durante B4 di PLAN37 ha lasciato passare un apostrofo non chiuso in
+// Session.js con `npm run lint` verde. Con la CI di S2 quello sarebbe stato un
+// deploy rotto su Pages con la spunta verde.
+// Ora i tre file sono linted come gli altri, con il solo no-undef spento.
+// design/DesignSystem.js resta escluso (componenti SVG generati).
 
 export default [
   {
@@ -22,9 +24,6 @@ export default [
       'docs/**',
       'design/**',
       '*.html',
-      'src/main.js',
-      'src/SongEngine.js',
-      'src/Session.js',
     ],
   },
   {
@@ -61,6 +60,14 @@ export default [
       'no-fallthrough': 'warn',
       eqeqeq: ['warn', 'smart'],
     },
+  },
+  {
+    // I tre file di interfaccia: registrano gli handler come `window.smX = ...`
+    // e li richiamano dagli attributi onclick dell'HTML, quindi ogni chiamata
+    // fra un file e l'altro sembra un identificatore non dichiarato. Spento
+    // solo no-undef: parsing e tutte le altre regole valgono come ovunque.
+    files: ['src/main.js', 'src/SongEngine.js', 'src/Session.js'],
+    rules: { 'no-undef': 'off' },
   },
   {
     files: ['tests/**/*.js'],
