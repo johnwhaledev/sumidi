@@ -2559,6 +2559,18 @@ async function _smSoloGenerateSection(sec, state) {
   const roster = CHARACTER_ROSTER[inst] ?? [];
   const char = roster.find(c => c.id === _smSolo.characterId) ?? null;
 
+  // O1 di PLAN37 — nel blueprint del solo restano attivi SOLO lo strumento
+  // scelto. L'adattamento a "sono rimasto solo" è già scritto nei generatori e
+  // non si accendeva mai: PianoGenerator abbassa il floor della mano sinistra
+  // da C3 (48) a C2 (36) quando il modulo bass non è attivo nella sezione
+  // (anti-mud verso il basso, che qui non c'è), e GuitarGenerator toglie lo
+  // stagger dei transienti pensato per lasciargli spazio. Il blueprint però
+  // arrivava qui così com'era, con tutti i moduli attivi: il piano solo teneva
+  // la sinistra alta come se un basso stesse suonando, la chitarra sola
+  // sfalsava i transienti per un basso che nessuno avrebbe generato.
+  for (const [nome, m] of Object.entries(bp.sections[0].modules)) {
+    if (m && nome !== inst) m.active = false;
+  }
   mod.active = true;
   if (inst === 'ensemble') {
     // Il personaggio ensemble sceglie la FAMIGLIA di strumento (archi/ottoni/…),
