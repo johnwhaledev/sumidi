@@ -18,8 +18,7 @@ import { AppState } from './AppState.js';
 import { SessionManager, buildSectionBlueprint } from './SessionManager.js';
 import { CHARACTER_ROSTER } from './CharacterRoster.js';
 import { createKnob, createSlider, createPatternDots, createToggle } from '../design/DesignSystem.js';
-import { makeRng, parseChord, parseKey, keySignatureSf } from './SongArchitect.js';
-import { MidiWriter } from './MidiWriter.js';
+import { makeRng, parseChord } from './SongArchitect.js';
 import { generateDrums } from './Percussionist.js';
 import { generateDrumMachine, DM_PRESETS, DM_CHANNELS } from './DrumMachineGenerator.js';
 import { generateBass } from './BassGenerator.js';
@@ -33,18 +32,10 @@ import { applyGrooveLock } from './GrooveLock.js';
 import { playTracks, stopAll as stopPlayback } from './Playback.js';
 import { STYLES } from './Styles.js';
 import { costruisciSalvataggio, validaSalvataggio, salvaAutosave, leggiAutosave, nomeFileProgetto } from './SessionStore.js';
+import { buildSessionMidi, buildSoloMidi } from './SessionExport.js';
 
 const SM_PPQ = 480;   // PPQ standard usato da buildSong
 
-// Armatura di chiave (FF 59) per gli export di Session Mode — B2 di PLAN37.
-// Senza questo evento il .mid si apre in Do maggiore in MuseScore/Logic/Dorico e
-// ogni alterazione compare come accidente sulla singola nota. La tabella delle
-// armature sta in SongArchitect (keySignatureSf), la stessa usata dal percorso
-// Classic: qui si converte solo la stringa di tonalità ("Am", "F#") in pc + modo.
-function smWriteKeySignature(writer, keyStr) {
-  const { rootPc, isMinor } = parseKey(keyStr);
-  writer.setKeySignature(keySignatureSf(rootPc, isMinor), isMinor);
-}
 // AppState.ui.expanded, AppState.ui.activeInst → AppState.ui
 
 // Apre/chiude il pannello di configurazione di una sezione
@@ -2107,108 +2098,13 @@ window.smExportSession = async () => {
       applyGrooveLock(glBuffers, { ppq, bpm: state.bpm, barTicks }, glRng);
     }
 
-    // 4. MIDI Writer
-    const writer = new MidiWriter(ppq);
-    writer.setTempo(state.bpm);
-    writer.setTimeSignature(4, 4);
-    smWriteKeySignature(writer, state.key);
-
-    // Marker di sezione
-    let globalTick = 0;
-    for (const sec of state.sections) {
-      writer.addMarker(globalTick, sec.label);
-      globalTick += sec.bars * barTicks;
-    }
-
-    // ── Drums (ch 9 — GM Percussion, nessun program change) ──────
-    if (trackBuffers.drums?.length) {
-      // Determina se è drum machine o acustica per il nome traccia
-      const isDM = state.sections.some(s => (s.instruments.drums.characterId ?? '').startsWith('dm_'));
-      const dmPreset = isDM
-        ? (state.sections.find(s => s.instruments.drums.params?.dmPreset)?.instruments.drums.params.dmPreset ?? 'trap')
-        : null;
-      const drumName = isDM ? `Drum Machine (${dmPreset})` : 'Drums';
-      const dt = writer.addTrack(drumName);
-      const drumMode = window._smMixerOverride['drums'] || 'auto';
-      if (drumMode !== 'auto') dt.programChange(0, parseInt(drumMode), 9);
-      for (const e of trackBuffers.drums) {
-        if (e.type === 'pc') {
-          if (drumMode === 'auto') dt.programChange(e.tick, e.prog, e.ch);
-        } else if (e.cc != null) {
-          dt.controlChange(e.tick, e.cc, e.value, 9);
-        } else {
-          dt.noteOn(e.tick, e.note, e.velocity, 9); dt.noteOff(e.tick + e.duration, e.note, 9);
-        }
-      }
-    }
-
-    // ── Bass (ch 1) ───────────────────────────────────────────────
-    if (trackBuffers.bass?.length) {
-      const bt = writer.addTrack('Bass');
-      const bsMode = window._smMixerOverride['bass'] || 'auto';
-      if (bsMode !== 'auto') bt.programChange(0, parseInt(bsMode), 1);
-      for (const e of trackBuffers.bass) {
-        if (e.type === 'pc') {
-          if (bsMode === 'auto') bt.programChange(e.tick, e.prog, e.ch);
-        } else if (e.cc != null) {
-          bt.controlChange(e.tick, e.cc, e.value, 1);
-        } else {
-          bt.noteOn(e.tick, e.note, e.velocity, 1);
-          bt.noteOff(e.tick + e.duration, e.note, 1);
-        }
-      }
-    }
-
-    // ── Guitar (ch 2) ─────────────────────────────────────────────
-    if (trackBuffers.guitar?.length) {
-      const gt = writer.addTrack('Guitar');
-      const gtMode = window._smMixerOverride['guitar'] || 'auto';
-      if (gtMode !== 'auto') gt.programChange(0, parseInt(gtMode), 2);
-      for (const e of trackBuffers.guitar) {
-        if (e.type === 'pc') {
-          if (gtMode === 'auto') gt.programChange(e.tick, e.prog, e.ch);
-        } else if (e.cc != null) {
-          gt.controlChange(e.tick, e.cc, e.value, 2);
-        } else {
-          gt.noteOn(e.tick, e.note, e.velocity, 2);
-          gt.noteOff(e.tick + e.duration, e.note, 2);
-        }
-      }
-    }
-
-    // ── Piano (ch 3) ──────────────────────────────────────────────
-    if (trackBuffers.piano?.length) {
-      const pt = writer.addTrack('Piano');
-      const ptMode = window._smMixerOverride['piano'] || 'auto';
-      if (ptMode !== 'auto') pt.programChange(0, parseInt(ptMode), 3);
-      for (const e of trackBuffers.piano) {
-        if (e.type === 'pc') {
-          if (ptMode === 'auto') pt.programChange(e.tick, e.prog, e.ch);
-        } else if (e.cc != null) {
-          pt.controlChange(e.tick, e.cc, e.value, 3);
-        } else {
-          pt.noteOn(e.tick, e.note, e.velocity, 3);
-          pt.noteOff(e.tick + e.duration, e.note, 3);
-        }
-      }
-    }
-
-    // ── Ensemble: 3 tracce separate (e0/e1/e2) ───────────────────
-    const ensMode = window._smMixerOverride['ensemble'] || 'auto';
-    for (const key of ['e0', 'e1', 'e2']) {
-      const ens = trackBuffers[key];
-      if (!ens?.evts?.length) continue;
-      const et = writer.addTrack(ens.name ?? `Ensemble ${key}`);
-      if (ensMode !== 'auto') et.programChange(0, parseInt(ensMode), ens.ch);
-      // Emetti i program change dinamici
-      for (const pc of ens.progChanges ?? []) {
-        if (ensMode === 'auto') et.programChange(pc.tick, pc.prog, pc.ch);
-      }
-      for (const e of ens.evts) {
-        et.noteOn(e.tick, e.note, e.velocity, ens.ch);
-        et.noteOff(e.tick + e.duration, e.note, ens.ch);
-      }
-    }
+    // 4. MIDI Writer — la costruzione vive in SessionExport.js, senza DOM,
+    // per poter essere collaudata dalla suite (T1). Qui resta solo la lettura
+    // dell'interfaccia: gli override del mixer.
+    const writer = buildSessionMidi(state, trackBuffers, {
+      ppq,
+      mixerOverride: window._smMixerOverride ?? {},
+    });
 
     // 5. Download
     const blob = writer.toBlob();
@@ -2683,23 +2579,12 @@ window.smSoloExportMidi = async () => {
       if (statusEl) statusEl.textContent = '⚠️ Nessun evento generato per questo strumento.';
       return;
     }
-    const writer = new MidiWriter(ppq);
-    writer.setTempo(state.bpm);
-    writer.setTimeSignature(4, 4);
-    smWriteKeySignature(writer, state.key);
-    let globalTick = 0;
-    for (const sec of AppState.session.manager.getSections()) {
-      writer.addMarker(globalTick, sec.label);
-      globalTick += sec.bars * (ppq * 4);
-    }
-    tracks.forEach((t, i) => {
-      const tr = writer.addTrack(tracks.length > 1 ? `${SOLO_INST_LABELS[_smSolo.inst]} ${i + 1}` : SOLO_INST_LABELS[_smSolo.inst]);
-      if (t.program != null) tr.programChange(0, t.program, t.channel);
-      for (const e of t.events) {
-        if (e.cc != null) tr.controlChange(e.tick, e.cc, e.value, t.channel);
-        else { tr.noteOn(e.tick, e.note, e.velocity, t.channel); tr.noteOff(e.tick + e.duration, e.note, t.channel); }
-      }
-    });
+    const writer = buildSoloMidi(
+      state,
+      AppState.session.manager.getSections(),
+      tracks,
+      { ppq, etichetta: SOLO_INST_LABELS[_smSolo.inst] },
+    );
     const blob = writer.toBlob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
