@@ -122,6 +122,21 @@ function parseKey(keyStr) {
 }
 
 /**
+ * Numero di alterazioni in armatura di chiave — campo `sf` dell'evento MIDI
+ * FF 59: positivo = diesis, negativo = bemolli. Una tonalità minore usa
+ * l'armatura della sua relativa maggiore, tre semitoni sopra.
+ * Fonte unica per tutti i percorsi di export (Classic e Session Mode): finché
+ * questa tabella è scritta in un posto solo non può divergere da sé stessa.
+ * @param {number} rootPc   Pitch class della tonica (0 = Do)
+ * @param {boolean} isMinor
+ * @returns {number} da -7 a +7
+ */
+function keySignatureSf(rootPc, isMinor = false) {
+  const SF = [0, -5, 2, -3, 4, -1, 6, 1, -4, 3, -2, 5];
+  return isMinor ? SF[(rootPc + 3) % 12] : SF[rootPc];
+}
+
+/**
  * Build all MIDI pitches for a scale within a range.
  */
 function buildScalePool(rootPc, scaleName, loMidi = 36, hiMidi = 96) {
@@ -1139,6 +1154,7 @@ export {
   parseChord,
   transposeChord,
   parseKey,
+  keySignatureSf,
   buildScalePool,
   buildChordTonePool,
   buildHarmonicMap,

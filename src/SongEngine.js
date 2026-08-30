@@ -12,7 +12,7 @@
  */
 import { AppState } from './AppState.js';
 import { buildSectionBlueprint } from './SessionManager.js';
-import { buildSong, makeRng } from './SongArchitect.js';
+import { buildSong, makeRng, keySignatureSf } from './SongArchitect.js';
 import { MidiWriter } from './MidiWriter.js';
 import { generateDrums } from './Percussionist.js';
 import { generateBass } from './BassGenerator.js';
@@ -247,11 +247,8 @@ const gen = async (params, humAmt, disabledSet, isFlat) => {
     const writer = new MidiWriter(bp.meta.ppq);
     writer.setTempo(bp.meta.bpm);
     writer.setTimeSignature(bp.meta.beatsPerBar ?? 4, 4);
-    // Key signature (FF 59): rootPc → sharps(+)/flats(-) per tonalità maggiori
-    {
-      const SF = [0, -5, 2, -3, 4, -1, 6, 1, -4, 3, -2, 5], pc = bp.meta.keyInfo.rootPc;
-      writer.setKeySignature(bp.meta.keyInfo.isMinor ? SF[(pc + 3) % 12] : SF[pc], bp.meta.keyInfo.isMinor);
-    }
+    // Key signature (FF 59) — tabella in SongArchitect.keySignatureSf, unica
+    writer.setKeySignature(keySignatureSf(bp.meta.keyInfo.rootPc, bp.meta.keyInfo.isMinor), bp.meta.keyInfo.isMinor);
     // Marker di sezione (FF 06): Intro, Verse 1, Verse 2, Chorus … visibili in DAW
     {
       const LBL = { intro: 'Intro', verse: 'Verse', chorus: 'Chorus', bridge: 'Bridge', outro: 'Outro' };

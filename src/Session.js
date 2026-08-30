@@ -18,7 +18,7 @@ import { AppState } from './AppState.js';
 import { SessionManager, buildSectionBlueprint } from './SessionManager.js';
 import { CHARACTER_ROSTER } from './CharacterRoster.js';
 import { createKnob, createSlider, createPatternDots, createToggle } from '../design/DesignSystem.js';
-import { makeRng, parseChord } from './SongArchitect.js';
+import { makeRng, parseChord, parseKey, keySignatureSf } from './SongArchitect.js';
 import { MidiWriter } from './MidiWriter.js';
 import { generateDrums } from './Percussionist.js';
 import { generateDrumMachine, DM_PRESETS, DM_CHANNELS } from './DrumMachineGenerator.js';
@@ -34,6 +34,16 @@ import { playTracks, stopAll as stopPlayback } from './Playback.js';
 import { STYLES } from './Styles.js';
 
 const SM_PPQ = 480;   // PPQ standard usato da buildSong
+
+// Armatura di chiave (FF 59) per gli export di Session Mode — B2 di PLAN37.
+// Senza questo evento il .mid si apre in Do maggiore in MuseScore/Logic/Dorico e
+// ogni alterazione compare come accidente sulla singola nota. La tabella delle
+// armature sta in SongArchitect (keySignatureSf), la stessa usata dal percorso
+// Classic: qui si converte solo la stringa di tonalità ("Am", "F#") in pc + modo.
+function smWriteKeySignature(writer, keyStr) {
+  const { rootPc, isMinor } = parseKey(keyStr);
+  writer.setKeySignature(keySignatureSf(rootPc, isMinor), isMinor);
+}
 // AppState.ui.expanded, AppState.ui.activeInst → AppState.ui
 
 // Apre/chiude il pannello di configurazione di una sezione
@@ -1965,6 +1975,7 @@ window.smExportSession = async () => {
     const writer = new MidiWriter(ppq);
     writer.setTempo(state.bpm);
     writer.setTimeSignature(4, 4);
+    smWriteKeySignature(writer, state.key);
 
     // Marker di sezione
     let globalTick = 0;
@@ -2531,6 +2542,7 @@ window.smSoloExportMidi = async () => {
     const writer = new MidiWriter(ppq);
     writer.setTempo(state.bpm);
     writer.setTimeSignature(4, 4);
+    smWriteKeySignature(writer, state.key);
     let globalTick = 0;
     for (const sec of AppState.session.manager.getSections()) {
       writer.addMarker(globalTick, sec.label);
