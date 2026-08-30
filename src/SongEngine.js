@@ -434,15 +434,17 @@ window.smAutoGenerate = async () => {
   } else {
     _smLastSeed = Math.floor(Math.random() * 99999) + 1;
   }
+  const form = _smReadForm(style, def);
   const params = {
-    style, key, bpm,
-    form: def.defaultForm,
+    style, key, bpm, form,
     ensemble: def.ensemble?.type,
     seed: _smLastSeed,
   };
   // Il seed usato diventa subito visibile e finisce nell'URL: da qui in poi il
-  // brano e' recuperabile anche dopo aver chiuso la scheda.
-  _smPublishState(_smLastSeed, style, key, bpm);
+  // brano e' recuperabile anche dopo aver chiuso la scheda. La forma ci va
+  // insieme, altrimenti un link con una forma non di default non riprodurrebbe
+  // il brano che chi lo manda sta ascoltando.
+  _smPublishState(_smLastSeed, style, key, bpm, form);
   const humAmt = def.humanize ?? 0.35;
 
   const genBtn = document.getElementById('sm-gen-btn');
@@ -480,6 +482,41 @@ window.smToggleSeedLock = () => {
 // lucchetto lo congelava solo finche' la scheda restava aperta. Chiusa la scheda,
 // il brano era perduto — e non c'era modo di darlo a qualcun altro.
 
+// ── A2 di PLAN37 — scelta della forma ─────────────────
+// SONG_FORMS definisce 21 forme e Session Mode ne usava una sola per stile
+// (`def.defaultForm`): le altre erano raggiungibili solo dal pannello Classic di
+// lab.html. Sono 6 forme già scritte e collaudate — fra cui jazz_aaba — che
+// aspettavano solo un <select>. Il select compare soltanto per i 4 stili che
+// hanno più di una forma: per gli altri 9 mostrerebbe una scelta sola, e la
+// composer bar è già densa.
+
+/**
+ * Riempie il select delle forme con quelle dello stile corrente e lo mostra
+ * solo se c'è davvero da scegliere. Preserva la forma già selezionata se
+ * appartiene anche al nuovo stile.
+ * @param {string} [formaDaSelezionare] — forza una forma (usata dall'URL)
+ */
+window.smSyncForms = (formaDaSelezionare = null) => {
+  const sel = document.getElementById('sm-form');
+  const wrap = document.getElementById('sm-form-wrap');
+  if (!sel || !wrap) return;
+  const style = document.getElementById('sm-style')?.value ?? 'unplugged';
+  const def = STYLES[style] ?? STYLES['unplugged'];
+  const forme = def.availableForms?.length ? def.availableForms : [def.defaultForm];
+
+  const precedente = formaDaSelezionare ?? sel.value;
+  sel.innerHTML = forme.map(f => `<option value="${f}">${f.replace(/_/g, ' ')}</option>`).join('');
+  sel.value = forme.includes(precedente) ? precedente : def.defaultForm;
+  wrap.style.display = forme.length > 1 ? '' : 'none';
+};
+
+/** Forma scelta nella composer bar, se è una di quelle dello stile corrente. */
+function _smReadForm(style, def) {
+  const scelta = document.getElementById('sm-form')?.value;
+  const forme = def.availableForms ?? [];
+  return scelta && forme.includes(scelta) ? scelta : def.defaultForm;
+}
+
 /** Legge il campo seed della composer bar. Ritorna null se vuoto o non valido. */
 function _smReadSeedField() {
   const el = document.getElementById('sm-seed');
@@ -493,12 +530,16 @@ function _smReadSeedField() {
  * (?style=&key=&bpm=&seed=). Da qui vengono sia il recupero dopo un ricaricamento
  * sia la condivisione: il link nella barra degli indirizzi e' il brano.
  */
-function _smPublishState(seed, style, key, bpm) {
+function _smPublishState(seed, style, key, bpm, form = null) {
   const el = document.getElementById('sm-seed');
   if (el) el.value = String(seed);
   try {
     const url = new URL(window.location.href);
-    url.search = new URLSearchParams({ style, key, bpm: String(bpm), seed: String(seed) }).toString();
+    const p = { style, key, bpm: String(bpm), seed: String(seed) };
+    // La forma finisce nell'URL solo se non è quella di default: un link non
+    // deve portarsi dietro un parametro che non dice niente.
+    if (form && form !== (STYLES[style] ?? {}).defaultForm) p.form = form;
+    url.search = new URLSearchParams(p).toString();
     window.history.replaceState(null, '', url);
   } catch {
     // Pagina aperta da file:// — replaceState non e' permesso. Il campo seed
@@ -554,6 +595,12 @@ window.smApplyUrlState = () => {
     const v = document.getElementById('sm-bpm-v');
     if (v) v.textContent = String(bpm);
   }
+
+  // Il select delle forme dipende dallo stile appena impostato, quindi va
+  // ricostruito prima di provare a selezionare la forma che arriva dal link.
+  const formaUrl = p.get('form');
+  const formeValide = (STYLES[document.getElementById('sm-style')?.value] ?? {}).availableForms ?? [];
+  window.smSyncForms(formaUrl && formeValide.includes(formaUrl) ? formaUrl : null);
 
   const seed = parseInt(p.get('seed'), 10);
   if (!Number.isFinite(seed) || seed <= 0) return false;

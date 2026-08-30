@@ -1314,6 +1314,7 @@ function _smApplicaSessione(sessione, solo) {
   if (keyEl && Array.from(keyEl.options).some(o => o.value === sessione.key)) keyEl.value = sessione.key;
   if (bpmEl) { bpmEl.value = String(sessione.bpm); if (bpmVEl) bpmVEl.textContent = String(sessione.bpm); }
   if (styleEl && Array.from(styleEl.options).some(o => o.value === sessione.style)) styleEl.value = sessione.style;
+  window.smSyncForms?.();
   _smUpdateScaleHint();
   smRender();
 }
@@ -1384,6 +1385,7 @@ export function smInit({ ripristina = true } = {}) {
     bpm: parseInt(document.getElementById('sm-bpm').value),
     style: document.getElementById('sm-style').value,
   });
+  window.smSyncForms?.();
   _smUpdateScaleHint();
   smRender();
 }
@@ -1391,6 +1393,7 @@ export function smInit({ ripristina = true } = {}) {
 window.smSyncMeta = () => {
   if (!AppState.session.manager) return;
   _smApplyKeyConstraint();
+  window.smSyncForms?.();   // A2: le forme disponibili dipendono dallo stile
   AppState.session.manager.setMeta({
     key: document.getElementById('sm-key').value,
     bpm: parseInt(document.getElementById('sm-bpm').value),
