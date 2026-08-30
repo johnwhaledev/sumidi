@@ -209,12 +209,15 @@
 
   <h3>Seed</h3>
   <p>Numero intero che inizializza il generatore di numeri casuali. Stesso seed, stesso stile, stessa tonalità e stesso BPM producono sempre <strong>esattamente</strong> lo stesso brano — utile per confrontare varianti o tornare su un'idea che ti era piaciuta.</p>
-  <p>Nella composer bar in alto trovi due controlli dedicati:</p>
+  <p>Nella composer bar in alto trovi i controlli dedicati:</p>
   <table>
     <tr><th>Controllo</th><th>Cosa fa</th></tr>
+    <tr><td>Campo <strong>Seed</strong></td><td>Mostra il seed del brano che stai ascoltando. Puoi anche scriverci o incollarci dentro un seed che avevi annotato: premendo Genera riottieni quel brano esatto, a patto che stile, tonalità e BPM siano gli stessi. Compilare il campo blocca automaticamente il seed (il lucchetto accanto si chiude), perché altrimenti Genera ne estrarrebbe subito un altro.</td></tr>
     <tr><td>🔓 / 🔒 Blocca seed</td><td>Se sbloccato (🔓), ogni volta che premi Genera viene estratto un nuovo seed casuale (quindi un brano diverso anche a parità di stile/tonalità/BPM). Se bloccato (🔒), il seed resta fisso e rigenerare riproduce sempre lo stesso brano.</td></tr>
+    <tr><td>🔗 Copia link</td><td>Copia negli appunti l'indirizzo del brano corrente. L'indirizzo contiene stile, tonalità, BPM e seed: chi lo apre ottiene lo stesso identico brano, e a te basta salvarlo fra i preferiti per ritrovarlo domani.</td></tr>
     <tr><td>🎲 Random</td><td>Randomizza insieme stile, tonalità e BPM (scelto in un range coerente con lo stile estratto) e rigenera subito il brano. Utile per uscire dal "blocco dell'idea" e scoprire combinazioni a cui non avresti pensato.</td></tr>
   </table>
+  <p>La barra degli indirizzi si aggiorna da sola a ogni generazione: l'indirizzo <em>è</em> il brano. Nessun dato viene inviato da nessuna parte — il brano non è salvato su un server, viene semplicemente rigenerato identico a partire dai quattro parametri che il link porta con sé.</p>
 </div>
 
 <!-- MODULI -->

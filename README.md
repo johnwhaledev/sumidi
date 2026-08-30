@@ -11,7 +11,7 @@ Generatore procedurale di brani MIDI multi-traccia, client-side (nessun server a
 - **Solo Mode**: ascolta un solo strumento (Piano, Chitarra, Basso o Ensemble) sull'intera progressione di accordi già costruita, con stile fisso o adattato automaticamente per tipo di sezione — indipendente dall'arrangiamento multi-traccia, un click per attivarlo.
 - **Roster di 31 personaggi**: ogni strumento (batteria, drum machine, percussioni etniche, basso, chitarra, piano, ensemble) può essere assegnato a un personaggio con stile e "feel" propri.
 - **Drum machine**: step sequencer a 16 step con preset Trap, Lo-Fi, Electro, editabili passo per passo.
-- **Seed deterministico**: stesso seed, stesso stile/tonalità/BPM ⇒ stesso brano identico, sempre. Blocco seed e randomizzazione rapida di stile/tonalità/BPM dalla composer bar.
+- **Seed deterministico**: stesso seed, stesso stile/tonalità/BPM ⇒ stesso brano identico, sempre. Il seed è visibile e incollabile nella composer bar, e l'indirizzo della pagina lo porta con sé (`?style=&key=&bpm=&seed=`): un brano si ritrova dopo giorni e si condivide con un link, senza che nulla venga salvato su un server. Blocco seed e randomizzazione rapida di stile/tonalità/BPM dalla stessa barra.
 - **Playback in-app**: ascolto di sezione o del brano intero via WebAudioFont, senza dover prima esportare.
 - **Export**: file MIDI multi-traccia su canali separati.
 - **Undo** fino a 10 passi, umanizzazione regolabile del timing/velocity.

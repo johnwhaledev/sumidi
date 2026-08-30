@@ -22,4 +22,11 @@ document.addEventListener('keydown', e => {
 
 // ── Avvio automatico Session Mode ────────────────────────────────
 // Non ci sono più tab: Session è l'unica vista, si inizializza subito.
+// B1 di PLAN37: prima di smInit() si applica alla composer bar lo stato
+// eventualmente presente nell'URL (?style=&key=&bpm=&seed=), perché smInit
+// legge i controlli per costruire il SessionManager. Se il link portava un
+// seed, il brano viene rigenerato subito: è quello che rende condivisibile
+// un brano con un link, e recuperabile dopo aver chiuso la scheda.
+const daLink = window.smApplyUrlState?.() ?? false;
 smInit();
+if (daLink) window.smAutoGenerate();

@@ -147,9 +147,17 @@
         </select>
       </div>
       <div class="cb-sep"></div>
+      <div class="cb-seed">
+        <label>Seed</label>
+        <input type="text" id="sm-seed" inputmode="numeric" maxlength="5" placeholder="—"
+          oninput="smSeedFieldInput()" spellcheck="false" autocomplete="off"
+          title="Il numero che identifica il brano. Incollane uno e premi Genera per riottenere esattamente quel brano.">
+      </div>
       <div class="cb-spacer"></div>
       <button id="sm-seed-lock-btn" class="btn btn-s btn-sm" onclick="smToggleSeedLock()"
         title="Blocca il seed: rigenerando riproduci sempre lo stesso brano">🔓</button>
+      <button id="sm-share-btn" class="btn btn-s btn-sm" onclick="smCopyShareLink()"
+        title="Copia il link di questo brano: chi lo apre ottiene lo stesso identico brano">🔗</button>
       <button id="sm-random-btn" class="btn btn-s btn-sm" onclick="smRandomAll()"
         title="Randomizza stile, tonalità e BPM e rigenera">🎲 Random</button>
       <button id="sm-gen-btn" class="btn btn-p btn-sm" onclick="smAutoGenerate()"

@@ -495,13 +495,24 @@ window.smAutoGenerate = async () => {
   // tutti attivi, come il default che il pannello Classic aveva sempre
   // avuto per questi due controlli.
   const def = STYLES[style] ?? {};
-  if (!window._seedLocked) _smLastSeed = Math.floor(Math.random() * 99999) + 1;
+  // B1: a seed bloccato comanda il campo della composer bar — e' cosi' che un
+  // seed incollato (a mano o arrivato da un link) riproduce il brano esatto.
+  // A seed sbloccato se ne pesca uno nuovo, come sempre.
+  const seedDalCampo = _smReadSeedField();
+  if (window._seedLocked) {
+    if (seedDalCampo !== null) _smLastSeed = seedDalCampo;
+  } else {
+    _smLastSeed = Math.floor(Math.random() * 99999) + 1;
+  }
   const params = {
     style, key, bpm,
     form: def.defaultForm,
     ensemble: def.ensemble?.type,
     seed: _smLastSeed,
   };
+  // Il seed usato diventa subito visibile e finisce nell'URL: da qui in poi il
+  // brano e' recuperabile anche dopo aver chiuso la scheda.
+  _smPublishState(_smLastSeed, style, key, bpm);
   const humAmt = def.humanize ?? 0.35;
 
   const genBtn = document.getElementById('sm-gen-btn');
@@ -516,15 +527,112 @@ window.smAutoGenerate = async () => {
 
 /** V1: blocca/sblocca il seed — a seed bloccato, rigenerare riproduce lo stesso brano. */
 window._seedLocked = false;
+
+/** Allinea l'icona del lucchetto allo stato reale: lo cambia anche il campo seed. */
+function _smSyncSeedLockBtn() {
+  const btn = document.getElementById('sm-seed-lock-btn');
+  if (!btn) return;
+  btn.textContent = window._seedLocked ? '🔒' : '🔓';
+  btn.title = window._seedLocked
+    ? 'Seed bloccato: rigenerando riproduci sempre lo stesso brano — clic per sbloccare'
+    : 'Blocca il seed: rigenerando riproduci sempre lo stesso brano';
+}
+
 window.smToggleSeedLock = () => {
   window._seedLocked = !window._seedLocked;
-  const btn = document.getElementById('sm-seed-lock-btn');
-  if (btn) {
-    btn.textContent = window._seedLocked ? '🔒' : '🔓';
-    btn.title = window._seedLocked
-      ? 'Seed bloccato: rigenerando riproduci sempre lo stesso brano — clic per sbloccare'
-      : 'Blocca il seed: rigenerando riproduci sempre lo stesso brano';
+  _smSyncSeedLockBtn();
+};
+
+// ── B1 di PLAN37 — seed recuperabile e stato del brano nell'URL ───────────
+// Il README prometteva "stesso seed, stesso stile/tonalita'/BPM => stesso brano
+// identico, sempre", ma nel percorso pubblicato il seed nasceva da Math.random(),
+// non era mostrato da nessuna parte e non esisteva un campo per reinserirlo: il
+// lucchetto lo congelava solo finche' la scheda restava aperta. Chiusa la scheda,
+// il brano era perduto — e non c'era modo di darlo a qualcun altro.
+
+/** Legge il campo seed della composer bar. Ritorna null se vuoto o non valido. */
+function _smReadSeedField() {
+  const el = document.getElementById('sm-seed');
+  if (!el) return null;
+  const n = parseInt(el.value, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Mostra il seed appena usato e riscrive l'URL con lo stato completo del brano
+ * (?style=&key=&bpm=&seed=). Da qui vengono sia il recupero dopo un ricaricamento
+ * sia la condivisione: il link nella barra degli indirizzi e' il brano.
+ */
+function _smPublishState(seed, style, key, bpm) {
+  const el = document.getElementById('sm-seed');
+  if (el) el.value = String(seed);
+  try {
+    const url = new URL(window.location.href);
+    url.search = new URLSearchParams({ style, key, bpm: String(bpm), seed: String(seed) }).toString();
+    window.history.replaceState(null, '', url);
+  } catch {
+    // Pagina aperta da file:// — replaceState non e' permesso. Il campo seed
+    // resta comunque compilato, che e' meta' del recupero.
   }
+}
+
+/** L'utente ha scritto o incollato un seed: da qui in poi comanda il campo. */
+window.smSeedFieldInput = () => {
+  const el = document.getElementById('sm-seed');
+  if (!el) return;
+  const pulito = el.value.replace(/\D/g, '').slice(0, 5);
+  if (pulito !== el.value) el.value = pulito;
+  // Incollare un seed e poi vederlo ignorato dal Genera sarebbe la stessa
+  // promessa non mantenuta di prima: il campo compilato blocca il seed da solo.
+  if (pulito && !window._seedLocked) { window._seedLocked = true; _smSyncSeedLockBtn(); }
+};
+
+/** Copia negli appunti il link del brano corrente. */
+window.smCopyShareLink = async () => {
+  const btn = document.getElementById('sm-share-btn');
+  const testoOriginale = btn?.textContent ?? '🔗';
+  try {
+    await navigator.clipboard.writeText(window.location.href);
+    if (btn) btn.textContent = '✅';
+  } catch {
+    if (btn) btn.textContent = '❌';
+  } finally {
+    if (btn) setTimeout(() => { btn.textContent = testoOriginale; }, 1400);
+  }
+};
+
+/**
+ * Applica alla composer bar lo stato presente nell'URL. Va chiamata PRIMA di
+ * smInit(), che legge i controlli per costruire il SessionManager.
+ * @returns {boolean} true se l'URL conteneva un seed valido, cioe' se punta a
+ *                    un brano preciso da rigenerare all'avvio.
+ */
+window.smApplyUrlState = () => {
+  const p = new URLSearchParams(window.location.search);
+
+  // Stile e tonalita' solo se il valore esiste davvero fra le option: un
+  // parametro inventato non deve lasciare la select su un valore impossibile.
+  for (const [id, val] of [['sm-style', p.get('style')], ['sm-key', p.get('key')]]) {
+    const el = document.getElementById(id);
+    if (el && val && Array.from(el.options).some(o => o.value === val)) el.value = val;
+  }
+
+  const bpmEl = document.getElementById('sm-bpm');
+  const bpm = parseInt(p.get('bpm'), 10);
+  if (bpmEl && Number.isFinite(bpm) && bpm >= Number(bpmEl.min) && bpm <= Number(bpmEl.max)) {
+    bpmEl.value = String(bpm);
+    const v = document.getElementById('sm-bpm-v');
+    if (v) v.textContent = String(bpm);
+  }
+
+  const seed = parseInt(p.get('seed'), 10);
+  if (!Number.isFinite(seed) || seed <= 0) return false;
+  const seedEl = document.getElementById('sm-seed');
+  if (seedEl) seedEl.value = String(seed);
+  _smLastSeed = seed;
+  window._seedLocked = true;
+  _smSyncSeedLockBtn();
+  return true;
 };
 
 // V2: BPM di default per stile (min/max presi da SongArchitect.js STYLES.defaultBpm)
