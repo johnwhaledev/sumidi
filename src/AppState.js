@@ -68,6 +68,12 @@ export const AppState = {
       active:      false,
       inst:        'piano',
       style:       '',     // '' = Auto (varia per tipo di sezione)
+      // O5 di PLAN37: sectionId → stile scelto a mano per quella sezione. La
+      // tabella per tipo di sezione resta il default (l'etichetta "Auto" era
+      // giusta, non era un errore); questa mappa è l'eccezione esplicita, lo
+      // stesso modello che l'Arrangement ha sempre avuto. Vuota = nessuna
+      // eccezione. Viene salvata nel .sumidi.json insieme al resto del solo.
+      stylePerSection: {},
       characterId: null,   // null = nessun personaggio scelto
       seed:        42,
       playing:     false,  // transitorio: non ha senso salvarlo

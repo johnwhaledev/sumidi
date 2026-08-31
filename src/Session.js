@@ -2332,10 +2332,14 @@ window.smCloseAdvancedExport = () => {
 // Non è un mute per sezione: sceglie UN solo strumento (Piano/Chitarra/
 // Basso/Ensemble) e lo suona per intero sulla progressione di accordi già
 // costruita in Session Mode (stessa tonalità/BPM/forma/sezioni), senza
-// leggere o toccare lo stato attivo/muto dell'Arrangement. Lo stile è
-// globale: "Auto" varia per tipo di sezione (tabella SOLO_STYLES, la
-// stessa di smGenerateSection), oppure un valore fisso per tutto il
-// brano — mai un mix per-sezione, come richiesto.
+// leggere o toccare lo stato attivo/muto dell'Arrangement.
+//
+// Lo stile: "Auto" varia per tipo di sezione (tabella SOLO_STYLES, la stessa di
+// smGenerateSection) ed è il default; un valore scelto a mano vale per tutto il
+// brano. O5 di PLAN37 aggiunge il terzo livello, che qui mancava e
+// nell'Arrangement c'era già: l'eccezione **per singola sezione**. Ordine di
+// precedenza, dal più specifico: sezione → globale → personaggio → tabella per
+// tipo di sezione → default del modulo.
 const SOLO_INSTS = ['piano', 'guitar', 'bass', 'ensemble'];
 const SOLO_INST_LABELS = { piano: 'Piano', guitar: 'Chitarra', bass: 'Basso', ensemble: 'Ensemble' };
 const SOLO_INST_CHANNEL = { piano: 3, guitar: 2, bass: 1 }; // ensemble: canali propri da generateEnsemble
@@ -2354,6 +2358,23 @@ const SOLO_STYLE_LISTS = {
 // in un `let` di modulo. Qui resta solo un alias sullo stesso oggetto, così il
 // codice sotto non cambia; tutte le scritture sono su proprietà, mai sull'alias.
 const _smSolo = AppState.session.solo;
+
+/**
+ * La mappa sezione → stile, sempre in una forma usabile. Un `.sumidi.json` può
+ * arrivare da chiunque e da qualunque versione: se al posto della mappa c'è
+ * altro, si riparte da vuota invece di rompere il pannello.
+ */
+function _smSoloMappaStili() {
+  const m = _smSolo.stylePerSection;
+  if (!m || typeof m !== 'object' || Array.isArray(m)) _smSolo.stylePerSection = {};
+  return _smSolo.stylePerSection;
+}
+
+/** Lo stile scelto a mano per una sezione: prima l'eccezione, poi il globale. */
+function _smSoloStileDi(sectionId) {
+  const scelto = _smSoloMappaStili()[sectionId];
+  return typeof scelto === 'string' && scelto ? scelto : _smSolo.style;
+}
 
 /** Attiva/disattiva Solo Mode — sostituisce la vista Arrangement. */
 window.smToggleSoloMode = () => {
@@ -2386,10 +2407,29 @@ window.smSoloSetInstrument = inst => {
   _smSolo.inst = inst;
   _smSolo.characterId = null;
   _smSolo.style = '';
+  // Gli stili sono per strumento (SOLO_STYLE_LISTS): tenere le eccezioni
+  // significherebbe chiedere al piano di suonare 'powerchord'.
+  _smSolo.stylePerSection = {};
   _smRenderSoloPanel();
 };
 
 window.smSoloSetStyle = val => { _smSolo.style = val; };
+
+/** O5: stile della singola sezione. Valore vuoto = torna a seguire il globale. */
+window.smSoloSetSectionStyle = (sectionId, val) => {
+  const mappa = _smSoloMappaStili();
+  if (val) mappa[sectionId] = val;
+  else delete mappa[sectionId];
+  _smRenderSoloPanel();
+  _smAutosave();
+};
+
+/** O5: toglie tutte le eccezioni per sezione in un colpo solo. */
+window.smSoloResetSectionStyles = () => {
+  _smSolo.stylePerSection = {};
+  _smRenderSoloPanel();
+  _smAutosave();
+};
 
 window.smSoloCycleCharacter = dir => {
   const roster = CHARACTER_ROSTER[_smSolo.inst] ?? [];
@@ -2421,6 +2461,16 @@ function _smRenderSoloPanel() {
   const char = roster[idx] ?? null;
   const styleOptions = SOLO_STYLE_LISTS[_smSolo.inst](char);
 
+  // O5: le eccezioni per sezione. Le sezioni cambiano (una rigenerazione
+  // completa ne crea di nuove con altri id): le voci rimaste orfane si
+  // buttano qui, cosi' la mappa non cresce con roba che non esiste piu'.
+  const mappaStili = _smSoloMappaStili();
+  for (const id of Object.keys(mappaStili)) {
+    if (!secs.some(sec => sec.id === id)) delete mappaStili[id];
+  }
+  const conEccezioni = Object.keys(mappaStili).length;
+  const etichettaGlobale = _smSolo.style || 'Auto';
+
   panel.innerHTML = `
     <div style="display:flex;gap:6px;margin-bottom:14px">
       ${SOLO_INSTS.map(inst => `<button class="sm-adv-tab-btn${inst === _smSolo.inst ? ' active' : ''}"
@@ -2439,6 +2489,22 @@ function _smRenderSoloPanel() {
         <option value=""${_smSolo.style === '' ? ' selected' : ''}>Auto (varia per tipo di sezione)</option>
         ${styleOptions.map(s => `<option value="${s}"${s === _smSolo.style ? ' selected' : ''}>${s}</option>`).join('')}
       </select>
+    </div>
+    <div class="sm-solo-sezioni" style="margin-top:10px;border-top:1px solid var(--border, #33335a);padding-top:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span class="sm-ctrl-label">Per sezione</span>
+        <span style="font-size:10px;color:var(--muted)">l'eccezione vince sullo stile qui sopra (${etichettaGlobale})</span>
+        ${conEccezioni ? `<button class="sm-icon-btn" style="margin-left:auto"
+          onclick="smSoloResetSectionStyles()" title="Togli tutte le eccezioni">↺</button>` : ''}
+      </div>
+      ${secs.map(sec => `
+        <div class="sm-ctrl-row">
+          <span class="sm-ctrl-label" style="min-width:96px">${sec.label}</span>
+          <select class="sm-style-sel" onchange="smSoloSetSectionStyle('${sec.id}', this.value)">
+            <option value=""${!mappaStili[sec.id] ? ' selected' : ''}>— come sopra —</option>
+            ${styleOptions.map(st => `<option value="${st}"${st === mappaStili[sec.id] ? ' selected' : ''}>${st}</option>`).join('')}
+          </select>
+        </div>`).join('')}
     </div>
     <div class="sm-ctrl-row">
       <span class="sm-ctrl-label">Seed</span>
@@ -2482,9 +2548,9 @@ async function _smSoloGenerateSection(sec, state) {
     // asse indipendente dallo stile pad/melodic — stessa distinzione di
     // smSelectCharacter (ensStyle vs style) sul pannello per-sezione.
     if (char?.style) bp.meta.ensemble = { ...(bp.meta.ensemble ?? {}), type: char.style };
-    mod.style = _smSolo.style || (SOLO_STYLES.ensemble[sec.type] ?? mod.style);
+    mod.style = _smSoloStileDi(sec.id) || (SOLO_STYLES.ensemble[sec.type] ?? mod.style);
   } else {
-    mod.style = _smSolo.style || char?.style || (SOLO_STYLES[inst]?.[sec.type] ?? mod.style);
+    mod.style = _smSoloStileDi(sec.id) || char?.style || (SOLO_STYLES[inst]?.[sec.type] ?? mod.style);
   }
 
   const seed = _smSolo.seed ^ SM_SALT[inst];
@@ -2518,7 +2584,23 @@ async function _smSoloGenerateSection(sec, state) {
   return { bp, voices };
 }
 
-/** Assembla l'intero brano per lo strumento scelto, sezione per sezione (stesso schema di smPlaySong). */
+/**
+ * Assembla l'intero brano per lo strumento scelto, sezione per sezione (stesso
+ * schema di smPlaySong).
+ *
+ * SEGNALATO E NON CORRETTO — B9 di PLAN37, trovato facendo O5. La
+ * `CrossSectionMemory` in `AppState.session.crossMemory` sopravvive fra una
+ * generazione e l'altra: qui non viene azzerata, quindi il primo export dopo
+ * il caricamento parte da una memoria vuota e tutti quelli dopo partono dalle
+ * note lasciate dal giro precedente. Misurato sullo stesso link (jazz_ballad,
+ * Dm, 84, seed 31337, piano): export in Auto → passaggio ad alberti_bass →
+ * ritorno ad Auto produce un file **diverso** dal primo (`f225cd09…` contro
+ * `b3f4e86f…`), e da lì in poi stabile. Cioe' il file dipende da cosa si e'
+ * esportato prima, non solo dal seed — la stessa famiglia di B7, ma piu'
+ * piccola. Il rimedio e' una riga (una memoria nuova a ogni assemblaggio, o un
+ * `reset()`), ma cambia il suono di quello che si sente adesso, quindi la
+ * decisione e' del committente.
+ */
 async function _smSoloAssembleSong() {
   const state = AppState.session.manager.getState();
   const secs = AppState.session.manager.getSections();
