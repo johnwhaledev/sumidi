@@ -33,12 +33,22 @@
 
 import { buildSong, buildHarmonicMap, makeRng, STYLES, SONG_FORMS } from './SongArchitect.js';
 import { bpmDensityScale }             from './FlowCore.js';
+import { generateChords }              from './ChordGenerator.js';
 
 // ── Costanti ──────────────────────────────────────────────────────
 
 export const INSTRUMENTS = ['drums', 'bass', 'guitar', 'piano', 'ensemble'];
 
 export const SECTION_TYPES = ['intro', 'verse', 'chorus', 'bridge', 'outro', 'custom'];
+
+// A3 di PLAN37 — il pad di riferimento armonico. Non e' uno strumento della
+// sessione: non ha una lane, non si spegne, non ha un seed. E' lo strato
+// d'atmosfera sotto l'arrangiamento, come deciso dal committente il
+// 2026-08-31, e per questo entra a volume basso: CC 7 a 55 invece del 100 di
+// default della DAW, circa 10 dB sotto le altre tracce. Le velocity le decide
+// gia' ChordGenerator in funzione dell'energia della sezione (range 12-30).
+const PAD_CH     = 4;
+const PAD_VOLUME = 55;
 
 // Bar di default per tipo sezione
 const DEFAULT_BARS = { intro: 4, verse: 8, chorus: 8, bridge: 8, outro: 4, custom: 8 };
@@ -555,6 +565,7 @@ export class SessionManager {
    * @param {number} ppq
    * @returns {Object} {
    *   drums:[], bass:[], guitar:[], piano:[],
+   *   pad:[],
    *   e0:{ evts:[], ch:5, prog:48, progChanges:[] },
    *   e1:{ evts:[], ch:6, prog:48, progChanges:[] },
    *   e2:{ evts:[], ch:7, prog:48, progChanges:[] },
@@ -562,7 +573,7 @@ export class SessionManager {
    */
   assembleSessionEvents(ppq) {
     const trackBuffers = {
-      drums: [], bass: [], guitar: [], piano: [],
+      drums: [], bass: [], guitar: [], piano: [], pad: [],
       e0: { evts: [], ch: 5, prog: 48, name: 'Ensemble V1', progChanges: [] },
       e1: { evts: [], ch: 6, prog: 48, name: 'Ensemble V2', progChanges: [] },
       e2: { evts: [], ch: 7, prog: 48, name: 'Ensemble V3', progChanges: [] },
@@ -576,6 +587,22 @@ export class SessionManager {
 
     for (const sec of this._state.sections) {
       const sectionTicks = sec.bars * barTicks;
+
+      // ── Pad (A3) ──────────────────────────────────────────────
+      // Non passa dalla cache degli strumenti perche' non e' uno strumento:
+      // si costruisce dall'armonia della sezione, che e' l'unica cosa da cui
+      // dipende. Cosi' e' davvero "sempre presente nel MIDI export", anche in
+      // una sezione con tutti gli strumenti spenti, e segue le eventuali
+      // modifiche fatte a mano nel chord track (che vivono in sec.progression
+      // e le vede buildSectionBlueprint).
+      const padGen = generateChords(buildSectionBlueprint(this._state, sec));
+      if (padGen.events.length && !trackBuffers.pad.length) {
+        trackBuffers.pad.push({ type: 'pc', tick: 0, prog: padGen.program, ch: PAD_CH });
+        trackBuffers.pad.push({ tick: 0, cc: 7, value: PAD_VOLUME, ch: PAD_CH });
+      }
+      for (const e of padGen.events) {
+        trackBuffers.pad.push({ ...e, tick: e.tick + globalTick });
+      }
 
       for (const inst of INSTRUMENTS) {
         const instState = sec.instruments[inst];

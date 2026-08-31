@@ -134,15 +134,60 @@ describe('assembleSessionEvents — montaggio della timeline', () => {
   });
 });
 
+describe('il pad di riferimento armonico (A3)', () => {
+  // Il pad non e' uno strumento della sessione: non ha lane, non si spegne e
+  // non passa dalla cache. E' lo strato d'atmosfera sotto l'arrangiamento, e
+  // l'intestazione di ChordGenerator.js promette che sia "sempre presente nel
+  // MIDI export" — per un periodo non era vero nel percorso di Session Mode.
+
+  const note = tb => tb.pad.filter(e => e.note != null);
+
+  it('c’e’ anche quando tutti gli strumenti sono spenti', () => {
+    const mgr = new SessionManager({ key: 'Dm', bpm: 84, style: 'jazz_ballad' });
+    const sec = mgr.addSection('verse', { bars: 4, seed: 100 });
+    for (const inst of INSTS) mgr.setInstrumentActive(sec.id, inst, false);
+    const tb = mgr.assembleSessionEvents(480);
+    for (const inst of ['drums', 'bass', 'guitar', 'piano']) expect(tb[inst]).toHaveLength(0);
+    expect(note(tb).length).toBeGreaterThan(0);
+  });
+
+  it('entra a volume basso, sul canale 4 e col programma del generatore', () => {
+    const tb = sessionePronta().assembleSessionEvents(480);
+    const pc = tb.pad.find(e => e.type === 'pc');
+    expect(pc).toMatchObject({ tick: 0, prog: 49, ch: 4 });
+    const volume = tb.pad.find(e => e.cc === 7);
+    expect(volume).toMatchObject({ tick: 0, ch: 4 });
+    expect(volume.value).toBeLessThan(100);   // il default della DAW
+    // Le velocity restano quelle contenute del generatore (12-30).
+    for (const e of note(tb)) expect(e.velocity).toBeLessThanOrEqual(30);
+  });
+
+  it('i tick seguono le sezioni, come per gli altri strumenti', () => {
+    const tb = sessionePronta({ sezioni: ['intro', 'verse'] }).assembleSessionEvents(480);
+    const sezioneTicks = 4 * 480 * 4;   // 4 battute
+    const seconda = note(tb).filter(e => e.tick >= sezioneTicks);
+    expect(seconda.length).toBeGreaterThan(0);
+    expect(Math.max(...note(tb).map(e => e.tick))).toBeLessThan(sezioneTicks * 2);
+  });
+
+  it('segue gli accordi scritti a mano nel chord track', () => {
+    const mgr = sessionePronta({ sezioni: ['verse'] });
+    const primo = mgr.assembleSessionEvents(480).pad.filter(e => e.note != null).map(e => e.note);
+    mgr.setSectionProgression(mgr.getSections()[0].id, ['Cmaj7', 'Fmaj7', 'Cmaj7', 'G7']);
+    const dopo = mgr.assembleSessionEvents(480).pad.filter(e => e.note != null).map(e => e.note);
+    expect(dopo).not.toEqual(primo);
+  });
+});
+
 describe('buildSessionMidi — il file esportato', () => {
   const midi = (mgr, opts) => buildSessionMidi(mgr.getState(), mgr.assembleSessionEvents(480), { ppq: 480, ...opts });
 
   it('produce un file MIDI valido con una traccia per strumento', () => {
     const bytes = midi(sessionePronta()).toUint8Array();
     expect(Array.from(bytes.slice(0, 4))).toEqual([0x4D, 0x54, 0x68, 0x64]);
-    // tempo track + drums, bass, guitar, piano + 3 voci di ensemble = 8
-    expect(contaTracce(bytes)).toBe(8);
-    expect((bytes[10] << 8) | bytes[11]).toBe(8);
+    // tempo track + drums, bass, guitar, piano + pad (A3) + 3 voci di ensemble = 9
+    expect(contaTracce(bytes)).toBe(9);
+    expect((bytes[10] << 8) | bytes[11]).toBe(9);
   });
 
   it('scrive tempo, metro e armatura di chiave (B2)', () => {
@@ -162,9 +207,9 @@ describe('buildSessionMidi — il file esportato', () => {
     expect(marker).toBe(3);
   });
 
-  it('senza ensemble scrive quattro tracce piu’ il tempo track', () => {
+  it('senza ensemble scrive i quattro strumenti, il pad e il tempo track', () => {
     const bytes = midi(sessionePronta({ ensemble: false })).toUint8Array();
-    expect(contaTracce(bytes)).toBe(5);
+    expect(contaTracce(bytes)).toBe(6);
   });
 
   it('l’override del mixer sostituisce il programma e zittisce quelli dinamici', () => {

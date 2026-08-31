@@ -23,6 +23,9 @@ const TRACCE_LINEARI = [
   { key: 'bass', ch: 1, nome: 'Bass' },
   { key: 'guitar', ch: 2, nome: 'Guitar' },
   { key: 'piano', ch: 3, nome: 'Piano' },
+  // A3 di PLAN37: il pad di riferimento armonico, canale 4. In coda alle
+  // altre quattro perche' cosi' l'ordine delle tracce esistenti non cambia.
+  { key: 'pad', ch: 4, nome: 'Pad' },
 ];
 
 /**
