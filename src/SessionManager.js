@@ -108,32 +108,6 @@ function _defaultSection(type, countSameType, seed, ordinal) {
 
 // ── buildSectionBlueprint ─────────────────────────────────────────
 
-// Mapping stile → form che contiene tutti i tipi di sezione.
-//
-// ATTENZIONE — copia parziale di STYLES.defaultForm, verificata il 2026-08-30
-// (B3 di PLAN37). Elenca 8 stili sui 13 esistenti: cinematic, lo_fi, punk,
-// garage_rock e chiptune cadono nel fallback 'unplugged_ballad', quindi in
-// Session Mode le loro sezioni vengono costruite sulla curva dinamica di una
-// ballad. Misurato: punk ha la strofa a energia 4 invece di 7, l'intro a 2
-// invece di 6, l'outro a 2 invece di 8; effetti simili su chiptune,
-// garage_rock e cinematic. Non è una scelta: il criterio dichiarato qui sopra
-// ("form che contiene tutti i tipi di sezione") è soddisfatto da tutte e 13 le
-// forme di default, la mappa è semplicemente rimasta a quando gli stili erano
-// 8. Correggerla cambia la musica generata sul percorso principale per 5 stili
-// su 13, quindi va fatta con un ascolto, non in autonomia — v. PLAN37, voce B6.
-// Il test tests/stylesSource.test.js impedisce che la divergenza cresca senza
-// che nessuno se ne accorga.
-export const SESSION_FORMS = {
-  unplugged:         'unplugged_ballad',
-  folk:              'folk_standard',
-  jazz_ballad:       'jazz_standard',
-  neo_soul:          'neo_soul_standard',
-  classical:         'classical_standard',
-  pop_rock:          'pop_rock_standard',
-  blues_rock:        'blues_rock_standard',
-  singer_songwriter: 'singer_songwriter_standard',
-};
-
 /**
  * Costruisce un SongBlueprint a sezione singola compatibile con tutti i generatori.
  *
@@ -142,7 +116,14 @@ export const SESSION_FORMS = {
  * @returns {SongBlueprint}     — { meta, sections: [singleSection] }
  */
 export function buildSectionBlueprint(sessionMeta, section) {
-  const formKey = SESSION_FORMS[sessionMeta.style] ?? 'unplugged_ballad';
+  // La forma con cui si costruisce la sezione e' quella di default dello
+  // stile, letta da STYLES — non piu' una mappa a parte (B6 di PLAN37). La
+  // mappa era ferma a quando gli stili erano 8: cinematic, lo_fi, punk,
+  // garage_rock e chiptune cadevano nel fallback 'unplugged_ballad' e
+  // prendevano la curva dinamica di una ballad. Il criterio dichiarato dalla
+  // vecchia mappa ("forma che contiene tutti i tipi di sezione") e' soddisfatto
+  // da tutte e 13 le forme di default: lo sorveglia tests/stylesSource.test.js.
+  const formKey = STYLES[sessionMeta.style]?.defaultForm ?? 'unplugged_ballad';
 
   // buildSong produce l'armonia e i moduli per il tipo di sezione richiesto
   const fullBp = buildSong({

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { STYLES } from '../src/Styles.js';
 import { SONG_FORMS } from '../src/SongArchitect.js';
-import { SESSION_FORMS } from '../src/SessionManager.js';
+import { SessionManager, buildSectionBlueprint } from '../src/SessionManager.js';
 
 // B3 di PLAN37 — Styles.js è la fonte delle verità musicali per stile (forma di
 // default, range di BPM, umanizzazione). Erano copiate a mano in sei punti di
@@ -85,29 +85,34 @@ describe('gli slider BPM sanno esprimere i range dichiarati dagli stili', () => 
   );
 });
 
-describe('SESSION_FORMS — copia parziale, sorvegliata', () => {
-  // Session Mode costruisce ogni sezione con la forma indicata qui. La mappa è
-  // ferma a quando gli stili erano 8: i 5 aggiunti dopo cadono nel fallback
-  // 'unplugged_ballad' e prendono la curva dinamica di una ballad. Correggerlo
-  // cambia la musica generata, quindi è una decisione d'ascolto (PLAN37, B6).
-  // Questi due test non sanano la divergenza: impediscono che cresca.
+describe('Session Mode — la forma della sezione viene da Styles.js', () => {
+  // B6 di PLAN37. Session Mode costruiva ogni sezione con una mappa a parte,
+  // ferma a quando gli stili erano 8: i 5 aggiunti dopo (cinematic, lo_fi,
+  // punk, garage_rock, chiptune) cadevano nel fallback 'unplugged_ballad' e
+  // prendevano la curva dinamica di una ballad. La mappa non c'e' piu': questi
+  // test guardano il comportamento, non la tabella.
 
-  it('per gli stili che elenca, coincide con STYLES.defaultForm', () => {
-    for (const [style, form] of Object.entries(SESSION_FORMS)) {
-      expect(STYLES[style], `SESSION_FORMS elenca "${style}", che non esiste in STYLES`).toBeTruthy();
-      expect(form).toBe(STYLES[style].defaultForm);
+  it('ogni stile costruisce le sezioni con la propria forma di default', () => {
+    for (const style of STILI) {
+      const mgr = new SessionManager({ key: 'Am', bpm: 90, style });
+      const sec = mgr.addSection('verse', { seed: 4242 });
+      const bp = buildSectionBlueprint(mgr.getState(), sec);
+      expect(bp.meta.formName, `${style} non usa la sua forma di default`)
+        .toBe(STYLES[style].defaultForm);
     }
   });
 
-  it('gli stili non coperti sono esattamente i 5 noti', () => {
-    const scoperti = STILI.filter(s => !SESSION_FORMS[s]).sort();
-    expect(scoperti).toEqual(['chiptune', 'cinematic', 'garage_rock', 'lo_fi', 'punk']);
+  it('uno stile sconosciuto ricade sulla ballad, senza esplodere', () => {
+    const mgr = new SessionManager({ key: 'Am', bpm: 90, style: 'unplugged' });
+    const sec = mgr.addSection('verse', { seed: 4242 });
+    const bp = buildSectionBlueprint({ ...mgr.getState(), style: 'inesistente' }, sec);
+    expect(bp.meta.formName).toBe('unplugged_ballad');
   });
 
   it('ogni forma usata da Session Mode contiene tutti i tipi di sezione', () => {
-    // È il criterio dichiarato nel commento sopra la mappa, ed è anche la
-    // ragione per cui la correzione è sicura sul piano strutturale: tutte e 13
-    // le forme di default lo soddisfano.
+    // È il criterio dichiarato dalla vecchia mappa, ed è anche la ragione per
+    // cui la correzione è sicura sul piano strutturale: tutte e 13 le forme di
+    // default lo soddisfano.
     const TIPI = ['intro', 'verse', 'chorus', 'bridge', 'outro'];
     for (const style of STILI) {
       const form = SONG_FORMS[STYLES[style].defaultForm];
