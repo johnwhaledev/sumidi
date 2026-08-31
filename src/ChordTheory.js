@@ -91,39 +91,99 @@ export const SCALE_INTERVALS = {
  * una battuta ('Am'), oppure una coppia [nome, battute] quando ne dura di più
  * (['Am7', 2]). La seconda forma compare nei pool jazz e blues_rock.
  *
+ * A1 di PLAN37 — la durata può anche essere **mezza battuta** (['Am7', 0.5]):
+ * è la granularità con cui buildHarmonicMap costruisce le regioni armoniche
+ * (finestre di mezza battuta in 4/4). Prima non esisteva alcun modo di
+ * rappresentare un accordo più corto di una battuta, e questo escludeva dal
+ * motore il ii-V dentro la battuta, la cadenza che stringe sull'ultima e ogni
+ * accelerazione armonica: un brano suMidi aveva sempre lo stesso passo, su
+ * tutti e 13 gli stili. Durate più corte di mezza battuta vengono arrotondate
+ * a mezza: meglio sentirle dove non erano previste che perderle del tutto.
+ *
  * Chi deve solo mostrare l'accordo usi nomeAccordo(): trattare la coppia come
  * stringa produce "Am7,2" a video. Chi deve allineare gli accordi alle battute
- * usi accordiPerBattuta(), che è anche la logica con cui buildHarmonicMap
- * decide quale accordo copre quale battuta.
+ * usi accordiPerBattuta(); chi deve mostrarli a chi legge, etichettePerBattuta(),
+ * che in una battuta con due accordi li mostra entrambi. Tutte e tre passano da
+ * accordiPerFinestra(), che è anche la logica con cui buildHarmonicMap decide
+ * quale accordo copre quale finestra: una fonte sola, come per B3.
  */
+
+// Finestre per battuta con cui si leggono le progressioni: mezza battuta, cioè
+// la stessa granularità delle regioni armoniche in 4/4.
+export const FINESTRE_PER_BATTUTA = 2;
 export function nomeAccordo(voce) {
   return Array.isArray(voce) ? voce[0] : voce;
 }
 
 /**
- * Espande una progressione in un accordo per battuta, ciclando se la sezione è
- * più lunga della progressione.
+ * Espande una progressione in un accordo per finestra, ciclando se la sezione è
+ * più lunga della progressione. È la funzione di base: accordiPerBattuta ed
+ * etichettePerBattuta ne sono due letture.
+ *
+ * @param {Array<string|[string, number]>} progressione
+ * @param {number} battute            — quante battute coprire
+ * @param {number} finestrePerBattuta — 1 = una finestra per battuta, 2 = mezze
+ * @returns {string[]} un nome di accordo per ogni finestra
+ */
+export function accordiPerFinestra(progressione, battute, finestrePerBattuta = FINESTRE_PER_BATTUTA) {
+  const normalizzata = (progressione ?? []).map(v => (Array.isArray(v) ? v : [v, 1]));
+  if (!normalizzata.length || !(battute > 0) || !(finestrePerBattuta > 0)) return [];
+
+  // Durate convertite in finestre intere. Il minimo è una finestra: un accordo
+  // più corto della griglia disponibile si sente comunque, allungato.
+  const inFinestre = normalizzata.map(([nome, durata]) =>
+    [nome, Math.max(1, Math.round((durata ?? 1) * finestrePerBattuta))]);
+
+  const lunghezzaCiclo = inFinestre.reduce((somma, [, durata]) => somma + durata, 0);
+  if (!(lunghezzaCiclo > 0)) return [];
+
+  const fuori = [];
+  const totale = Math.round(battute * finestrePerBattuta);
+  for (let finestra = 0; finestra < totale; finestra++) {
+    const posizione = finestra % lunghezzaCiclo;
+    let accumulate = 0, nome = inFinestre[0][0];
+    for (const [accordo, durata] of inFinestre) {
+      if (posizione < accumulate + durata) { nome = accordo; break; }
+      accumulate += durata;
+    }
+    fuori.push(nome);
+  }
+  return fuori;
+}
+
+/**
+ * Un accordo per battuta: quello su cui la battuta parte. Per le progressioni
+ * a battute intere — cioè tutte quelle scritte finora — è esattamente il
+ * risultato di prima.
  *
  * @param {Array<string|[string, number]>} progressione
  * @param {number} battute  — quante battute coprire
  * @returns {string[]} un nome di accordo per ogni battuta
  */
 export function accordiPerBattuta(progressione, battute) {
-  const normalizzata = (progressione ?? []).map(v => (Array.isArray(v) ? v : [v, 1]));
-  if (!normalizzata.length || !(battute > 0)) return [];
+  const finestre = accordiPerFinestra(progressione, battute);
+  return Array.from({ length: Math.max(0, Math.trunc(battute)) },
+    (_, bar) => finestre[bar * FINESTRE_PER_BATTUTA]).filter(x => x != null);
+}
 
-  const lunghezzaCiclo = normalizzata.reduce((somma, [, durata]) => somma + durata, 0);
-  if (!(lunghezzaCiclo > 0)) return [];
-
+/**
+ * Un'etichetta per battuta, per chi legge: 'Am7' se la battuta ha un accordo
+ * solo, 'Am7 D7' se ne ha due. Serve a chord chart e CRD, che altrimenti
+ * mostrerebbero solo il primo dei due e direbbero una cosa diversa da quella
+ * che si sente — la divergenza che B1 di PLAN36 aveva già pagato una volta.
+ *
+ * @param {Array<string|[string, number]>} progressione
+ * @param {number} battute
+ * @returns {string[]} un'etichetta per ogni battuta
+ */
+export function etichettePerBattuta(progressione, battute) {
+  const finestre = accordiPerFinestra(progressione, battute);
   const fuori = [];
-  for (let bar = 0; bar < battute; bar++) {
-    const posizione = bar % lunghezzaCiclo;
-    let accumulate = 0, nome = normalizzata[0][0];
-    for (const [accordo, durata] of normalizzata) {
-      if (posizione < accumulate + durata) { nome = accordo; break; }
-      accumulate += durata;
-    }
-    fuori.push(nome);
+  for (let bar = 0; bar < Math.trunc(battute); bar++) {
+    const nella = finestre.slice(bar * FINESTRE_PER_BATTUTA, (bar + 1) * FINESTRE_PER_BATTUTA)
+      .filter(x => x != null);
+    if (!nella.length) break;
+    fuori.push([...new Set(nella)].join(' '));
   }
   return fuori;
 }

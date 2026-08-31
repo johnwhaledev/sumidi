@@ -5,7 +5,7 @@
  * Utile per sessioni di studio, condivisione e archivio.
  */
 
-import { nomeAccordo, accordiPerBattuta } from './ChordTheory.js';
+import { nomeAccordo, etichettePerBattuta } from './ChordTheory.js';
 
 // ── Tuning strings (note per corda a vuoto, dalla più bassa) ─────
 const TUNINGS = {
@@ -189,7 +189,9 @@ export function exportMarkdown(bp, guitarEvents, bassEvents) {
       crdLines.push(`[${sec.type.toUpperCase()}${sec.index > 0 ? ` ${sec.index + 1}` : ''}]`);
       // Una riga per battuta: un accordo che dura 2 battute va ripetuto, o il
       // CRD non è allineato al brano (formato pensato per chi suona leggendo).
-      for (const chord of accordiPerBattuta(sec.progression, sec.bars)) {
+      // A1 di PLAN37: se in una battuta ce ne sono due, l'etichetta li porta
+      // entrambi, perché chi legge deve leggere quello che sente.
+      for (const chord of etichettePerBattuta(sec.progression, sec.bars)) {
         crdLines.push(`${chord} ...`);
       }
       crdLines.push('');

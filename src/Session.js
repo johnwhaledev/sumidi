@@ -2196,18 +2196,24 @@ function _smBuildTabSections() {
       // dedup consecutiva è pensata per l'etichetta del chord-track — ciclarla
       // con accordiPerBattuta darebbe battute sbagliate se le durate reali non
       // sono uniformi). Si ricostruisce invece un run-length encoding esatto
-      // [accordo, battute] dall'harmonicMap reale, un accordo per bar.
+      // [accordo, battute] dall'harmonicMap reale.
+      // A1 di PLAN37: si legge di mezza battuta in mezza battuta, che è la
+      // granularità delle regioni armoniche. Su una progressione a battute
+      // intere le due metà sono uguali e si fondono, quindi esce lo stesso
+      // [accordo, 1] di prima; se invece la battuta contiene due accordi,
+      // escono due voci da 0,5 e tab e chord chart li mostrano entrambi.
       const bp = AppState.cache.bp[`${sec.id}:_bp`];
       const barTicks = bp?.meta?.barTicks ?? 1920;
       const map = bp?.sections?.[0]?.harmonicMap ?? [];
       progression = [];
-      for (let b = 0; b < sec.bars; b++) {
-        const tick = b * barTicks;
+      const PASSO = 0.5;
+      for (let q = 0; q < Math.round(sec.bars / PASSO); q++) {
+        const tick = q * barTicks * PASSO;
         const region = map.find(r => r.start_tick <= tick && r.end_tick > tick);
         const chord = region?.chord ?? progression[progression.length - 1]?.[0] ?? '?';
         const last = progression[progression.length - 1];
-        if (last && last[0] === chord) last[1] += 1;
-        else progression.push([chord, 1]);
+        if (last && last[0] === chord) last[1] += PASSO;
+        else progression.push([chord, PASSO]);
       }
     }
 

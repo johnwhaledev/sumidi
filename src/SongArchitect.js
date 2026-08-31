@@ -17,7 +17,7 @@
 // forme di canzone, preset di sezione e metadati di stile vivono ora in
 // moduli dedicati. Qui restano solo logica di utilità e il builder.
 // ═══════════════════════════════════════════════════════════════════
-import { PITCH_CLASS, CHORD_INTERVALS, SCALE_INTERVALS, nomeAccordo, accordiPerBattuta } from './ChordTheory.js';
+import { PITCH_CLASS, CHORD_INTERVALS, SCALE_INTERVALS, nomeAccordo, accordiPerFinestra } from './ChordTheory.js';
 import { PROGRESSION_POOLS, PROGRESSIONS } from './SongProgressions.js';
 import { SONG_FORMS } from './SongForms.js';
 import { SECTION_PRESETS } from './SectionPresets.js';
@@ -242,87 +242,91 @@ function buildHarmonicMap(progression, startTick, barsCount, ppq, barTicks = ppq
   const windowTicks = barTicks < ppq * 4 ? barTicks : ppq * 2;
   const map = [];
 
-  // Formato misto: 'Am' → una battuta | ['Am', 2] → due battute.
-  // L'espansione vive in ChordTheory.accordiPerBattuta perché serve anche a
-  // chi mostra gli accordi (export, tab): averne due copie è il modo in cui
-  // nascono le divergenze fra ciò che si sente e ciò che si legge.
-  const chordsByBar = accordiPerBattuta(progression, barsCount);
+  // Formato misto: 'Am' → una battuta | ['Am', 2] → due battute | ['Am', 0.5]
+  // → mezza battuta (A1 di PLAN37). L'espansione vive in
+  // ChordTheory.accordiPerFinestra perché serve anche a chi mostra gli accordi
+  // (export, tab): averne due copie è il modo in cui nascono le divergenze fra
+  // ciò che si sente e ciò che si legge.
+  //
+  // Prima l'accordo si sceglieva per battuta e si scriveva identico nelle due
+  // mezze battute, quindi un accordo più corto di una battuta non aveva modo
+  // di esistere. Ora ogni finestra ha il suo: per una progressione a battute
+  // intere — cioè tutte quelle scritte finora — il risultato è identico, ed è
+  // verificato sui byte.
+  const finestrePerBattuta = Math.max(1, Math.round(barTicks / windowTicks));
+  const chordsByWindow = accordiPerFinestra(progression, barsCount, finestrePerBattuta);
 
-  for (let bar = 0; bar < barsCount; bar++) {
-    const chordStr = chordsByBar[bar];
+  for (let w = 0; w < chordsByWindow.length; w++) {
+    const chordStr = chordsByWindow[w];
     const parsed = parseChord(chordStr);
     if (!parsed) continue;
 
-    const barStart = startTick + bar * barTicks;
+    const wStart = startTick + w * windowTicks;
+    const wEnd = wStart + windowTicks;
 
-    for (let half = 0; half < 2; half++) {
-      const wStart = barStart + half * windowTicks;
-      const wEnd = wStart + windowTicks;
+    // Scale chord-aware: ogni qualità suggerisce il modo più idiomatico
+    // FASE H: blues_rock usa sempre 'blues' per gli accordi I7/IV7/V7
+    const q2 = parsed.quality;
+    const scaleType =
+      (progFamily === 'blues_rock')
+        ? 'blues'
+      : (q2 === 'min' || q2 === 'min7' || q2 === 'min9' || q2 === 'min11' ||
+         q2 === 'minmaj7' || q2 === 'min6' || q2 === 'm6')
+        ? 'dorian'
+      : (q2 === 'dom7' || q2 === '7' || q2 === 'dom9' || q2 === 'dom11' ||
+         q2 === 'dom13' || q2 === 'dom7sus4')
+        ? 'mixolydian'
+      : (q2 === 'dim' || q2 === 'dim7' || q2 === 'hdim7')
+        ? 'locrian'
+      : (q2 === 'aug' || q2 === 'aug7')
+        ? 'lydian'
+      : 'major';
 
-      // Scale chord-aware: ogni qualità suggerisce il modo più idiomatico
-      // FASE H: blues_rock usa sempre 'blues' per gli accordi I7/IV7/V7
-      const q2 = parsed.quality;
-      const scaleType =
-        (progFamily === 'blues_rock')
-          ? 'blues'
-        : (q2 === 'min' || q2 === 'min7' || q2 === 'min9' || q2 === 'min11' ||
-           q2 === 'minmaj7' || q2 === 'min6' || q2 === 'm6')
-          ? 'dorian'
-        : (q2 === 'dom7' || q2 === '7' || q2 === 'dom9' || q2 === 'dom11' ||
-           q2 === 'dom13' || q2 === 'dom7sus4')
-          ? 'mixolydian'
-        : (q2 === 'dim' || q2 === 'dim7' || q2 === 'hdim7')
-          ? 'locrian'
-        : (q2 === 'aug' || q2 === 'aug7')
-          ? 'lydian'
-        : 'major';
+    // FASE A: propaga bassNotePc/bassNoteMidi per slash chords
+    const bassNotePc   = parsed.bassNotePc   ?? null;
+    const bassNoteMidi = parsed.bassNoteMidi  ?? null;
 
-      // FASE A: propaga bassNotePc/bassNoteMidi per slash chords
-      const bassNotePc   = parsed.bassNotePc   ?? null;
-      const bassNoteMidi = parsed.bassNoteMidi  ?? null;
-
-      // Sessione C S2-B: avoid notes per qualità — pitch class assoluti in range 36–96
-      // Usate dal basso walking per filtrare i passing tones scalari dissonanti.
-      const AVOID_PCS = {
-        'maj':   [11],        // IV maggiore: 7M (sensibile) è avoid
-        'dom7':  [],          // dom7: la 7m è già nell'accordo
-        'dom9':  [],
-        'maj7':  [],          // maj7: nessuna avoid (la 7M è la nota caratteristica)
-        'min':   [1],         // min: b9 è avoid
-        'min7':  [1],
-        'dim':   [1, 6],      // dim: b9 e tritono
-        'dim7':  [1],
-        'hdim7': [1],
-        'sus4':  [4],         // sus4: la 3M è avoid (non risolta)
-        'sus2':  [2],         // sus2: la 2M stridente
-      };
-      const avoidPcs = (AVOID_PCS[parsed.qualityStr] ?? [])
-        .map(interval => ((parsed.rootPc + interval) % 12));
-      // Espandi in pitch MIDI concreti nel range 36–96
-      const avoidNotesMidi = [];
-      for (const pc of avoidPcs) {
-        for (let oct = 2; oct <= 7; oct++) {
-          const n = oct * 12 + pc;
-          if (n >= 36 && n <= 96) avoidNotesMidi.push(n);
-        }
+    // Sessione C S2-B: avoid notes per qualità — pitch class assoluti in range 36–96
+    // Usate dal basso walking per filtrare i passing tones scalari dissonanti.
+    const AVOID_PCS = {
+      'maj':   [11],        // IV maggiore: 7M (sensibile) è avoid
+      'dom7':  [],          // dom7: la 7m è già nell'accordo
+      'dom9':  [],
+      'maj7':  [],          // maj7: nessuna avoid (la 7M è la nota caratteristica)
+      'min':   [1],         // min: b9 è avoid
+      'min7':  [1],
+      'dim':   [1, 6],      // dim: b9 e tritono
+      'dim7':  [1],
+      'hdim7': [1],
+      'sus4':  [4],         // sus4: la 3M è avoid (non risolta)
+      'sus2':  [2],         // sus2: la 2M stridente
+    };
+    const avoidPcs = (AVOID_PCS[parsed.qualityStr] ?? [])
+      .map(interval => ((parsed.rootPc + interval) % 12));
+    // Espandi in pitch MIDI concreti nel range 36–96
+    const avoidNotesMidi = [];
+    for (const pc of avoidPcs) {
+      for (let oct = 2; oct <= 7; oct++) {
+        const n = oct * 12 + pc;
+        if (n >= 36 && n <= 96) avoidNotesMidi.push(n);
       }
-
-      map.push({
-        start_tick:    wStart,
-        end_tick:      wEnd,
-        chord:         chordStr,
-        root:          parsed.rootMidi,
-        rootPc:        parsed.rootPc,
-        chord_degrees: parsed.intervals,
-        scale:         scaleType,
-        scale_notes:   buildScalePool(parsed.rootPc, scaleType, 36, 96),
-        chord_tones:   buildChordTonePool(parsed, 48, 84),
-        active:        true,
-        bassNotePc,      // FASE A: null se non slash chord
-        bassNoteMidi,    // FASE A: MIDI ottava 2 della nota al basso
-        avoid_notes:   avoidNotesMidi,  // Sessione C S2-B
-      });
     }
+
+    map.push({
+      start_tick:    wStart,
+      end_tick:      wEnd,
+      chord:         chordStr,
+      root:          parsed.rootMidi,
+      rootPc:        parsed.rootPc,
+      chord_degrees: parsed.intervals,
+      scale:         scaleType,
+      scale_notes:   buildScalePool(parsed.rootPc, scaleType, 36, 96),
+      chord_tones:   buildChordTonePool(parsed, 48, 84),
+      active:        true,
+      bassNotePc,      // FASE A: null se non slash chord
+      bassNoteMidi,    // FASE A: MIDI ottava 2 della nota al basso
+      avoid_notes:   avoidNotesMidi,  // Sessione C S2-B
+    });
   }
 
   return map;

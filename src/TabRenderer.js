@@ -11,7 +11,7 @@
  * ─────────────────────────────────────────────────────────────────
  */
 
-import { accordiPerBattuta } from './ChordTheory.js';
+import { etichettePerBattuta } from './ChordTheory.js';
 
 // ── Instrument tunings (MIDI note per open string, low→high) ─────
 const TUNINGS = {
@@ -264,12 +264,14 @@ export function renderChordChart(sections, totalBars) {
   const svgH  = numRows * (rowH + 12) + 32;
 
   // Build bar→chord map
-  // accordiPerBattuta rispetta la durata degli accordi: `progression[b % len]`
+  // etichettePerBattuta rispetta la durata degli accordi: `progression[b % len]`
   // assumeva un accordo per battuta e disallineava la griglia sui pool
-  // jazz/blues_rock, dove un accordo può durarne 2 o 4.
+  // jazz/blues_rock, dove un accordo può durarne 2 o 4. A1 di PLAN37: una
+  // battuta può anche contenerne due, e allora l'etichetta li mostra entrambi
+  // ("Am7 D7") invece di far leggere metà di quello che si sente.
   const chordByBar = new Map();
   for (const sec of sections) {
-    const accordi = accordiPerBattuta(sec.progression, sec.bars);
+    const accordi = etichettePerBattuta(sec.progression, sec.bars);
     for (let b = 0; b < sec.bars; b++) {
       const absBar = sec.startBar + b;
       chordByBar.set(absBar, {
@@ -313,9 +315,12 @@ export function renderChordChart(sections, totalBars) {
           text-anchor="middle" fill="${tc}" font-size="8" font-weight="bold">${label.toUpperCase()}</text>`;
       }
 
-      // Chord name — centered, large
+      // Chord name — centered, large. Con due accordi nella stessa battuta
+      // (A1) l'etichetta è più lunga: si rimpicciolisce quanto basta a stare
+      // nella cella invece di uscirne.
+      const chordFs = (info.chord ?? '').length > 9 ? 11 : 15;
       svg += `<text x="${x + barW/2}" y="${ry + 32}"
-        text-anchor="middle" fill="#E0E0E0" font-size="15" font-weight="bold">${esc(info.chord)}</text>`;
+        text-anchor="middle" fill="#E0E0E0" font-size="${chordFs}" font-weight="bold">${esc(info.chord)}</text>`;
     }
   }
 
