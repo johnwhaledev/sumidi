@@ -31,7 +31,7 @@
  *   .undo()                           — ripristina snapshot precedente, ritorna true/false
  */
 
-import { buildSong, buildHarmonicMap, STYLES, SONG_FORMS } from './SongArchitect.js';
+import { buildSong, buildHarmonicMap, makeRng, STYLES, SONG_FORMS } from './SongArchitect.js';
 import { bpmDensityScale }             from './FlowCore.js';
 
 // ── Costanti ──────────────────────────────────────────────────────
@@ -62,28 +62,45 @@ function _sectionLabel(type, countSameType) {
   return countSameType > 0 ? `${base} ${countSameType + 1}` : base;
 }
 
-function _defaultInstrumentState() {
+// Seed iniziale di uno strumento, derivato da quello della sezione — B7 di
+// PLAN37. Prima era _rndSeed(): il seed del brano fissava struttura, accordi,
+// tonalita' e tempo, ma non le note suonate, e due aperture dello stesso link
+// davano due file MIDI diversi (misurato sui byte, non dedotto). Nella
+// derivazione entra anche l'ordine di creazione della sezione, perche'
+// smImportFromBlueprint assegna a tutte le sezioni lo stesso seed di brano:
+// senza l'ordinale due strofe uscirebbero identiche nota per nota. Il dado del
+// singolo strumento (mutateInstrumentSeed) continua a randomizzare su richiesta.
+function _instrumentSeed(sectionSeed, instrument, ordinal) {
+  const rng = makeRng(
+    Math.imul((sectionSeed >>> 0) + 1, 0x9E3779B1)
+      ^ Math.imul(INSTRUMENTS.indexOf(instrument) + 1, 0x85EBCA6B)
+      ^ Math.imul((ordinal >>> 0) + 1, 0xC2B2AE35),
+  );
+  return rng.int(1, 99998);
+}
+
+function _defaultInstrumentState(seed) {
   return {
     active:       true,
     locked:       false,
-    seed:         _rndSeed(),
+    seed,
     characterId:  null,   // null = default del roster per tipo strumento
     params:       {},     // espanso da S5 in poi (knob, slider, dot-pattern)
     cachedEvents: null,   // null = rigenera al prossimo generate
   };
 }
 
-function _defaultSection(type, countSameType) {
+function _defaultSection(type, countSameType, seed, ordinal) {
   return {
     id:          _uid(),
     type,
     label:       _sectionLabel(type, countSameType),
     bars:        DEFAULT_BARS[type] ?? 8,
-    seed:        _rndSeed(),
+    seed,
     lockedSeed:  false,
     progression: null,    // array di accordi custom, se null usa form generator
     instruments: Object.fromEntries(
-      INSTRUMENTS.map(inst => [inst, _defaultInstrumentState()])
+      INSTRUMENTS.map(inst => [inst, _defaultInstrumentState(_instrumentSeed(seed, inst, ordinal))])
     ),
     cachedEvents: null,   // null = tutte le tracce da rigenerare
   };
@@ -318,9 +335,12 @@ export class SessionManager {
 
   addSection(type = 'verse', opts = {}) {
     const countSame = this._state.sections.filter(s => s.type === type).length;
-    const sec = _defaultSection(type, countSame);
+    // Il seed della sezione si decide prima di costruirla: da lui derivano i
+    // seed iniziali dei cinque strumenti (B7). Assegnarlo dopo li lascerebbe
+    // slegati, che era esattamente il difetto.
+    const seed = opts.seed !== undefined ? opts.seed : _rndSeed();
+    const sec = _defaultSection(type, countSame, seed, this._state.sections.length);
     if (opts.bars  !== undefined) sec.bars = opts.bars;
-    if (opts.seed  !== undefined) sec.seed = opts.seed;
     if (opts.label !== undefined) sec.label = opts.label;
 
     if (opts.after !== undefined) {
