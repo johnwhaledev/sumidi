@@ -64,8 +64,32 @@ describe('PianoGenerator — la mano sinistra scende quando il basso non c’è'
     // È il senso dell'anti-mud: sotto il C3 ci sta il basso, non il piano.
     const note = noteDi(generatePiano(bp('classical'), null, 4242, null));
     const bassi = note.filter(n => n < 48);
-    // Qualche nota sotto il C3 resta (ornamenti, ottave), ma sono l'eccezione.
-    expect(bassi.length / note.length).toBeLessThan(0.1);
+    // Prima di O2 qualche nota sotto il C3 restava (finestra di 9 semitoni:
+    // clampToRegister non aveva un rappresentante per Sib, Si e Do e le
+    // spingeva un'ottava sotto). Con la finestra di un'ottava piena non ne
+    // resta nessuna.
+    expect(bassi).toEqual([]);
+  });
+});
+
+describe('PianoGenerator — la finestra della sinistra copre un ottava piena (O2)', () => {
+  // O2 di PLAN37, decisione del committente: la mano sinistra deve avere
+  // almeno un'ottava. Sotto i 12 semitoni clampToRegister non ha un
+  // rappresentante esatto per ogni pitch class e la nota finisce fuori dalla
+  // finestra — sempre verso il basso, cioè addosso al basso vero. Il test
+  // guarda la conseguenza udibile, non la costante.
+  const STILI = ['unplugged', 'folk', 'jazz_ballad', 'neo_soul', 'classical',
+                 'pop_rock', 'blues_rock', 'singer_songwriter', 'cinematic',
+                 'lo_fi', 'punk', 'garage_rock', 'chiptune'];
+
+  it.each(STILI)('su %s nessuna nota cade sotto il pavimento della sezione', style => {
+    for (const seed of [4242, 777]) {
+      // Col basso attivo il pavimento è C3 (48), senza basso è C2 (36).
+      const conBasso = noteDi(generatePiano(bp(style), null, seed, null));
+      expect(conBasso.filter(n => n < 48)).toEqual([]);
+      const soloPiano = noteDi(generatePiano(bp(style, 'piano'), null, seed, null));
+      expect(soloPiano.filter(n => n < 36)).toEqual([]);
+    }
   });
 });
 

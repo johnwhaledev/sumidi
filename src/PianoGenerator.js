@@ -38,8 +38,21 @@ const PIANO_PROGRAM_BY_STYLE = {
 };
 
 // Registri base — il LH lo viene calcolato dinamicamente per sezione (FASE I)
-const LH_HI  = 57;
-// Fase D: RH.lo alzato da 57(A3) a 60(C4) per creare gap con LH e non sovrapporsi
+//
+// O2 di PLAN37 — LH_HI da 57 (A3) a 60 (C4), decisione del committente: la
+// mano sinistra deve avere almeno un'ottava. Col pavimento a 48 (basso attivo)
+// la finestra e' ora di 12 semitoni, con quello a 36 (basso assente, dopo O1)
+// di 24. Non e' solo larghezza: sotto i 12 semitoni clampToRegister non ha un
+// rappresentante esatto per ogni pitch class, e le tre classi che mancavano
+// (Bb, B, C) finivano un'ottava sotto il pavimento — 914 note su 47.215 nella
+// misura fatta su 13 stili x 4 seed, ora zero. E' la stessa famiglia del bug corretto in
+// 27ccbf5 ("clampToRegister corrompe la nota su registri piu' stretti di
+// un'ottava"), qui vista dal lato della finestra invece che della nota.
+const LH_HI  = 60;
+// Fase D: RH.lo alzato da 57(A3) a 60(C4) per creare gap con LH e non sovrapporsi.
+// Con LH_HI a 60 il gap si chiude su una nota sola, il DO4, dove le due mani
+// possono ora incontrarsi all'unisono: doppioni esatti (stesso tick, stessa
+// nota) da 114 a 138 su 47.215 note, cioe' 24 in piu' — 0,05%.
 const RH = { lo: 60, hi: 84 };
 
 // ── Patterns (step16, durSteps, velFactor) ────────────────────────
