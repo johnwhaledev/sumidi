@@ -258,8 +258,14 @@ export function generateBass(blueprint, drumContext = null, seedOverride = null)
 /**
  * Chord tone più vicino all'ancora (in range LO–HI).
  * Beat 1 non è sempre root — sceglie il chord tone meno lontano dall'ultima nota suonata.
+ *
+ * O3 di PLAN37: questa e le due funzioni sotto sono esportate perché le usa
+ * anche la mano sinistra del piano quando suona da sola. Sono pure — ricevono
+ * note e registro, restituiscono una nota — e non sanno niente di corde: le
+ * parti specifiche dello strumento (`applyNoteOffVariation`, `canSlide`)
+ * restano qui e non escono.
  */
-function _nearestChordTone(tones, anchor, lo, hi) {
+export function _nearestChordTone(tones, anchor, lo, hi) {
   const clamped = tones
     .filter(t => t != null)
     .map(t => clampToRegister(t, lo, hi));
@@ -273,7 +279,7 @@ function _nearestChordTone(tones, anchor, lo, hi) {
  * Seleziona il chord tone per beat 3 — deve essere diverso da beat1.
  * Se beat1 era root → beat3 = fifth; se fifth → beat3 = seventh o third; altrimenti root.
  */
-function _selectBeat3(beat1Note, root, fifth, third, seventh, lo, hi) {
+export function _selectBeat3(beat1Note, root, fifth, third, seventh, lo, hi) {
   const rpc  = root % 12;
   const candidates = [
     beat1Note % 12 === rpc         ? fifth              : null,
@@ -288,7 +294,7 @@ function _selectBeat3(beat1Note, root, fifth, third, seventh, lo, hi) {
  * Passing tone scalare tra fromNote e toNote, escluse le avoid notes.
  * Sceglie la nota della scala più vicina al punto medio tra le due, nella direzione di moto.
  */
-function _walkingPassTone(fromNote, toNote, scalePool, avoidNotes, lo, hi) {
+export function _walkingPassTone(fromNote, toNote, scalePool, avoidNotes, lo, hi) {
   const dir = toNote > fromNote ? 1 : -1;
   const avoidPcs = new Set((avoidNotes ?? []).map(n => n % 12));
   const candidates = scalePool.filter(n => {

@@ -93,6 +93,63 @@ describe('PianoGenerator — la finestra della sinistra copre un ottava piena (O
   });
 });
 
+describe('PianoGenerator — la sinistra fa una linea quando il basso non c’è (O3)', () => {
+  // Con il basso spento la sinistra non ha più nessuno sotto: battere la
+  // fondamentale a ogni colpo la lascia un pedale. Ora le note si scelgono con
+  // le stesse funzioni del walking bass (importate da BassGenerator, non
+  // riscritte). Col basso acceso non cambia niente: sotto c'è già chi la linea
+  // la fa, e due linee nello stesso registro sono fango.
+
+  /** Note della mano sinistra (sotto il DO4), in ordine di tick. */
+  const sinistra = res => res.events
+    .filter(e => e.cc == null && e.note < 60)
+    .sort((a, b) => a.tick - b.tick || a.note - b.note);
+
+  const distinte = note => new Set(note.map(e => e.note)).size;
+
+  it.each(['classical', 'folk', 'jazz_ballad', 'cinematic'])('su %s la sinistra sola tocca più note', style => {
+    const conBasso   = sinistra(generatePiano(bp(style), null, 4242, null));
+    const senzaBasso = sinistra(generatePiano(bp(style, 'piano'), null, 4242, null));
+    expect(senzaBasso.length).toBeGreaterThan(0);
+    // È la differenza fra una linea e un pedale: la stessa sezione, gli stessi
+    // accordi, ma la sinistra non ribatte più la fondamentale.
+    expect(distinte(senzaBasso)).toBeGreaterThan(distinte(conBasso));
+  });
+
+  it('sulla linea il bicordo root+quinta diventa una nota sola', () => {
+    // Due note tenute insieme sono un accordo, non un passo. Il ruolo
+    // 'root+fifth' vive nel pattern LH 'comping', che tocca a energia bassa.
+    const perTick = solo => {
+      const b = bp('jazz_ballad', solo);
+      b.sections[0].energy = 2;
+      b.sections[0].modules.piano.style = 'comping';
+      const m = new Map();
+      for (const e of sinistra(generatePiano(b, null, 4242, null))) {
+        m.set(e.tick, (m.get(e.tick) ?? 0) + 1);
+      }
+      return [...m.values()];
+    };
+    expect(perTick(null).filter(n => n >= 2).length).toBeGreaterThan(0);
+    expect(perTick('piano').every(n => n === 1)).toBe(true);
+  });
+
+  it('la linea non inventa note: restano dell’accordo o della scala', () => {
+    const b = bp('classical', 'piano');
+    const regioni = b.sections[0].harmonicMap;
+    for (const e of sinistra(generatePiano(b, null, 4242, null))) {
+      const r = regioni.find(x => e.tick >= x.start_tick && e.tick < x.end_tick) ?? regioni[0];
+      const ammesse = new Set([
+        ...(r.chord_tones ?? []).map(n => n % 12),
+        ...(r.scale_notes ?? []).map(n => n % 12),
+      ]);
+      // Le note di approccio cromatico sono l'eccezione prevista: stanno a un
+      // semitono dalla fondamentale del prossimo accordo.
+      const vicine = regioni.map(x => x.rootPc).flatMap(pc => [(pc + 11) % 12, (pc + 1) % 12]);
+      expect(ammesse.has(e.note % 12) || vicine.includes(e.note % 12)).toBe(true);
+    }
+  });
+});
+
 describe('GuitarGenerator — lo stagger dei transienti cambia in solo', () => {
   it('su classical la chitarra sola non sfalsa i transienti come col basso', () => {
     const impronta = b => generateGuitar(b, null, 4242, null)

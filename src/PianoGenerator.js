@@ -24,6 +24,9 @@
  */
 
 import { makeRng, clampToRegister } from './SongArchitect.js';
+// O3 di PLAN37: la selezione delle note della linea di basso, riusata dalla
+// mano sinistra quando il piano suona da solo. Importate, non riscritte.
+import { _nearestChordTone, _selectBeat3, _walkingPassTone } from './BassGenerator.js';
 import { arcVelocity, selectContextualNote, PhraseMemory, getMelodicCharacter } from './FlowCore.js';
 
 export const PIANO_PROGRAM = 0;  // Acoustic Grand — default per tutti gli stili
@@ -201,6 +204,12 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
     // Evita overlap frequenziale 65–220Hz tra LH piano e basso (anti-mud).
     const bassActive = section.modules.bass?.active ?? false;
     const LH = { lo: bassActive ? 48 : 36, hi: LH_HI };
+
+    // O3: con il basso spento la sinistra fa una linea con moto proprio. Con il
+    // basso acceso resta l'accompagnamento di sempre — sotto c'e' gia' qualcuno
+    // che quella linea la fa, e due linee nello stesso registro sono fango.
+    const lhLinea = !bassActive;
+    let lhPrevNota = null;
 
     const patConf = STYLE_PATTERNS[style]?.[energyKey] ?? STYLE_PATTERNS['ballad']['mid'];
 
@@ -381,6 +390,7 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
       }
 
       // ── Left hand ───────────────────────────────────────────
+      let primoColpoLh = true;
       for (const [step16, durSteps, role] of lhPattern) {
         const tick = barStart + step16 * s16;
         if (tick >= section.endTick) break;
@@ -395,17 +405,37 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
           Math.round(velBase * 0.85) + rng.int(-5, 5)
         ));
 
+        // O3: sulla linea, i ruoli a nota singola non sono piu' "sempre la
+        // fondamentale" ma il passo successivo di una condotta. I ruoli di
+        // accompagnamento (accordo, chord_mid) restano quello che sono.
+        const notaLinea = lhLinea ? _lhLineaNota(region, LH, lhPrevNota, primoColpoLh) : null;
+        primoColpoLh = false;
+
         switch (role) {
-          case 'root':
-            events.push({ tick, note: lhRoot, velocity: vel, duration: dur });
+          case 'root': {
+            const n = notaLinea ?? lhRoot;
+            events.push({ tick, note: n, velocity: vel, duration: dur });
+            lhPrevNota = n;
             break;
-          case 'fifth':
-            events.push({ tick, note: lhFifth, velocity: Math.max(1, vel - 4), duration: dur });
+          }
+          case 'fifth': {
+            const n = notaLinea ?? lhFifth;
+            events.push({ tick, note: n, velocity: Math.max(1, vel - 4), duration: dur });
+            lhPrevNota = n;
             break;
-          case 'root+fifth':
-            events.push({ tick, note: lhRoot,  velocity: vel,                  duration: dur });
-            events.push({ tick, note: lhFifth, velocity: Math.max(1, vel - 8), duration: dur });
+          }
+          case 'root+fifth': {
+            // Sulla linea il bicordo diventa una nota sola: due note tenute
+            // insieme sono un accordo, non un passo.
+            if (notaLinea != null) {
+              events.push({ tick, note: notaLinea, velocity: vel, duration: dur });
+              lhPrevNota = notaLinea;
+            } else {
+              events.push({ tick, note: lhRoot,  velocity: vel,                  duration: dur });
+              events.push({ tick, note: lhFifth, velocity: Math.max(1, vel - 8), duration: dur });
+            }
             break;
+          }
           case 'chord':
             lhChord.forEach(n => {
               events.push({ tick, note: n, velocity: Math.max(1, vel - 4), duration: dur });
@@ -413,9 +443,10 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
             break;
           case 'root_low': {
             // Oom-pah beat 1&3: root al registro più basso del LH (basso profondo)
-            let basso = lhRoot;
+            let basso = notaLinea ?? lhRoot;
             while (basso - 12 >= LH.lo) basso -= 12;
             events.push({ tick, note: basso, velocity: vel, duration: dur });
+            lhPrevNota = basso;
             break;
           }
           case 'chord_mid': {
@@ -430,22 +461,36 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
         }
       }
 
-      // LH approccio cromatico: anticipa il root del prossimo accordo a step 14
+      // LH approccio cromatico: anticipa il root del prossimo accordo a step 14.
+      // O3: sulla linea si prova prima il passaggio scalare vero (quello del
+      // walking bass, avoid notes escluse); il cromatico resta come ripiego,
+      // ed e' quello che si sente quando i due accordi sono vicini.
       if (chordChanging && rhDensity > 0.4 && nextRegion?.root != null) {
         const appTick = barStart + 14 * s16;
         if (appTick < section.endTick) {
           const targetRoot = clampToRegister(nextRegion.root, LH.lo, LH.hi);
+          // Solo sulla linea si parte da dove la sinistra e' arrivata davvero:
+          // con il basso acceso il punto di partenza resta la fondamentale,
+          // altrimenti cambierebbe il cromatico anche dove O3 non c'entra.
+          const daDove = lhLinea ? (lhPrevNota ?? lhRoot) : lhRoot;
+          const scalare = lhLinea
+            ? _walkingPassTone(daDove, targetRoot, region.scale_notes ?? [],
+                               region.avoid_notes ?? [], LH.lo, LH.hi)
+            : null;
           const below = targetRoot - 1, above = targetRoot + 1;
-          const approach = Math.abs(below - lhRoot) <= Math.abs(above - lhRoot) ? below : above;
+          const approach = scalare
+            ?? (Math.abs(below - daDove) <= Math.abs(above - daDove) ? below : above);
           // Nota: qui il clamp finale per VALORE (non per ottava) è corretto —
           // approach è già a ±1 semitono da targetRoot (in registro), non va
           // fatto scattare di un'ottava intera se sfora di 1 solo semitono.
+          const notaApp = Math.max(LH.lo, Math.min(LH.hi, approach));
           events.push({
             tick:     appTick,
-            note:     Math.max(LH.lo, Math.min(LH.hi, approach)),
+            note:     notaApp,
             velocity: Math.max(1, Math.round(velBase * 0.60)),
             duration: Math.round(s16 * 0.85),
           });
+          lhPrevNota = notaApp;
         }
       }
 
@@ -597,6 +642,39 @@ function _buildQuartalVoicing(region, lo, hi) {
     notes.push(clampToRegister(60 + ((rootPc + d) % 12), lo, hi));
   }
   return [...new Set(notes)].sort((a, b) => a - b);
+}
+
+/**
+ * O3 — la nota della mano sinistra quando il piano suona da solo.
+ *
+ * Con il basso spento la sinistra non ha piu' nessuno sotto: continuare a
+ * battere la fondamentale a ogni colpo la lascia un pedale, non una linea. Qui
+ * la nota si sceglie come la sceglierebbe un contrabbassista, con le stesse
+ * funzioni che usa BassGenerator: il primo colpo della battuta va sul chord
+ * tone piu' vicino a dove eravamo (non e' sempre la fondamentale), i colpi
+ * dopo si muovono su un altro grado invece di ripetere.
+ *
+ * @param {object} region   — regione armonica corrente
+ * @param {object} LH       — { lo, hi } registro della sinistra
+ * @param {number|null} prevNota — ultima nota suonata dalla sinistra
+ * @param {boolean} primaDelBar  — e' il primo colpo della battuta?
+ * @returns {number|null} la nota, o null se la regione non ha chord tones
+ */
+function _lhLineaNota(region, LH, prevNota, primaDelBar) {
+  const tones = (region.chord_tones ?? []).filter(n => n != null);
+  if (!tones.length) return null;
+
+  if (primaDelBar || prevNota == null) {
+    return _nearestChordTone(tones, prevNota ?? region.root, LH.lo, LH.hi);
+  }
+
+  const degs    = region.chord_degrees ?? [0, 4, 7];
+  const nota    = deg => clampToRegister(60 + ((region.rootPc + deg) % 12), LH.lo, LH.hi);
+  const root    = nota(degs[0] ?? 0);
+  const third   = nota(degs[1] ?? 4);
+  const fifth   = nota(degs[2] ?? 7);
+  const seventh = degs[3] != null ? nota(degs[3]) : null;
+  return _selectBeat3(prevNota, root, fifth, third, seventh, LH.lo, LH.hi);
 }
 
 // ── LH voicing ───────────────────────────────────────────────────
