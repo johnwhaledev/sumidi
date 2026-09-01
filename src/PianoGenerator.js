@@ -27,7 +27,8 @@ import { makeRng, clampToRegister } from './SongArchitect.js';
 // O3 di PLAN37: la selezione delle note della linea di basso, riusata dalla
 // mano sinistra quando il piano suona da solo. Importate, non riscritte.
 import { _nearestChordTone, _selectBeat3, _walkingPassTone } from './BassGenerator.js';
-import { arcVelocity, selectContextualNote, PhraseMemory, getMelodicCharacter } from './FlowCore.js';
+import { arcVelocity, selectContextualNote, PhraseMemory, getMelodicCharacter,
+         regioniDellaBattuta, finestraAlTick } from './FlowCore.js';
 
 export const PIANO_PROGRAM = 0;  // Acoustic Grand — default per tutti gli stili
 
@@ -224,9 +225,9 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
       // T7: velocity arc — velBase varia bar per bar nella sezione
       const velBase   = arcVelocity(velBaseSection, b, section.bars, arcType);
 
-      const region = section.harmonicMap.find(r =>
-        r.start_tick <= barStart && r.end_tick > barStart
-      ) ?? section.harmonicMap[0];
+      // A1b: le regioni della battuta, non la sola d'inizio bar.
+      const spans  = regioniDellaBattuta(section.harmonicMap, barStart, barStart + barTicks);
+      const region = spans[0]?.region;
       if (!region) continue;
 
       // T11: se c'è rest_probability sul piano, riduzione densità (interplay, non silenzio)
@@ -243,7 +244,6 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
       const nextRegion    = section.harmonicMap.find(r =>
         r.start_tick <= nextBarStart && r.end_tick > nextBarStart
       ) ?? null;
-      const chordChanging = nextRegion != null && nextRegion.rootPc !== region.rootPc;
 
       // Pedal: lift and re-press on chord change
       if (usePedal && prevRegionPc != null && prevRegionPc !== region.rootPc) {
@@ -252,24 +252,56 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
       }
       // S5-A: estrai snareSteps per questo bar
       const snareSteps = drumContext?.get(barStart)?.snareSteps ?? null;
-      // S6-B: calcolo tensione e risoluzione
-      const tension = _chordTension(region.chord);
-      const isResolution = prevRegionChord != null && _chordTension(prevRegionChord) >= 2 && tension === 0 && prevRegionPc !== region.rootPc;
-      
-      prevRegionPc = region.rootPc;
-      prevRegionChord = region.chord;
 
       // Build voicings — quartale a bassa energia jazz, shell altrimenti, full per pop
       const useShell   = JAZZ_SHELL_STYLES.has(style);
       // Energy 4-5: crossfade probabilistico quartal→shell (non salto secco)
       const useQuartal = style === 'comping' && (energy <= 4 || (energy === 5 && rng.bool(0.60)));
-      const rhVoicing  = useQuartal
-        ? _buildQuartalVoicing(region, RH.lo, RH.hi)
-        : useShell
-          ? _buildShellVoicing(region, energy, region.scale_notes ?? [], tension)
-          : _buildRhVoicing(region, prevRhVoicing);
-      prevRhVoicing    = rhVoicing;
-      const { lhRoot, lhFifth, lhChord } = _buildLhVoicing(region, LH);
+
+      // A1b: un voicing per ogni regione della battuta — destra, sinistra,
+      // tensione e accordo successivo. Prima si costruiva tutto sulla regione
+      // d'inizio bar e su | Dm7 G7 | la seconda metà restava sul Dm7. Con un
+      // accordo per battuta la lista ha un elemento e vale il codice di prima.
+      let vociPrec  = prevRhVoicing;
+      let accPrecPc = prevRegionPc, accPrecNome = prevRegionChord;
+      const armonie = spans.map((sp, si) => {
+        const r = sp.region;
+        // Il "prossimo accordo" è quello della regione dopo: dentro la battuta
+        // se ce n'è un'altra, altrimenti quello d'inizio battuta successiva
+        // (trappola (b) di A1b).
+        const successiva = si + 1 < spans.length ? spans[si + 1].region : nextRegion;
+        // S6-B: calcolo tensione e risoluzione
+        const tension = _chordTension(r.chord);
+        const isResolution = accPrecNome != null && _chordTension(accPrecNome) >= 2
+                          && tension === 0 && accPrecPc !== r.rootPc;
+        const rhVoicing = useQuartal
+          ? _buildQuartalVoicing(r, RH.lo, RH.hi)
+          : useShell
+            ? _buildShellVoicing(r, energy, r.scale_notes ?? [], tension)
+            : _buildRhVoicing(r, vociPrec);
+        vociPrec = rhVoicing;
+        accPrecPc = r.rootPc; accPrecNome = r.chord;
+        return {
+          inizio: sp.inizio, fine: sp.fine, region: r, successiva,
+          chordChanging: successiva != null && successiva.rootPc !== r.rootPc,
+          tension, isResolution, rhVoicing,
+          ..._buildLhVoicing(r, LH),
+        };
+      });
+      const ultima = armonie[armonie.length - 1];
+      prevRhVoicing   = ultima.rhVoicing;
+      prevRegionPc    = ultima.region.rootPc;
+      prevRegionChord = ultima.region.chord;
+
+      // Il pedale si rialza anche a un cambio d'accordo dentro la battuta:
+      // tenerlo giù su | Dm7 G7 | impasta i due accordi in uno.
+      if (usePedal) {
+        for (let k = 1; k < armonie.length; k++) {
+          if (armonie[k].region.rootPc === armonie[k - 1].region.rootPc) continue;
+          events.push({ tick: armonie[k].inizio - 5, cc: 64, value: 0   });
+          events.push({ tick: armonie[k].inizio,     cc: 64, value: 100 });
+        }
+      }
 
       // Variant probabilistico: bar 2 → 65%, bar 3-4 di frase → 40%
       const barInPhrase = b % 4;
@@ -291,16 +323,25 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
 
       // ── Right hand ──────────────────────────────────────────
       if (useFreelyStyle) {
-        events.push(..._genFreelyBar(barStart, region, s16, barTicks, velBase,
+        events.push(..._genFreelyBar(barStart, armonie, s16, barTicks, velBase,
                                      section.endTick, rng, movement, freelyMemory, character));
-      } else if (useAlberti) {
-        events.push(..._genAlbertiBar(barStart, rhVoicing, s16, velBase, section.endTick));
-      } else if (useBroken || useBrokenChordsStyle) {
-        events.push(..._genBrokenBar(barStart, rhVoicing, s16, barTicks, velBase, section.endTick));
+      } else if (useAlberti || useBroken || useBrokenChordsStyle) {
+        // A1b: il disegno (alberti o broken) continua per tutta la battuta, ma
+        // ogni nota è quella del voicing che suona in quel punto. Si genera la
+        // battuta intera per ogni regione e si tiene la parte che le compete:
+        // il pattern non riparte a metà, cambia solo l'accordo sotto.
+        for (const ar of armonie) {
+          const battuta = useAlberti
+            ? _genAlbertiBar(barStart, ar.rhVoicing, s16, velBase, section.endTick)
+            : _genBrokenBar(barStart, ar.rhVoicing, s16, barTicks, velBase, section.endTick);
+          events.push(...battuta.filter(e => e.tick >= ar.inizio && e.tick < ar.fine));
+        }
       } else {
       for (const [step16, durSteps, velFactor] of rhPattern) {
         const tick = barStart + step16 * s16;
         if (tick >= section.endTick) break;
+        // A1b: l'armonia di questo colpo, non quella d'inizio battuta
+        const { region, rhVoicing, chordChanging, isResolution } = finestraAlTick(armonie, tick);
 
         const dur = Math.min(
           Math.round(durSteps * s16 * 0.92),
@@ -336,7 +377,7 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
 
         // Strong beats: core voicing con inversioni voice-leading
         let notesToPlay = isStrong
-          ? _coreVoicing(region, RH.lo, RH.hi, prevRhVoicing)
+          ? _coreVoicing(region, RH.lo, RH.hi, rhVoicing)
           : rhVoicing;
 
         // T10 v2 — HOOK: nel ritornello, sovrappone al voicing la stessa nota del
@@ -394,6 +435,8 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
       for (const [step16, durSteps, role] of lhPattern) {
         const tick = barStart + step16 * s16;
         if (tick >= section.endTick) break;
+        // A1b: la sinistra segue il cambio d'accordo dentro la battuta
+        const { region, lhRoot, lhFifth, lhChord } = finestraAlTick(armonie, tick);
 
         const dur = Math.min(
           Math.round(durSteps * s16 * 0.95),
@@ -465,17 +508,18 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
       // O3: sulla linea si prova prima il passaggio scalare vero (quello del
       // walking bass, avoid notes escluse); il cromatico resta come ripiego,
       // ed e' quello che si sente quando i due accordi sono vicini.
-      if (chordChanging && rhDensity > 0.4 && nextRegion?.root != null) {
+      const app = finestraAlTick(armonie, barStart + 14 * s16);
+      if (app.chordChanging && rhDensity > 0.4 && app.successiva?.root != null) {
         const appTick = barStart + 14 * s16;
         if (appTick < section.endTick) {
-          const targetRoot = clampToRegister(nextRegion.root, LH.lo, LH.hi);
+          const targetRoot = clampToRegister(app.successiva.root, LH.lo, LH.hi);
           // Solo sulla linea si parte da dove la sinistra e' arrivata davvero:
           // con il basso acceso il punto di partenza resta la fondamentale,
           // altrimenti cambierebbe il cromatico anche dove O3 non c'entra.
-          const daDove = lhLinea ? (lhPrevNota ?? lhRoot) : lhRoot;
+          const daDove = lhLinea ? (lhPrevNota ?? app.lhRoot) : app.lhRoot;
           const scalare = lhLinea
-            ? _walkingPassTone(daDove, targetRoot, region.scale_notes ?? [],
-                               region.avoid_notes ?? [], LH.lo, LH.hi)
+            ? _walkingPassTone(daDove, targetRoot, app.region.scale_notes ?? [],
+                               app.region.avoid_notes ?? [], LH.lo, LH.hi)
             : null;
           const below = targetRoot - 1, above = targetRoot + 1;
           const approach = scalare
@@ -497,7 +541,8 @@ export function generatePiano(blueprint, drumContext = null, seedOverride = null
       // LH ghost beat: nota leggera su un offbeat (step 2, 6, 10 o 14)
       if (LH_GHOST_STYLES.has(style) && rng.bool(0.15)) {
         const ghostStep = rng.choice([2, 6, 10, 14]);
-        events.push({ tick: barStart + ghostStep * s16, note: lhRoot,
+        const ghostTick = barStart + ghostStep * s16;
+        events.push({ tick: ghostTick, note: finestraAlTick(armonie, ghostTick).lhRoot,
                       velocity: rng.int(20, 35), duration: Math.round(s16 * 0.3) });
       }
     }
@@ -762,11 +807,14 @@ function _genBrokenBar(barStart, voicing, s16, barTicks, velBase, endTick) {
 // ── S8: Freely bar — fraseggio jazz/soul libero, mai due bar uguali ──────────
 // region.scale_notes usate come pool melodico (note di scala nel registro RH).
 // movement: 'minimal' (1-3 note), 'medium' (3-6 note), 'full' (6-10 note + run).
-function _genFreelyBar(barStart, region, s16, barTicks, velBase, endTick, rng, movement,
+function _genFreelyBar(barStart, armonie, s16, barTicks, velBase, endTick, rng, movement,
                         memory = null, character = null) {
   const events = [];
-  const scaleNotes = (region.scale_notes ?? []).filter(n => n >= RH.lo && n <= RH.hi);
-  if (!scaleNotes.length) return events;
+  // A1b: una scala per regione della battuta — la linea libera cambia colore
+  // quando cambia l'accordo, invece di restare su quello d'inizio battuta.
+  const perRegione = armonie.map(ar => ({ ...ar,
+    scaleNotes: (ar.region.scale_notes ?? []).filter(n => n >= RH.lo && n <= RH.hi) }));
+  if (!perRegione[0].scaleNotes.length) return events;
 
   // Numero di note target per il bar
   const minN = movement === 'minimal' ? 1 : movement === 'full' ? 5 : 2;
@@ -786,6 +834,8 @@ function _genFreelyBar(barStart, region, s16, barTicks, velBase, endTick, rng, m
   for (let i = 0; i < noteCount && cursor < 16; i++) {
     const tick = barStart + cursor * s16;
     if (tick >= endTick) break;
+    const qui = finestraAlTick(perRegione, tick);
+    const scaleNotes = qui.scaleNotes.length ? qui.scaleNotes : perRegione[0].scaleNotes;
 
     // Prima: rng.choice puramente casuale — nessun legame tra una nota e la
     // successiva. Ora usa selectContextualNote con la PhraseMemory della

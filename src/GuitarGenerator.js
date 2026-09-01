@@ -13,7 +13,8 @@
  */
 
 import { makeRng, clampToRegister, buildChordTonePool } from './SongArchitect.js';
-import { PhraseMemory, chromaticApproach, selectContextualNote, arcVelocity, getMelodicCharacter } from './FlowCore.js';
+import { PhraseMemory, chromaticApproach, selectContextualNote, arcVelocity, getMelodicCharacter,
+         regioniDellaBattuta, finestraAlTick } from './FlowCore.js';
 
 export const GUITAR_PROGRAMS = {
   fingerpicking: 25,
@@ -287,10 +288,12 @@ export function generateGuitar(blueprint, drumContext = null, seedOverride = nul
     if (!preset?.active) continue;
     for (let b = 0; b < section.bars; b++) {
       const barStart = section.startTick + b * barTicks;
-      const region   = _regionAt(barStart, section.harmonicMap);
+      // A1b: le regioni della battuta, non la sola d'inizio bar.
+      const spans  = regioniDellaBattuta(section.harmonicMap, barStart, barStart + barTicks);
+      const region = spans[0]?.region;
       if (!region) continue;
       allBars.push({
-        barStart, region, section,
+        barStart, region, spans, section,
         barIdxInSection:    b,
         totalBarsInSection: section.bars,
       });
@@ -300,7 +303,7 @@ export function generateGuitar(blueprint, drumContext = null, seedOverride = nul
   let prevSectionIdx = -1;
 
   for (let i = 0; i < allBars.length; i++) {
-    const { barStart, region, section, barIdxInSection } = allBars[i];
+    const { barStart, section, barIdxInSection } = allBars[i];
     const nextRegion = allBars[i + 1]?.region ?? null;
     const preset     = section.modules.guitar;
 
@@ -354,27 +357,41 @@ export function generateGuitar(blueprint, drumContext = null, seedOverride = nul
     // roll_up è troppo denso a bassa energia — cap a classic
     if (energyKey === 'low' && patternName === 'roll_up') patternName = 'classic';
 
-    const bassPool   = buildChordTonePool(
-      { rootPc: region.rootPc, intervals: region.chord_degrees }, bassLo,   bassHi);
-    const treblePool = buildChordTonePool(
-      { rootPc: region.rootPc, intervals: region.chord_degrees }, trebleLo, trebleHi);
+    // A1b: un pool di corde per ogni regione della battuta. Su | Dm7 G7 | la
+    // strimpellata della seconda metà prende le note del G7 invece di ripetere
+    // il Dm7 d'inizio battuta. Con un accordo per battuta la lista ha un
+    // elemento e vale il codice di prima.
+    const armonie = allBars[i].spans.map((sp, si) => {
+      const r = sp.region;
+      const successiva = si + 1 < allBars[i].spans.length
+        ? allBars[i].spans[si + 1].region
+        : nextRegion;
+      const bassPool   = buildChordTonePool(
+        { rootPc: r.rootPc, intervals: r.chord_degrees }, bassLo,   bassHi);
+      const treblePool = buildChordTonePool(
+        { rootPc: r.rootPc, intervals: r.chord_degrees }, trebleLo, trebleHi);
+      const chordChanging = successiva != null && successiva.rootPc !== r.rootPc;
+      const nextRootMidi  = successiva
+        ? clampToRegister(successiva.rootPc + 60, trebleLo, trebleHi)
+        : null;
+      return {
+        inizio: sp.inizio, fine: sp.fine, region: r, bassPool, treblePool,
+        chordChanging, nextRootMidi,
+        // Approach note via FlowCore — l'ancora è l'ultima nota suonata prima
+        // della battuta, come è sempre stato: la si legge una volta sola qui.
+        approachPitch: chordChanging && nextRootMidi != null
+          ? chromaticApproach(nextRootMidi, trebleMemory.lastNote ?? treblePool[0], trebleLo, trebleHi)
+          : null,
+      };
+    });
 
-    if (!bassPool.length || !treblePool.length) continue;
+    if (armonie.some(ar => !ar.bassPool.length || !ar.treblePool.length)) continue;
 
     const isBar2       = barIdxInSection % 2 === 1;
     const isPhraseFill = (barIdxInSection % 4 === 3 && barIdxInSection > 0)
                        || (barIdxInSection % 4 === 2 && barIdxInSection > 0 && rng.bool(0.22));
     // Arco 2-bar: bar dispari spinge (+4), bar pari si ritira (-6) — fraseggio naturale
     const phaseOff = isBar2 ? -6 : +4;
-    const chordChanging = nextRegion && nextRegion.rootPc !== region.rootPc;
-    const nextRootMidi  = nextRegion
-      ? clampToRegister(nextRegion.rootPc + 60, trebleLo, trebleHi)
-      : null;
-
-    // Approach note via FlowCore
-    const approachPitch = chordChanging && nextRootMidi != null
-      ? chromaticApproach(nextRootMidi, trebleMemory.lastNote ?? treblePool[0], trebleLo, trebleHi)
-      : null;
 
     // Palm mute: strumming o power a bassa energia → suono muto percussivo
     const palmMute = (style === 'strumming' || style === 'powerchord') && energyKey === 'low';
@@ -388,9 +405,8 @@ export function generateGuitar(blueprint, drumContext = null, seedOverride = nul
 
     const ctx = {
       barStart, s16, ppq, rng, pattern: null,
-      bassPool, treblePool, region,
+      armonie,
       velBase, isBar2, isPhraseFill, phaseOff,
-      chordChanging, approachPitch,
       trebleMemory, palmMute, grooveNudge,
       energy, energyKey, beatsPerBar,
       keyScaleNotes: meta.keyScaleNotes,  // ← scala globale della tonalità
@@ -439,12 +455,16 @@ export function generateGuitar(blueprint, drumContext = null, seedOverride = nul
 
 // ── Travis bar ────────────────────────────────────────────────────
 function _genTravisBar(events, ctx) {
-  const { barStart, s16, ppq, rng, pattern, bassPool, treblePool,
-          velBase, isBar2, phaseOff, chordChanging, approachPitch, trebleMemory, bassActive,
+  const { barStart, s16, ppq, rng, pattern, armonie,
+          velBase, isBar2, phaseOff, trebleMemory, bassActive,
           character, density = 0.5, restProb = 0 } = ctx;
 
-  const root  = bassPool[0];
-  const fifth = bassPool.find(n => (n - root) % 12 === 7) ?? bassPool[Math.min(1, bassPool.length - 1)];
+  // A1b: root e quinta della regione che suona in quel punto della battuta.
+  const perRegione = armonie.map(ar => {
+    const root = ar.bassPool[0];
+    return { ...ar, root,
+      fifth: ar.bassPool.find(n => (n - root) % 12 === 7) ?? ar.bassPool[Math.min(1, ar.bassPool.length - 1)] };
+  });
 
   // Diradamento: le voci decorative (mid/fifth/low) possono saltare a bassa
   // density; 'bass' e 'pinch' restano sempre — sono il polso ritmico.
@@ -454,6 +474,8 @@ function _genTravisBar(events, ctx) {
     const { step16, voice } = pattern[pi];
     const tick        = barStart + step16 * s16;
     const isLastStep  = pi === pattern.length - 1;
+    const { root, fifth, bassPool, treblePool, chordChanging, approachPitch } =
+      finestraAlTick(perRegione, tick);
 
     // Approach note sull'ultimo step prima del cambio accordo
     if (isLastStep && chordChanging && approachPitch != null) {
@@ -532,19 +554,21 @@ function _genTravisBar(events, ctx) {
 
 // ── Arpeggio bar ──────────────────────────────────────────────────
 function _genArpBar(events, ctx) {
-  const { barStart, s16, ppq, rng, pattern, bassPool, treblePool,
-          velBase, isBar2, phaseOff, chordChanging, approachPitch, trebleMemory,
+  const { barStart, s16, ppq, rng, pattern, armonie,
+          velBase, isBar2, phaseOff, trebleMemory,
           grooveNudge, energy, beatsPerBar = 4, density = 0.5, restProb = 0 } = ctx;
 
   // Diradamento generale sugli step non-downbeat, in base a density/rest_probability
   const skipChance = Math.max(0, Math.min(0.6, (0.65 - density) * 0.6)) + restProb;
 
-  const allTones = [...new Set([...bassPool.slice(-2), ...treblePool.slice(0, 4)])]
-                    .sort((a, b) => a - b);
-  const noteCount = allTones.length;
-  if (noteCount === 0) return;
-  const hiNote    = allTones[allTones.length - 1];
-  const loNote    = allTones[0];
+  // A1b: un arpeggio per regione — l'ordine delle note riparte dall'accordo
+  // che sta suonando, non da quello d'inizio battuta.
+  const perRegione = armonie.map(ar => {
+    const allTones = [...new Set([...ar.bassPool.slice(-2), ...ar.treblePool.slice(0, 4)])]
+                      .sort((a, b) => a - b);
+    return { ...ar, allTones, hiNote: allTones[allTones.length - 1], loNote: allTones[0] };
+  });
+  if (perRegione.some(r => r.allTones.length === 0)) return;
 
   const startOffset = isBar2 ? 1 : 0;
 
@@ -561,6 +585,9 @@ function _genArpBar(events, ctx) {
     // Diradamento density: mai sul primo step del bar (downbeat)
     if (step !== 0 && !isLastStep && rng.bool(skipChance)) continue;
 
+    const { allTones, hiNote, loNote, chordChanging, approachPitch } =
+      finestraAlTick(perRegione, barStart + step * s16);
+
     if (isLastStep && chordChanging && approachPitch != null) {
       const tick = barStart + step * s16;
       events.push({ tick, note: approachPitch,
@@ -574,7 +601,7 @@ function _genArpBar(events, ctx) {
     const swingOff = (step % 2 === 1) ? grooveNudge : 0;
     const tick     = barStart + step * s16 + swingOff;
 
-    const noteIdx = (idx + startOffset) % noteCount;
+    const noteIdx = (idx + startOffset) % allTones.length;
     const note    = allTones[noteIdx];
     const isDown  = step % 4 === 0;
 
@@ -595,26 +622,29 @@ function _genArpBar(events, ctx) {
 // Downstroke: note ordinate bass→treble con stagger di 8 tick (simulazione plettro)
 // Upstroke:   note ordinate treble→bass, velocity ridotta, durata più breve
 function _genStrumBar(events, ctx) {
-  const { barStart, s16, ppq, rng, pattern, bassPool, treblePool,
+  const { barStart, s16, ppq, rng, pattern, armonie,
           velBase, isBar2, isPhraseFill, phaseOff, palmMute, energyKey,
           density = 0.5, restProb = 0 } = ctx;
 
-  const fullChord = [...new Set([
-    bassPool[0],
-    bassPool[Math.min(1, bassPool.length - 1)],
-    ...treblePool.slice(0, 4),
-  ])].sort((a, b) => a - b);
+  // A1b: un voicing per regione della battuta.
+  const perRegione = armonie.map(ar => {
+    const fullChord = [...new Set([
+      ar.bassPool[0],
+      ar.bassPool[Math.min(1, ar.bassPool.length - 1)],
+      ...ar.treblePool.slice(0, 4),
+    ])].sort((a, b) => a - b);
 
-  // Voicing diradato a bassa density: meno corde per colpo (accordo più
-  // scarno) invece del blocco pieno sempre uguale indipendentemente dalla
-  // dinamica dichiarata dalla sezione.
-  const voiceCount = density < 0.35 ? Math.min(fullChord.length, 3)
-                    : density < 0.6  ? Math.min(fullChord.length, 4)
-                    : fullChord.length;
-  // Root + le note più alte del voicing (mantiene fondamentale e colore, toglie il "riempitivo" medio)
-  const thinChord = voiceCount >= fullChord.length
-    ? fullChord
-    : [fullChord[0], ...fullChord.slice(-(voiceCount - 1))];
+    // Voicing diradato a bassa density: meno corde per colpo (accordo più
+    // scarno) invece del blocco pieno sempre uguale indipendentemente dalla
+    // dinamica dichiarata dalla sezione.
+    const voiceCount = density < 0.35 ? Math.min(fullChord.length, 3)
+                      : density < 0.6  ? Math.min(fullChord.length, 4)
+                      : fullChord.length;
+    // Root + le note più alte del voicing (mantiene fondamentale e colore, toglie il "riempitivo" medio)
+    return { ...ar, thinChord: voiceCount >= fullChord.length
+      ? fullChord
+      : [fullChord[0], ...fullChord.slice(-(voiceCount - 1))] };
+  });
 
   // Stagger dipende da energia: lento e morbido a bassa energia, secco ad alta
   const staggerTick = palmMute
@@ -647,6 +677,7 @@ function _genStrumBar(events, ctx) {
     if (step16 !== 0 && restProb > 0 && rng.bool(restProb)) continue;
 
     const baseTime   = barStart + step16 * s16;
+    const { thinChord } = finestraAlTick(perRegione, baseTime);
     const notesOrder = isDown ? thinChord : [...thinChord].reverse();
     const notesFiltered = palmMute ? notesOrder.filter(n => n <= BASS_STR.hi + 5) : notesOrder;
     if (!notesFiltered.length) continue;
@@ -680,12 +711,8 @@ function _genStrumBar(events, ctx) {
 // Suona power chord (root + 5th + ottava opzionale) sui beat del pattern.
 // Bassa energia → palm mute (durata cortissima). Alta energia → ottava raddoppiata.
 function _genPowerBar(events, ctx) {
-  const { barStart, s16, rng, pattern, bassPool, velBase, phaseOff,
+  const { barStart, s16, rng, pattern, armonie, velBase, phaseOff,
           palmMute, energyKey, restProb = 0 } = ctx;
-
-  const root  = bassPool[0];
-  const fifth = root + 7;
-  const oct   = root + 12;
 
   const durWanted = palmMute
     ? Math.round(s16 * 0.30)
@@ -700,6 +727,10 @@ function _genPowerBar(events, ctx) {
     // rest_probability: salta i colpi sincopati non accentati
     if (!isAccentBeat && restProb > 0 && rng.bool(restProb)) continue;
     const tick = barStart + step16 * s16;
+    // A1b: il power chord è quello della regione che suona su quel colpo.
+    const root  = finestraAlTick(armonie, tick).bassPool[0];
+    const fifth = root + 7;
+    const oct   = root + 12;
     const accentOff = isAccentBeat ? rng.int(4, 10) : rng.int(-8, 0);
     const velR = Math.min(127, velBase + 20 + phaseOff + accentOff);
     const velF = Math.min(127, velBase + 14 + phaseOff + (isAccentBeat ? rng.int(2, 6) : rng.int(-6, 0)));
@@ -726,8 +757,8 @@ function _genPowerBar(events, ctx) {
 // Linea melodica procedurale sulla chitarra bassa (range E2-A4).
 // Usa selectContextualNote + PhraseMemory per voice leading naturale.
 function _genRiffBar(events, ctx) {
-  const { barStart, s16, rng, pattern, region, velBase, phaseOff,
-          trebleMemory, grooveNudge, chordChanging, approachPitch, energyKey,
+  const { barStart, s16, rng, pattern, armonie, velBase, phaseOff,
+          trebleMemory, grooveNudge, energyKey,
           keyScaleNotes, character, density = 0.5, restProb = 0 } = ctx;
 
   const decorSkipChance = Math.max(0, Math.min(0.5, (0.55 - density) * 0.6)) + restProb;
@@ -737,15 +768,21 @@ function _genRiffBar(events, ctx) {
 
   // Usa scala globale della tonalità per rimanere in key, anche su accordi cromatici
   const globalPool  = (keyScaleNotes ?? []).filter(n => n >= RIFF_LO && n <= RIFF_HI);
-  // Scala modale solo per selezionare i chord tones sui beat forti
-  const chordTones  = (region.chord_tones ?? []).filter(n => n >= RIFF_LO && n <= RIFF_HI);
-  // Pool melodico = scala globale (rimane in tonalità)
-  const notePool    = globalPool.length > 2 ? globalPool : chordTones;
-  if (!notePool.length) return;
+  // A1b: i chord tones sono quelli della regione che suona sul beat forte,
+  // non quelli d'inizio battuta. Il pool melodico resta la scala globale.
+  const perRegione = armonie.map(ar => {
+    // Scala modale solo per selezionare i chord tones sui beat forti
+    const chordTones = (ar.region.chord_tones ?? []).filter(n => n >= RIFF_LO && n <= RIFF_HI);
+    // Pool melodico = scala globale (rimane in tonalità)
+    return { ...ar, chordTones, notePool: globalPool.length > 2 ? globalPool : chordTones };
+  });
+  if (perRegione.some(r => !r.notePool.length)) return;
 
   for (let pi = 0; pi < pattern.length; pi++) {
     const step16 = pattern[pi];
     const isLast = pi === pattern.length - 1;
+    const { chordTones, notePool, chordChanging, approachPitch } =
+      finestraAlTick(perRegione, barStart + step16 * s16);
 
     if (isLast && chordChanging && approachPitch != null) {
       const apNote = Math.max(RIFF_LO, Math.min(RIFF_HI, approachPitch));
@@ -774,8 +811,7 @@ function _genRiffBar(events, ctx) {
     const anchor = trebleMemory.lastNote;
     let note;
     if (isStrongBeat) {
-      const chordPool  = (region.chord_tones ?? []).filter(n => n >= RIFF_LO && n <= RIFF_HI);
-      const targetPool = chordPool.length > 0 ? chordPool : notePool;
+      const targetPool = chordTones.length > 0 ? chordTones : notePool;
       note = anchor != null
         ? targetPool.reduce((b, n) => Math.abs(n - anchor) < Math.abs(b - anchor) ? n : b, targetPool[0])
         : targetPool[Math.floor(targetPool.length / 2)];
@@ -793,11 +829,6 @@ function _genRiffBar(events, ctx) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
-function _regionAt(tick, harmonicMap) {
-  return harmonicMap.find(r => r.start_tick <= tick && r.end_tick > tick)
-      ?? harmonicMap[0];
-}
-
 function _noteDur(s16, ppq, fill = 0.85) {
   return Math.max(4, Math.min(ppq - 10, Math.round(s16 * fill)));
 }

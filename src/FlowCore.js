@@ -379,3 +379,63 @@ export function buildDrumContext(evts, ppq, barTicks) {
   }
   return ctx;
 }
+
+// ── Le regioni armoniche dentro una battuta (A1b) ─────────────────────────
+
+/**
+ * Le regioni armoniche che suonano dentro una battuta, in ordine, fuse quando
+ * due finestre consecutive portano lo stesso accordo.
+ *
+ * A1b di PLAN37: basso, chitarra, piano ed ensemble risolvevano l'armonia una
+ * volta sola a inizio battuta e ci costruivano sopra tutti e quattro i beat.
+ * Con una battuta come `| Dm7 G7 |` — che l'harmonicMap sa rappresentare da A1
+ * e che la griglia incollata di A4 sa scrivere — la seconda metà restava sul
+ * primo accordo. Questa è la lista da cui i generatori pescano l'armonia del
+ * tick che stanno suonando.
+ *
+ * La fusione delle finestre uguali non è un dettaglio: senza, il "prossimo
+ * accordo" di chi guarda avanti diventerebbe la seconda metà di quello che sta
+ * già suonando, e ogni approccio cromatico punterebbe alla nota su cui è già.
+ *
+ * Con un accordo per battuta — cioè ogni progressione generata finora — la
+ * lista ha un elemento solo e vale esattamente la regione d'inizio battuta.
+ *
+ * @param {Array} harmonicMap — regioni della sezione, ordinate per start_tick
+ * @param {number} barStart — tick d'inizio battuta
+ * @param {number} barEnd — tick di fine battuta (escluso)
+ * @returns {Array<{inizio:number, fine:number, region:object}>}
+ */
+export function regioniDellaBattuta(harmonicMap, barStart, barEnd) {
+  const mappa = harmonicMap ?? [];
+  const spans = [];
+  for (const r of mappa) {
+    if (r.start_tick >= barEnd || r.end_tick <= barStart) continue;
+    const ultima = spans[spans.length - 1];
+    if (ultima && ultima.region.chord === r.chord) { ultima.fine = r.end_tick; continue; }
+    spans.push({ inizio: r.start_tick, fine: r.end_tick, region: r });
+  }
+  // Nessuna finestra sulla battuta (battuta oltre la fine della mappa, o
+  // spostata indietro da un push): vale la prima regione, che è il ripiego che
+  // ogni generatore aveva già scritto per conto suo.
+  if (!spans.length) {
+    return mappa.length ? [{ inizio: barStart, fine: barEnd, region: mappa[0] }] : [];
+  }
+  // La prima e l'ultima coprono tutta la battuta: una nota che parte poco prima
+  // del downbeat o poco dopo l'ultimo beat non deve restare senza armonia.
+  spans[0].inizio = Math.min(spans[0].inizio, barStart);
+  spans[spans.length - 1].fine = Math.max(spans[spans.length - 1].fine, barEnd);
+  return spans;
+}
+
+/**
+ * L'elemento che copre un tick, in un elenco di finestre `{inizio, fine}`.
+ * Vale sia per le regioni di `regioniDellaBattuta` sia per i contesti che i
+ * generatori ci costruiscono sopra (chord tones, voicing, pool), che ne
+ * conservano gli estremi. Fuori dagli estremi prende la finestra più vicina.
+ * @param {Array<{inizio:number, fine:number}>} elenco
+ * @param {number} tick
+ */
+export function finestraAlTick(elenco, tick) {
+  for (const f of elenco) if (tick < f.fine) return f;
+  return elenco[elenco.length - 1];
+}

@@ -20,7 +20,7 @@
  */
 
 import { makeRng, clampToRegister } from './SongArchitect.js';
-import { msToTick, arcVelocity } from './FlowCore.js';
+import { msToTick, arcVelocity, regioniDellaBattuta, finestraAlTick } from './FlowCore.js';
 import { createGlide, STRINGS_GLIDE_PROFILE } from './Ornaments.js';
 
 export const ENSEMBLE_PROGRAMS = {
@@ -292,13 +292,17 @@ export function generateEnsemble(blueprint, seedOverride = null) {
       const pushTicks  = (b === 0 && section.push_ticks) ? section.push_ticks : 0;
       const barStart   = section.startTick + b * barTicks - pushTicks;
 
-      const region = section.harmonicMap.find(r =>
-        r.start_tick <= barStart && r.end_tick > barStart
-      ) ?? section.harmonicMap[0];
-      if (!region) continue;
+      // A1b: le regioni della battuta, non la sola d'inizio bar. Il pad
+      // dell'ensemble teneva una nota sola per battuta: su | Dm7 G7 | la
+      // riattacca sul secondo accordo invece di tenere il primo fino in fondo.
+      const spans = regioniDellaBattuta(section.harmonicMap, barStart, barStart + barTicks);
+      if (!spans.length) continue;
 
-      const voicing = _buildVoicing(region, effectiveRanges, prevVoicing);
-      prevVoicing   = voicing;
+      const armonie = spans.map(sp => {
+        const voicing = _buildVoicing(sp.region, effectiveRanges, prevVoicing);
+        prevVoicing = voicing;
+        return { inizio: sp.inizio, fine: sp.fine, region: sp.region, voicing };
+      });
 
       // v1.0: Respirazione avanzata con gap variabile
       const globalBarIdx = Math.round(barStart / barTicks);
@@ -331,18 +335,18 @@ export function generateEnsemble(blueprint, seedOverride = null) {
       const velBaseArc = arcVelocity(velBase, b, section.bars, arcType);
 
       if (isMelodic) {
-        _genMelodicBar(voiceEvents, voicing, barStart, ppq, barTicks, rng,
-                       velBaseArc, contour, b, section.bars, region, effectiveRanges.soprano,
+        _genMelodicBar(voiceEvents, armonie, barStart, ppq, barTicks, rng,
+                       velBaseArc, contour, b, section.bars, effectiveRanges.soprano,
                        energy, keyScaleNotes, ecoOffsets, breathGap,
                        prevNotes, bpm, ppq, voiceDensity, ensType);
       } else {
-        _genPadBar(voiceEvents, voicing, barStart, ppq, barTicks, rng,
+        _genPadBar(voiceEvents, armonie, barStart, ppq, barTicks, rng,
                    velBaseArc, energy, b, section.bars, ensType, ecoOffsets,
                    breathGap, prevNotes, bpm, ppq, voiceDensity);
       }
-      
+
       // v1.0: Memorizza note correnti per portamento
-      prevNotes = [...voicing];
+      prevNotes = [...armonie[armonie.length - 1].voicing];
     }
   }
 
@@ -350,7 +354,7 @@ export function generateEnsemble(blueprint, seedOverride = null) {
 }
 
 // ── Pad bar ───────────────────────────────────────────────────────
-function _genPadBar(voiceEvents, voicing, barStart, _ppq, barTicks,
+function _genPadBar(voiceEvents, armonie, barStart, _ppq, barTicks,
                     rng, velBase, energy, _barIdx, _totalBars, ensType = 'strings', 
                     ecoOffsets = [0, 0, 0], breathGap = 10, prevNotes = [null, null, null],
                     bpm = 120, ppq = 480, voiceDensity = [1.0, 0.70, 0.50]) {
@@ -360,8 +364,8 @@ function _genPadBar(voiceEvents, voicing, barStart, _ppq, barTicks,
   for (let vi = 0; vi < 3; vi++) {
     // v1.0: Rispetta density della voce
     if (rng.bool(1 - voiceDensity[vi])) continue;
-    
-    const note = voicing[vi];
+
+    const note = armonie[0].voicing[vi];
     if (note == null) continue;
 
     const ecoDelay = ecoOffsets[vi] ?? 0;
@@ -370,7 +374,7 @@ function _genPadBar(voiceEvents, voicing, barStart, _ppq, barTicks,
     const durFactor = isBrass
       ? (energy >= 7 ? 0.35 : energy >= 5 ? 0.45 : 0.55)
       : (energy >= 7 ? 0.70 : energy >= 5 ? 0.92 : 0.98);
-    const dur = Math.max(10, Math.round((barTicks - ecoDelay) * durFactor) - breathGap);
+    const dur = Math.max(10, Math.round((armonie[0].fine - tick) * durFactor) - breathGap);
 
     const voiceOffset = [8, 0, -8][vi];
     const ecoPenalty = ecoDelay > 0 ? -8 : 0;
@@ -397,12 +401,24 @@ function _genPadBar(voiceEvents, voicing, barStart, _ppq, barTicks,
     } else {
       voiceEvents[vi].push({ tick, note, velocity: vel, duration: dur });
     }
+
+    // A1b: se l'accordo cambia dentro la battuta, la voce riattacca sul nuovo
+    // invece di tenere il primo fino in fondo. Stessa dinamica del primo
+    // attacco (nessun tiro di dado in più: la battuta consuma sempre gli
+    // stessi numeri, con o senza cambio), niente portamento — il glissando è
+    // l'entrata nella battuta, non il cambio d'accordo dentro.
+    for (let k = 1; k < armonie.length; k++) {
+      const nota = armonie[k].voicing[vi];
+      if (nota == null) continue;
+      const durK = Math.max(10, Math.round((armonie[k].fine - armonie[k].inizio) * durFactor) - breathGap);
+      voiceEvents[vi].push({ tick: armonie[k].inizio, note: nota, velocity: vel, duration: durK });
+    }
   }
 }
 
 // ── Melodic bar ───────────────────────────────────────────────────
-function _genMelodicBar(voiceEvents, voicing, barStart, ppq, barTicks,
-                         rng, velBase, contour, barIdx, totalBars, region,
+function _genMelodicBar(voiceEvents, armonie, barStart, ppq, barTicks,
+                         rng, velBase, contour, barIdx, totalBars,
                          sopranoRange, energy = 5, keyScaleNotes = null,
                          ecoOffsets = [0, 0, 0], breathGap = 10,
                          prevNotes = [null, null, null], bpm = 120, ppqVal = 480,
@@ -417,14 +433,14 @@ function _genMelodicBar(voiceEvents, voicing, barStart, ppq, barTicks,
     // v1.0: Rispetta density della voce
     if (rng.bool(1 - voiceDensity[vi])) continue;
     
-    const note = voicing[vi];
+    const note = armonie[0].voicing[vi];
     if (note == null) continue;
     
     const ecoDelay = ecoOffsets[vi] ?? 0;
     const tick = barStart + ecoDelay;
     const ecoPenalty = ecoDelay > 0 ? -8 : 0;
     const vel = Math.max(1, Math.min(127, velBase - [0, 8][vi - 1] + rng.int(-3, 3) + ecoPenalty));
-    const dur  = Math.max(10, Math.round((barTicks - ecoDelay) * artFactor) - breathGap);
+    const dur  = Math.max(10, Math.round((armonie[0].fine - tick) * artFactor) - breathGap);
     
     // Q5: portamento con soglia e probabilità per tipo ensemble
     const portCfg = PORTAMENTO_CONFIG[ensType] ?? PORTAMENTO_CONFIG['strings'];
@@ -445,16 +461,24 @@ function _genMelodicBar(voiceEvents, voicing, barStart, ppq, barTicks,
     } else {
       voiceEvents[vi].push({ tick, note, velocity: vel, duration: dur });
     }
+
+    // A1b: come nel pad — la voce riattacca sull'accordo che entra dentro la
+    // battuta invece di tenere quello d'inizio.
+    for (let k = 1; k < armonie.length; k++) {
+      const nota = armonie[k].voicing[vi];
+      if (nota == null) continue;
+      const durK = Math.max(10, Math.round((armonie[k].fine - armonie[k].inizio) * artFactor) - breathGap);
+      voiceEvents[vi].push({ tick: armonie[k].inizio, note: nota, velocity: vel, duration: durK });
+    }
   }
 
   // Q5: portamento soprano con soglia per tipo ensemble
   const portCfg = PORTAMENTO_CONFIG[ensType] ?? PORTAMENTO_CONFIG['strings'];
 
   // Soprano: linea melodica con portamento sui salti
-  const scaleNotes = keyScaleNotes ?? region.scale_notes ?? [];
   const sLo = sopranoRange?.lo ?? 57;
   const sHi = sopranoRange?.hi ?? 84;
-  let sopranoNote = voicing[0];
+  let sopranoNote = armonie[0].voicing[0];
 
   // Q5 — Call & response: 20% probabilità a energy ≤ 6
   // Il soprano tace sul primo half-bar e risponde sul secondo
@@ -462,6 +486,9 @@ function _genMelodicBar(voiceEvents, voicing, barStart, ppq, barTicks,
 
   for (let half = 0; half < 2; half++) {
     const tick      = barStart + half * halfBar;
+    // A1b: la scala di ripiego è quella dell'accordo che suona in questa metà
+    // (la scala della tonalità, quando c'è, resta la prima scelta).
+    const scaleNotes = keyScaleNotes ?? finestraAlTick(armonie, tick).region.scale_notes ?? [];
     const phrasePos = (barIdx * 2 + half) % contour.length;
     const step      = contour[phrasePos] ?? 0;
     const prevNote  = sopranoNote;
