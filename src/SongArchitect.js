@@ -559,11 +559,15 @@ function _bridgeChord(decoratedStrings, nextFirstChord, progFamily, rng, preferF
 // e' frequente; dove il gesto e' dritto per definizione (punk, garage, chiptune)
 // non si fa. L'energia della sezione fa il resto: un ritornello spinge, un
 // intro no.
-// Interruttore: finche' i generatori non seguono l'armonia DENTRO la battuta
-// (oggi ne leggono una sola, quella d'inizio bar), un anticipo verrebbe scritto
-// nella mappa e nel chord chart ma non suonato da basso, chitarra, piano ed
-// ensemble — solo dal pad. Si accende quando quel lavoro e' fatto.
-const ANTICIPO_ATTIVO = false;
+// Interruttore: e' rimasto spento finche' i generatori leggevano un accordo
+// per battuta — un anticipo sarebbe finito nella mappa e nel chord chart senza
+// che basso, chitarra, piano ed ensemble lo suonassero. Acceso il 2026-09-01,
+// con A1b: adesso i quattro risolvono l'armonia al tick dell'evento, e cio' che
+// e' scritto e cio' che si sente tornano la stessa cosa.
+// Effetto misurato accendendolo: 7,9% delle battute ha due accordi (zero su
+// punk, garage_rock e chiptune), 126.250 note diverse su 274.660, nessuna prima
+// della prima battuta anticipata di ogni brano.
+const ANTICIPO_ATTIVO = true;
 
 const ANTICIPO_PROB = {
   jazz: 0.35, neo_soul: 0.32, lo_fi: 0.28,
@@ -774,6 +778,12 @@ function buildSong(params = {}) {
   const ppq        = params.ppq     ?? 480;
   const seed       = params.seed    ?? Date.now();
   const rng        = makeRng(seed);
+  // A1b: RNG isolato per l'anticipazione, come rngArc e rngForm. Pescando dal
+  // rng principale, accendere l'interruttore spostava tutto il resto — forma,
+  // modulazioni, decorazioni — e il brano cambiava da cima a fondo invece che
+  // nelle battute anticipate. Misurato prima di isolarlo: 355.621 note diverse
+  // su 273.711, solo il 14% dentro una battuta con due accordi.
+  const rngAnticipo = makeRng(seed ^ 0x0A17);
 
   const styleDef   = STYLES[style] ?? STYLES['unplugged'];
   const formName   = params.form  ?? styleDef.defaultForm;
@@ -1056,7 +1066,7 @@ function buildSong(params = {}) {
 
     // A1: qualche cambio d'accordo arriva mezza battuta prima. Dopo la
     // decorazione, perche' anticipa l'accordo che si sentira' davvero.
-    const progression = _anticipaCambi(progressioneIntera, { progFamily, energy, rng });
+    const progression = _anticipaCambi(progressioneIntera, { progFamily, energy, rng: rngAnticipo });
 
     // Build harmonic map for this section (FASE H: passa progFamily per scala blues corretta)
     const sectionHarmonicMap = buildHarmonicMap(progression, currentTick, bars, ppq, barTicks, progFamily);
