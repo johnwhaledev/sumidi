@@ -507,7 +507,9 @@ window.smSyncForms = (formaDaSelezionare = null) => {
   const precedente = formaDaSelezionare ?? sel.value;
   sel.innerHTML = forme.map(f => `<option value="${f}">${f.replace(/_/g, ' ')}</option>`).join('');
   sel.value = forme.includes(precedente) ? precedente : def.defaultForm;
-  wrap.style.display = forme.length > 1 ? '' : 'none';
+  // B10: si nasconde, non si toglie. Lo slot resta largo uguale, cosi' la fila
+  // dei comandi non si ricompone a ogni cambio di stile.
+  wrap.style.visibility = forme.length > 1 ? '' : 'hidden';
 };
 
 /** Forma scelta nella composer bar, se è una di quelle dello stile corrente. */

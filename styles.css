@@ -1112,6 +1112,54 @@
       width: 90px;
     }
 
+    /* Slot della forma: larghezza fissa e sempre presente (B10 di PLAN37).
+       Compare solo per i 4 stili che hanno piu' di una forma, ma se comparisse
+       e sparisse davvero spingerebbe di lato tutta la fila dei comandi — con
+       Random si spostavano di ~200 px e l'ultimo bottone cambiava riga. Ora lo
+       slot c'e' sempre e la select dentro non cambia larghezza col testo delle
+       opzioni: quando non serve diventa invisibile, non assente. */
+    .composer-bar #sm-form-wrap {
+      width: 146px;
+      flex-shrink: 0;
+    }
+
+    /* Stessa ragione per gli altri controlli che cambiano contenuto: la select
+       degli stili e' larga quanto il nome dello stile scelto ("Folk" contro
+       "8-Bit / Chiptune"), il valore del BPM passa da due cifre a tre e il
+       suggerimento sulla scala cambia testo. Ognuno di questi spostava di lato
+       tutto quello che aveva a destra. Larghezze fisse: cambia il contenuto,
+       non l'ingombro. */
+    .composer-bar #sm-form,
+    .composer-bar #sm-style,
+    .composer-bar #sm-key {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+
+    .composer-bar #sm-style {
+      width: 168px;
+    }
+
+    .composer-bar #sm-key {
+      width: 92px;
+    }
+
+    .composer-bar #sm-bpm-v {
+      display: inline-block;
+      width: 26px;
+      text-align: right;
+    }
+
+    .composer-bar #sm-scale-hint {
+      display: inline-block;
+      width: 152px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      vertical-align: bottom;
+    }
+
     /* Campo seed: il numero che identifica il brano (B1 di PLAN37) */
     .composer-bar .cb-seed input {
       width: 72px;
