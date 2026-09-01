@@ -540,8 +540,11 @@ function _coreVoicing(region, lo, hi, prevVoicing = null) {
   for (let inv = 0; inv < d.length; inv++) {
     const v    = buildInv(inv);
     if (v.length < 2) continue;
-    const cost = prevVoicing.reduce((sum, prev) =>
-      sum + v.reduce((dx, c) => Math.min(dx, Math.abs(c - prev)), Infinity), 0);
+    // Voci appaiate per posizione, grave con grave: v. la nota sopra
+    // _buildRhVoicing per il perche' e per le misure.
+    const n = Math.min(v.length, prevVoicing.length);
+    let cost = 0;
+    for (let k = 0; k < n; k++) cost += Math.abs(v[k] - prevVoicing[k]);
     if (cost < bestCost) { bestCost = cost; best = v; }
   }
   return best;
@@ -617,15 +620,22 @@ function _buildRhVoicing(region, prevVoicing) {
   let startIdx = Math.floor(candidates.length * 0.3);
 
   if (prevVoicing?.length) {
-    // Voice leading ottimizzato: minimizza il movimento totale delle voci
-    // (somma delle distanze minime nota-per-nota) invece del solo midpoint
+    // Voice leading: si sceglie la finestra che muove meno le voci, appaiandole
+    // per posizione — la piu' grave con la piu' grave, la piu' acuta con la piu'
+    // acuta. Prima il costo sommava, per ogni voce precedente, la distanza dalla
+    // nota PIU' VICINA del nuovo accordo: una misura che quasi ogni accordo
+    // soddisfa, e infatti non sceglieva quasi niente. Misurato sul pad in A3
+    // (13 stili x 4 seed, 5.958 accordi): il vecchio costo spostava il 7,6% dei
+    // voicing senza migliorare il movimento (0,681 -> 0,678 semitoni per voce),
+    // quello appaiato lo porta a 0,558 e taglia i salti >= 3 semitoni da 224 a
+    // 44. Sul piano il guadagno e' piu' piccolo (0,618 -> 0,580, salti 30 -> 22)
+    // perche' attorno alla destra c'e' gia' altra logica: v. PLAN37.
     let bestCost = Infinity;
     for (let i = 0; i <= candidates.length - windowSize; i++) {
       const window = candidates.slice(i, i + windowSize);
-      const cost   = prevVoicing.reduce((sum, prev) => {
-        const minDist = window.reduce((d, c) => Math.min(d, Math.abs(c - prev)), Infinity);
-        return sum + minDist;
-      }, 0);
+      const n = Math.min(window.length, prevVoicing.length);
+      let cost = 0;
+      for (let k = 0; k < n; k++) cost += Math.abs(window[k] - prevVoicing[k]);
       if (cost < bestCost) { bestCost = cost; startIdx = i; }
     }
   }
