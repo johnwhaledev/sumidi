@@ -18,7 +18,7 @@
 // moduli dedicati. Qui restano solo logica di utilità e il builder.
 // ═══════════════════════════════════════════════════════════════════
 import { PITCH_CLASS, CHORD_INTERVALS, SCALE_INTERVALS, nomeAccordo, accordiPerFinestra } from './ChordTheory.js';
-import { PROGRESSION_POOLS, PROGRESSIONS } from './SongProgressions.js';
+import { PROGRESSION_POOLS, PROGRESSIONS, PROG_FAMILY_REF_PC } from './SongProgressions.js';
 import { SONG_FORMS } from './SongForms.js';
 import { SECTION_PRESETS } from './SectionPresets.js';
 import { STYLES } from './Styles.js';
@@ -763,13 +763,8 @@ function buildSong(params = {}) {
   // melodia vincolata a un'altra, dissonanze sistematiche (es. "punk
   // stonato" con l'impostazione di default style=punk key=A: gli accordi
   // finivano trasposti su F# invece di restare in A).
-  const PROG_FAMILY_REF_PC = {
-    pop_rock:    9,  // A / Am — "reference key A major / Am minor"
-    neo_soul:    2,  // Dm (dorian)
-    lo_fi:       2,  // Dm
-    punk:        9,  // A
-    garage_rock: 4,  // E
-  };
+  // D1 di PLAN37: la tabella delle toniche di riferimento sta con i dati che
+  // descrive (SongProgressions.js) ed e' l'unica copia — era duplicata qui.
   const refPc = PROG_FAMILY_REF_PC[progFamily] ?? (keyInfo.isMinor ? 9 : 0);
   const semitoneShift = (keyInfo.rootPc - refPc + 12) % 12;
 
