@@ -50,6 +50,7 @@ const NOMI = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 const progressioni = new Map();   // firma → { id, gradi, durate, modo, usata }
 const indice       = {};          // chiave pool → [id, ...]
+const doppioni     = [];          // pool che elencavano due volte la stessa progressione
 let contatore = 0;
 
 for (const [chiave, pool] of Object.entries(PROGRESSION_POOLS)) {
@@ -73,6 +74,14 @@ for (const [chiave, pool] of Object.entries(PROGRESSION_POOLS)) {
       rec = { id: `p${String(++contatore).padStart(3, '0')}`, gradi, durate, modo, usata: 0 };
       progressioni.set(firma, rec);
     }
+    // Un pool non elenca due volte la stessa progressione: e' un invariante,
+    // e si fa rispettare qui, dove i dati nascono. Il meccanismo che evita di
+    // ripetere l'ultima progressione puo' ripescare la gemella, quindi un
+    // doppione toglie varieta' senza che si veda (D4 di PLAN37).
+    if (indice[chiave].includes(rec.id)) {
+      doppioni.push(`${chiave}: ${prog.map(v => (Array.isArray(v) ? v[0] : v)).join(' ')}`);
+      continue;
+    }
     rec.usata++;
     indice[chiave].push(rec.id);
   }
@@ -91,11 +100,20 @@ const errori = [];
 for (const [chiave, pool] of Object.entries(PROGRESSION_POOLS)) {
   const { famiglia, minore } = leggiChiave(chiave);
   const refPc = REF_PC[famiglia] ?? (minore ? 9 : 0);
-  if (indice[chiave].length !== pool.length) {
-    errori.push(`${chiave}: ${indice[chiave].length} progressioni invece di ${pool.length}`);
+  // Il confronto e' con il pool ripulito dai doppioni: e' quello che i dati
+  // devono contenere, e ogni progressione tolta e' identica a una che resta.
+  const visteFirme = new Set();
+  const attese = pool.filter(prog => {
+    const f = JSON.stringify(prog.map(v => (Array.isArray(v) ? v : [v, 1])));
+    if (visteFirme.has(f)) return false;
+    visteFirme.add(f);
+    return true;
+  });
+  if (indice[chiave].length !== attese.length) {
+    errori.push(`${chiave}: ${indice[chiave].length} progressioni invece di ${attese.length}`);
     continue;
   }
-  pool.forEach((prog, i) => {
+  attese.forEach((prog, i) => {
     const rec = perId.get(indice[chiave][i]);
     if (prog.length !== rec.gradi.length) {
       errori.push(`${chiave}[${i}]: lunghezza diversa`);
@@ -118,6 +136,10 @@ for (const [chiave, pool] of Object.entries(PROGRESSION_POOLS)) {
 console.log(`pool ${Object.keys(PROGRESSION_POOLS).length} | progressioni ${Object.values(PROGRESSION_POOLS).reduce((n, p) => n + p.length, 0)} → record unici ${progressioni.size} | accordi verificati ${controllati}`);
 const doppie = [...progressioni.values()].filter(r => r.usata > 1);
 console.log(`record usati da piu' di un pool: ${doppie.length} (${doppie.reduce((n, r) => n + r.usata - 1, 0)} copie risparmiate)`);
+if (doppioni.length) {
+  console.log(`doppioni tolti (stessa progressione due volte nello stesso pool): ${doppioni.length}`);
+  for (const d of doppioni) console.log(`  ${d}`);
+}
 if (errori.length) {
   console.error(`\nROUND-TRIP FALLITO: ${errori.length} differenze`);
   console.error(errori.slice(0, 10).join('\n'));

@@ -101,19 +101,17 @@ describe('ProgressioniGradi — i pool', () => {
     }
   });
 
-  it('nessun pool elenca due volte la stessa progressione, tranne quella nota', () => {
-    // Un doppione dentro il pool riduce la varietà senza che si veda: il
+  it('nessun pool elenca due volte la stessa progressione', () => {
+    // D4 di PLAN37: `folk_intro` aveva `C F C G` agli indici 2 e 8 di dieci.
+    // Un doppione dentro il pool toglie varietà senza che si veda — il
     // meccanismo "non ripetere l'ultima" può ripescare la gemella e suonare
-    // uguale. folk_intro ha `C F C G` due volte su dieci (indici 2 e 8):
-    // toglierlo cambia quale progressione esce a ogni seed, quindi è una
-    // modifica da fare all'ascolto (PLAN37, voce D4). Questo test non la sana:
-    // impedisce che ne nascano altri.
-    const noti = new Set(['folk_intro:p002']);
+    // uguale due volte di fila. L'invariante ora è imposto alla fonte, dallo
+    // script che genera i dati; questo test è la rete.
     const doppioni = [];
     for (const [pool, ids] of Object.entries(POOL_INDICE)) {
       const visti = new Set();
       for (const id of ids) {
-        if (visti.has(id) && !noti.has(`${pool}:${id}`)) doppioni.push(`${pool}:${id}`);
+        if (visti.has(id)) doppioni.push(`${pool}:${id}`);
         visti.add(id);
       }
     }
