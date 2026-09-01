@@ -2635,8 +2635,12 @@ function _smRenderSoloPanel() {
   `;
 }
 
-/** Genera un solo strumento su una sezione, bypassando active/muto dell'Arrangement. */
-async function _smSoloGenerateSection(sec, state) {
+/**
+ * Genera un solo strumento su una sezione, bypassando active/muto
+ * dell'Arrangement.
+ * @param {object} memoria — CrossSectionMemory dell'assemblaggio in corso (B9)
+ */
+async function _smSoloGenerateSection(sec, state, memoria) {
   const bp = buildSectionBlueprint({ key: state.key, bpm: state.bpm, style: state.style }, sec);
   const inst = _smSolo.inst;
   const mod = bp.sections[0].modules[inst];
@@ -2673,13 +2677,13 @@ async function _smSoloGenerateSection(sec, state) {
   const humAmt = bp.meta.humanize ?? 0.35;
 
   if (inst === 'piano') {
-    const res = generatePiano(bp, null, seed, AppState.session.crossMemory);
+    const res = generatePiano(bp, null, seed, memoria);
     const evts = res.events.filter(e => e.cc == null);
     humanize(evts, bp.meta.ppq, humAmt * 0.5, 3, seed + 4, bp.meta.barTicks);
     applySwing(evts, bp.meta.ppq, bp.meta.swing ?? 0);
     voices.push({ channel: SOLO_INST_CHANNEL.piano, program: res.program, events: evts });
   } else if (inst === 'guitar') {
-    const res = generateGuitar(bp, null, seed, AppState.session.crossMemory);
+    const res = generateGuitar(bp, null, seed, memoria);
     humanize(res.events, bp.meta.ppq, humAmt * 0.7, 2, seed + 3, bp.meta.barTicks);
     applySwing(res.events, bp.meta.ppq, bp.meta.swing ?? 0);
     voices.push({ channel: SOLO_INST_CHANNEL.guitar, program: res.program, events: res.events });
@@ -2704,22 +2708,23 @@ async function _smSoloGenerateSection(sec, state) {
  * Assembla l'intero brano per lo strumento scelto, sezione per sezione (stesso
  * schema di smPlaySong).
  *
- * SEGNALATO E NON CORRETTO — B9 di PLAN37, trovato facendo O5. La
- * `CrossSectionMemory` in `AppState.session.crossMemory` sopravvive fra una
- * generazione e l'altra: qui non viene azzerata, quindi il primo export dopo
- * il caricamento parte da una memoria vuota e tutti quelli dopo partono dalle
- * note lasciate dal giro precedente. Misurato sullo stesso link (jazz_ballad,
- * Dm, 84, seed 31337, piano): export in Auto → passaggio ad alberti_bass →
- * ritorno ad Auto produce un file **diverso** dal primo (`f225cd09…` contro
- * `b3f4e86f…`), e da lì in poi stabile. Cioe' il file dipende da cosa si e'
- * esportato prima, non solo dal seed — la stessa famiglia di B7, ma piu'
- * piccola. Il rimedio e' una riga (una memoria nuova a ogni assemblaggio, o un
- * `reset()`), ma cambia il suono di quello che si sente adesso, quindi la
- * decisione e' del committente.
+ * B9 di PLAN37, trovato facendo O5 e corretto qui. La `CrossSectionMemory` in
+ * `AppState.session.crossMemory` sopravvive fra una generazione e l'altra:
+ * finche' non veniva azzerata, il primo export dopo il caricamento partiva da
+ * una memoria vuota e tutti quelli dopo dalle note lasciate dal giro
+ * precedente. Misurato sullo stesso link (jazz_ballad, Dm, 84, seed 31337,
+ * piano): export in Auto → passaggio ad alberti_bass → ritorno ad Auto dava un
+ * file **diverso** dal primo, e da li' in poi stabile. Cioe' il file dipendeva
+ * da cosa si era esportato prima, non solo dal seed — la stessa famiglia di B7.
+ *
+ * Ogni assemblaggio ricostruisce il brano dall'inizio, quindi parte da una
+ * memoria sua: la continuita' fra le sezioni resta (e' li' che serve), sparisce
+ * solo la continuita' fra due export diversi, che non era voluta da nessuno.
  */
 async function _smSoloAssembleSong() {
   const state = AppState.session.manager.getState();
   const secs = AppState.session.manager.getSections();
+  const memoria = new CrossSectionMemory();   // B9: una per assemblaggio
   const buckets = new Map(); // "channel:program" -> { channel, program, events }
   let ppq = 480, globalTick = 0;
   const bump = (channel, program, events) => {
@@ -2729,7 +2734,7 @@ async function _smSoloAssembleSong() {
     buckets.get(key).events.push(...events);
   };
   for (const sec of secs) {
-    const { bp, voices } = await _smSoloGenerateSection(sec, state);
+    const { bp, voices } = await _smSoloGenerateSection(sec, state, memoria);
     ppq = bp.meta.ppq;
     for (const v of voices) {
       bump(v.channel, v.program, v.events.map(e => ({ ...e, tick: e.tick + globalTick })));
