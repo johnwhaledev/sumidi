@@ -110,7 +110,16 @@ function transposeChord(chordStr, semitones, preferFlats = false) {
   const noteNamesFlats  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
   const noteNames = preferFlats ? noteNamesFlats : noteNamesSharps;
   const newRoot = noteNames[newPc];
-  return `${newRoot}${parsed.qualityStr}`;
+  // Il basso di uno slash chord viaggia con l'accordo. Senza questa riga
+  // `C/E` trasposto di due tornava `D`, non `D/F#`: il basso spariva in
+  // silenzio, e con lui la ragione per cui quell'accordo era scritto cosi'.
+  // Oggi nessun pool usa slash chord (verificato: 0 su 3.752 accordi), quindi
+  // non cambia una nota — e' una trappola disinnescata prima che scatti, per
+  // il primo pool o la prima griglia incollata che ne usera' uno.
+  const basso = parsed.bassNotePc != null
+    ? `/${noteNames[(parsed.bassNotePc + semitones + 12) % 12]}`
+    : '';
+  return `${newRoot}${parsed.qualityStr}${basso}`;
 }
 
 /**

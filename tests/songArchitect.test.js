@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildSong, STYLES } from '../src/SongArchitect.js';
+import { buildSong, STYLES, transposeChord } from '../src/SongArchitect.js';
 
 // Stili rappresentativi: alcuni storici, alcuni recenti (toccati da V2/V3).
 const SAMPLE_STYLES = [
@@ -60,5 +60,23 @@ describe('buildSong — determinismo del seed (base della feature "Lock seed" V1
     // Non deve essere identica per tutti gli 8 seed — altrimenti la regressione
     // "il brano non cambia mai" (bug V1 originale) sarebbe tornata.
     expect(distinct.size).toBeGreaterThan(1);
+  });
+});
+
+describe('transposeChord — il basso viaggia con l’accordo', () => {
+  // Prima, `C/E` trasposto perdeva il basso e tornava `D`: la nota che
+  // giustificava l'accordo spariva in silenzio. Nessun pool usa slash chord
+  // oggi (0 su 3.752 accordi), quindi il fix non cambia una nota — vale per il
+  // primo pool o la prima griglia incollata che ne userà uno.
+  it('trasporta anche la nota al basso', () => {
+    expect(transposeChord('C/E', 2)).toBe('D/F#');
+    expect(transposeChord('Am/C', 3, true)).toBe('Cm/Eb');
+    expect(transposeChord('G/B', 0)).toBe('G/B');
+  });
+
+  it('gli accordi senza basso restano come prima', () => {
+    expect(transposeChord('Am7', 2)).toBe('Bm7');
+    expect(transposeChord('Fmaj7', 0)).toBe('Fmaj7');
+    expect(transposeChord('Bb7', 1, true)).toBe('B7');
   });
 });
