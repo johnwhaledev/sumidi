@@ -542,6 +542,70 @@ function _bridgeChord(decoratedStrings, nextFirstChord, progFamily, rng, preferF
   return result;
 }
 
+// ── Ritmo armonico: l'anticipazione (A1, seconda meta') ───────────────────
+//
+// Fino a qui il motore ha sempre tenuto un accordo per battuta, su tutti e 13
+// gli stili. A1 ha reso rappresentabile la mezza battuta; questa e' la prima
+// cosa che la usa da sola, senza che nessuno scriva una progressione nuova.
+//
+// Il gesto e' l'ANTICIPAZIONE: la seconda meta' di una battuta prende gia'
+// l'accordo della battuta dopo. Non inventa armonia — gli accordi restano
+// quelli pescati dal pool, nello stesso ordine — sposta solo il cambio mezza
+// battuta prima. E' il "push" di mezzo pop e di tutto il jazz, e ha una
+// proprieta' che lo rende sicuro: **la durata totale non cambia mai**, quindi
+// la sezione resta lunga esattamente le battute che dice di essere.
+//
+// Quanto spesso, per famiglia: dove il push e' idioma (jazz, neo soul, lo-fi)
+// e' frequente; dove il gesto e' dritto per definizione (punk, garage, chiptune)
+// non si fa. L'energia della sezione fa il resto: un ritornello spinge, un
+// intro no.
+// Interruttore: finche' i generatori non seguono l'armonia DENTRO la battuta
+// (oggi ne leggono una sola, quella d'inizio bar), un anticipo verrebbe scritto
+// nella mappa e nel chord chart ma non suonato da basso, chitarra, piano ed
+// ensemble — solo dal pad. Si accende quando quel lavoro e' fatto.
+const ANTICIPO_ATTIVO = false;
+
+const ANTICIPO_PROB = {
+  jazz: 0.35, neo_soul: 0.32, lo_fi: 0.28,
+  unplugged: 0.18, folk: 0.18, singer_songwriter: 0.18, pop_rock: 0.20, blues_rock: 0.22,
+  classical: 0.06, cinematic: 0.08,
+  punk: 0, garage_rock: 0, chiptune: 0,
+};
+
+/**
+ * Anticipa qualche cambio d'accordo di mezza battuta.
+ * @param {Array<string|[string, number]>} progression — formato misto
+ * @param {object} opts — { progFamily, energy, rng }
+ * @returns {Array<string|[string, number]>} progressione, stessa durata totale
+ */
+function _anticipaCambi(progression, { progFamily, energy, rng }) {
+  const prob = (ANTICIPO_PROB[progFamily] ?? 0.12) * (0.5 + (energy ?? 5) / 10);
+  if (!ANTICIPO_ATTIVO || prob <= 0 || progression.length < 2) return progression;
+
+  const voci = progression.map(v => (Array.isArray(v) ? [v[0], v[1]] : [v, 1]));
+  // Al massimo un anticipo ogni quattro battute: due in una progressione da 8,
+  // uno in una da 4. Piu' di cosi' non e' un gesto, e' un ritmo diverso.
+  const battute = voci.reduce((n, [, d]) => n + d, 0);
+  let restanti  = Math.max(1, Math.floor(battute / 4));
+
+  const fuori = [];
+  for (let i = 0; i < voci.length; i++) {
+    const [nome, durata] = voci[i];
+    const prossimo = voci[i + 1];
+    const anticipabile = restanti > 0
+      && prossimo && prossimo[0] !== nome   // ha senso solo se l'accordo cambia
+      && durata >= 1;                       // mezze battute gia' strette si lasciano stare
+    if (anticipabile && rng.bool(prob)) {
+      fuori.push([nome, durata - 0.5]);
+      fuori.push([prossimo[0], 0.5]);
+      restanti--;
+    } else {
+      fuori.push([nome, durata]);
+    }
+  }
+  return fuori.map(([nome, durata]) => (durata === 1 ? nome : [nome, durata]));
+}
+
 function _decorateProgression(progression, progFamily, energy, parentRng, preferFlats, isMinor = false, sectionIdx = 0) {
   // RNG locale: seed posizionale garantisce verse1 ≠ verse2 anche con stessa progressione
   const rng = makeRng((parentRng.next() * 0xFFFF | 0) ^ (sectionIdx * 0x1337));
@@ -988,7 +1052,11 @@ function buildSong(params = {}) {
     }
 
     // Ricostruisce il formato originale: dur=1 → stringa semplice, dur>1 → [stringa, dur]
-    const progression = pairs.map(([, d], i) => d === 1 ? decoratedStrings[i] : [decoratedStrings[i], d]);
+    const progressioneIntera = pairs.map(([, d], i) => d === 1 ? decoratedStrings[i] : [decoratedStrings[i], d]);
+
+    // A1: qualche cambio d'accordo arriva mezza battuta prima. Dopo la
+    // decorazione, perche' anticipa l'accordo che si sentira' davvero.
+    const progression = _anticipaCambi(progressioneIntera, { progFamily, energy, rng });
 
     // Build harmonic map for this section (FASE H: passa progFamily per scala blues corretta)
     const sectionHarmonicMap = buildHarmonicMap(progression, currentTick, bars, ppq, barTicks, progFamily);
