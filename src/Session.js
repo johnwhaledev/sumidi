@@ -34,6 +34,7 @@ import { STYLES } from './Styles.js';
 import { costruisciSalvataggio, validaSalvataggio, salvaAutosave, leggiAutosave, nomeFileProgetto } from './SessionStore.js';
 import { buildSessionMidi, buildSoloMidi } from './SessionExport.js';
 import { analizzaGriglia } from './ChordGrid.js';
+import { nomeAccordo } from './ChordTheory.js';
 
 const SM_PPQ = 480;   // PPQ standard usato da buildSong
 
@@ -1498,14 +1499,24 @@ function smRenderChordTrack() {
                         onclick="smChipInitSection('${sec.id}')"
                         title="Imposta progressione iniziale">♩ accordi</button>`;
     } else {
-      // F3: chip con larghezza proporzionale al numero di accordi nella sezione
-      const chipW = Math.max(22, Math.floor(w / chords.length) - 3);
-      chips = chords.map((chord, ci) => {
+      // F3: chip largo in proporzione a quanto dura l'accordo, non al loro
+      // numero. Da A1/A4 una voce puo' durare mezza battuta o quattro: con la
+      // larghezza uguale per tutti, un accordo di due battute sembrava lungo
+      // come uno di mezza. La durata sta nella coppia [nome, battute]; la
+      // stringa nuda vale una battuta.
+      const durate = chords.map(voce => (Array.isArray(voce) ? (voce[1] ?? 1) : 1));
+      const totale = durate.reduce((a, b) => a + b, 0) || 1;
+      chips = chords.map((voce, ci) => {
+        // nomeAccordo, non la voce: la coppia stampata come stringa dava
+        // "Dm7,0.5" a video — la trappola descritta in ChordTheory.js.
+        const chord  = nomeAccordo(voce);
+        const chipW  = Math.max(22, Math.floor((w * durate[ci]) / totale) - 3);
         const isEdit = AppState.ui.chipEditing?.sectionId === sec.id && AppState.ui.chipEditing?.chordIndex === ci;
+        const durata = durate[ci] === 1 ? '' : ` · ${durate[ci]} battute`;
         return `<div style="position:relative;display:inline-block">
           <button class="chord-chip${isCustom ? ' custom' : ''}${isEdit ? ' editing' : ''}"
                   style="width:${chipW}px;min-width:${chipW}px;"
-                  title="${chord}"
+                  title="${chord}${durata}"
                   onclick="smChipClick('${sec.id}',${ci})">${chord}</button>
           ${isEdit ? _buildChipEditor(sec.id, ci, chord, chords) : ''}
         </div>`;
@@ -1622,7 +1633,13 @@ window.smChipApply = (sectionId, chordIndex) => {
   const baseChords = section.progression?.length
     ? [...section.progression]
     : _smGetSectionChords(sectionId);
-  baseChords[chordIndex] = newChord;
+  // Cambiare l'accordo non deve accorciarlo: se durava due battute (o mezza),
+  // continua a durarle. Prima il nome nuovo sostituiva la coppia intera e la
+  // sezione si sfasava.
+  const precedente = baseChords[chordIndex];
+  baseChords[chordIndex] = Array.isArray(precedente)
+    ? [newChord, precedente[1]]
+    : newChord;
 
   AppState.session.manager.setSectionProgression(sectionId, baseChords);
   smInvalidateCache(sectionId);
