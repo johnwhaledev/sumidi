@@ -16,16 +16,20 @@
  *    non un intero soundfont da decine/centinaia di MB.
  *  - I preset vengono caricati "on demand" e tenuti in cache in memoria
  *    per il resto della sessione. Per ogni preset si prova PRIMA la
- *    cartella locale `soundfonts/` (veloce, funziona offline, popolata
- *    da scripts/download-soundfonts.mjs) e POI, se il file non c'è, il
- *    CDN ufficiale del progetto. La cartella locale è quindi opzionale
- *    e non versionata: senza di essa l'app funziona comunque, via CDN.
- *    Vale sia per i timbri melodici che per le percussioni — se si tocca
- *    uno dei due percorsi di caricamento, mantenerli simmetrici.
+ *    cartella locale `soundfonts/` e POI, se il file non c'è, il CDN
+ *    ufficiale del progetto. Vale sia per i timbri melodici che per le
+ *    percussioni — se si tocca uno dei due percorsi di caricamento,
+ *    mantenerli simmetrici.
+ *  - T2 di PLAN37 (2026-08-31): `soundfonts/` e la libreria player sono
+ *    ora **nel repository**, non piu' opzionali. Prima libreria e preset
+ *    arrivavano a runtime da surikov.github.io: bastava che quel dominio
+ *    sparisse o cambiasse percorso perche' l'anteprima ammutolisse, e
+ *    senza rete non suonava niente. Il CDN resta solo come rete di
+ *    sicurezza per i preset (17 MB in locale, 65 file), non come fonte.
  * ─────────────────────────────────────────────────────────────────
  */
 
-// Cartella locale opzionale (vedi scripts/download-soundfonts.mjs).
+// Cartella locale, versionata (vedi scripts/download-soundfonts.mjs).
 const WAF_LOCAL_BASE  = './soundfonts';
 // CDN ufficiale WebAudioFont — fallback automatico quando un preset non è
 // presente in locale (cartella assente del tutto, oppure varianti extra del
@@ -33,7 +37,10 @@ const WAF_LOCAL_BASE  = './soundfonts';
 // "nel dubbio" per ogni possibile variante timbrica, si scarica solo quello
 // che viene davvero usato, al volo, la prima volta che serve.
 const WAF_REMOTE_BASE = 'https://surikov.github.io/webaudiofontdata/sound';
-const WAF_PLAYER_URL = 'https://surikov.github.io/webaudiofont/npm/dist/WebAudioFontPlayer.js';
+// La libreria player: prima la copia nel repository, poi — solo se manca —
+// quella ufficiale. E' l'unico script di terzi che la pagina caricava.
+const WAF_PLAYER_LOCAL  = './vendor/WebAudioFontPlayer.js';
+const WAF_PLAYER_REMOTE = 'https://surikov.github.io/webaudiofont/npm/dist/WebAudioFontPlayer.js';
 
 // ── Catalogo timbri melodici (program GM → codice preset FluidR3_GM) ──
 // Copre i program number emessi dai generatori (Guitar/Bass/Piano/Chord/
@@ -138,13 +145,15 @@ async function _ensureContextResumed() {
 function _loadPlayerLib() {
   if (window.WebAudioFontPlayer) return Promise.resolve();
   if (_playerLibPromise) return _playerLibPromise;
-  _playerLibPromise = new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = WAF_PLAYER_URL;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error('Impossibile caricare WebAudioFontPlayer da ' + WAF_PLAYER_URL));
-    document.head.appendChild(s);
-  });
+  // Prima la copia locale (T2), poi il CDN: stessa scaletta dei preset.
+  _playerLibPromise = _caricaScript(WAF_PLAYER_LOCAL)
+    .then(ok => (ok && window.WebAudioFontPlayer) ? true : _caricaScript(WAF_PLAYER_REMOTE))
+    .then(ok => {
+      if (!window.WebAudioFontPlayer) {
+        throw new Error(`Impossibile caricare WebAudioFontPlayer (locale: ${WAF_PLAYER_LOCAL}, remoto: ${WAF_PLAYER_REMOTE})`);
+      }
+      return ok;
+    });
   return _playerLibPromise;
 }
 

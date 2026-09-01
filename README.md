@@ -66,9 +66,9 @@ img/                  icone strumenti e personaggi
 
 ## Note tecniche
 
-L'app non salva automaticamente il lavoro in corso tra una sessione e l'altra: esporta il `.mid` prima di chiudere la pagina. È pensata per browser desktop moderni aggiornati (Chrome, Edge, Firefox).
+L'arrangiamento in corso viene ripreso da solo alla riapertura della pagina, e il tasto 💾 salva l'intero progetto in un file `.sumidi.json`; per portare la musica in una DAW resta l'export `.mid`. È pensata per browser desktop moderni aggiornati (Chrome, Edge, Firefox).
 
-Il playback carica la libreria [WebAudioFont](https://github.com/surikov/webaudiofont) e i preset sonori da `surikov.github.io`: serve una connessione a Internet la prima volta (i preset, se già scaricati in una cartella locale `soundfonts/` non versionata, vengono riletti da lì). Font e resto dell'interfaccia sono self-hostati, nessun'altra risorsa parte in rete.
+**Nessuna risorsa parte in rete.** La libreria [WebAudioFont](https://github.com/surikov/webaudiofont) e i 65 preset sonori del playback sono nel repository (`vendor/` e `soundfonts/`, 17 MB in tutto), come i font e il resto dell'interfaccia: l'app funziona offline e non dipende da nessun servizio di terzi. Il CDN ufficiale resta solo come rete di sicurezza, se un preset dovesse mancare in locale.
 
 ## Supporta il progetto
 

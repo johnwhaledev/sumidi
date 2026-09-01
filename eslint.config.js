@@ -24,6 +24,11 @@ export default [
       'docs/**',
       'design/**',
       '*.html',
+      // T2 di PLAN37: roba di terzi entrata nel repository per non dipendere
+      // piu' da un CDN. Sono campioni audio in base64 e una libreria minificata,
+      // non codice del progetto: linters e limiti di righe non li riguardano.
+      'soundfonts/**',
+      'vendor/**',
     ],
   },
   {

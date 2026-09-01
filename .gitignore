@@ -6,8 +6,8 @@ node_modules/
 data_players.xlsx
 PLAN/
 docs/
-# Preset WebAudioFont scaricati in locale con scripts/download-soundfonts.mjs:
-# opzionali (servono solo per l'uso offline), il default è il CDN ufficiale.
-soundfonts/
+# I preset WebAudioFont (soundfonts/) e la libreria player (vendor/) sono
+# versionati da T2 di PLAN37: l'app non dipende piu' da surikov.github.io a
+# runtime. Si ripopolano con scripts/download-soundfonts.mjs.
 # Script di verifica usa-e-getta delle sessioni di lavoro
 _verify_*_tmp.mjs
