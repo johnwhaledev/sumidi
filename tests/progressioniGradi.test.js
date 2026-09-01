@@ -42,14 +42,14 @@ describe('ProgressioniGradi — i record', () => {
     }
   });
 
-  it('le sigle senza una qualità nota sono esattamente le tre già trovate', () => {
-    // Trovate da questo stesso test appena scritto (D2, voce B11 di PLAN37):
-    // `m9`, `m11` e `13` non stanno in CHORD_INTERVALS e non hanno un alias in
-    // parseChord, quindi ricadono su 'maj' — cioè un LAm9 scritto nei dati esce
-    // come LA MAGGIORE, terza maggiore al posto della minore. Misurate 392
-    // regioni armoniche su 23.824 (1,6%), tutte in neo_soul e lo_fi.
-    // Correggerlo è un alias per riga, ma cambia il suono di quei due stili:
-    // decide il committente. Qui si sorveglia solo che non ne nascano altre.
+  it('ogni sigla arriva a una qualità che il motore sa suonare', () => {
+    // B11 di PLAN37, trovata da questo stesso test appena scritto: `m9`, `m11`
+    // e `13` non avevano un alias in parseChord, la qualità restava la stringa
+    // grezza, CHORD_INTERVALS non la trovava e si ricadeva su 'maj'. Un `Am9`
+    // usciva come LA MAGGIORE — non un'estensione mancante, il modo sbagliato,
+    // su 392 regioni armoniche di neo_soul e lo_fi. Ora sono zero, e questo
+    // test è la ragione per cui restano zero: una sigla senza qualità è un
+    // accordo che suona diverso da come è scritto, e non si vede.
     const senzaQualita = new Set();
     for (const [, rec] of records) {
       for (const [, sigla] of rec.gradi) {
@@ -57,7 +57,17 @@ describe('ProgressioniGradi — i record', () => {
         if (!CHORD_INTERVALS[parsed.quality]) senzaQualita.add(sigla);
       }
     }
-    expect([...senzaQualita].sort()).toEqual(['13', 'm11', 'm9']);
+    expect([...senzaQualita].sort()).toEqual([]);
+  });
+
+  it('le sigle minori hanno la terza minore, e le altre no', () => {
+    // La conseguenza udibile di B11, fissata su un accordo per tipo.
+    const terza = nome => parseChord(nome).intervals[1];
+    expect(terza('Am9'), 'Am9 deve avere la terza minore').toBe(3);
+    expect(terza('Am11')).toBe(3);
+    expect(terza('Am7')).toBe(3);
+    expect(terza('A13'), 'un tredicesima di dominante è maggiore').toBe(4);
+    expect(terza('Amaj9')).toBe(4);
   });
 
   it('le durate sono battute intere e la progressione dura 4 o 8 battute', () => {

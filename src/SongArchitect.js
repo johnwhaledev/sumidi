@@ -63,6 +63,15 @@ function parseChord(chordStr) {
     'aug':  'aug', '+':    'aug',
     'sus':  'sus4',
     'm7b5': 'hdim7',  // semidiminuito — senza alias letto come 'maj' (fallback CHORD_INTERVALS)
+    // B11 di PLAN37 — trovati dal validatore di D2. Senza questi tre alias la
+    // qualità restava la stringa grezza, CHORD_INTERVALS non la trovava e si
+    // ricadeva su 'maj': un `Am9` scritto nei pool usciva come LA MAGGIORE,
+    // terza maggiore al posto della minore. Non un'estensione mancante — il
+    // modo sbagliato, su 392 regioni armoniche di neo_soul e lo_fi.
+    'm9':   'min9', 'm11':  'min11', '13':   'dom13',
+    // Le sigle sorelle, che nei pool non compaiono ma che chiunque scrive in
+    // una griglia incollata (A4): senza, la griglia le rifiutava.
+    '9':    'dom9', '11':   'dom11',
     '':     'maj',  // no suffix = major
   };
 
