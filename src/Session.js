@@ -33,6 +33,7 @@ import { playTracks, stopAll as stopPlayback } from './Playback.js';
 import { STYLES } from './Styles.js';
 import { costruisciSalvataggio, validaSalvataggio, salvaAutosave, leggiAutosave, nomeFileProgetto } from './SessionStore.js';
 import { buildSessionMidi, buildSoloMidi } from './SessionExport.js';
+import { analizzaGriglia } from './ChordGrid.js';
 
 const SM_PPQ = 480;   // PPQ standard usato da buildSong
 
@@ -1692,8 +1693,8 @@ function smRender() {
   const secs = AppState.session.manager.getSections();
   const n = secs.length;
 
-  document.getElementById('sm-count').textContent =
-    n === 0 ? '0 sezioni' : `${n} sezione${n !== 1 ? 'i' : ''}`;
+  // "sezionei" era il plurale che usciva da `sezione${n !== 1 ? 'i' : ''}`.
+  document.getElementById('sm-count').textContent = n === 1 ? '1 sezione' : `${n} sezioni`;
 
   if (_smSolo.active) {
     // Solo Mode sostituisce la vista Arrangement (lanes/flyout restano
@@ -2326,6 +2327,121 @@ window.smAdvExportSetTab = tabId => {
 window.smCloseAdvancedExport = () => {
   const modal = document.getElementById('sm-adv-export-modal');
   if (modal) modal.style.display = 'none';
+};
+
+// ── Griglia di accordi incollata (A4 di PLAN37) ───────────────────
+// Il secondo caso d'uso del programma: non "generami una canzone" ma
+// "accompagnami sui MIEI accordi". Il parser vive in ChordGrid.js, senza DOM e
+// collaudato dalla suite; qui restano la finestra, l'anteprima mentre si
+// scrive e l'innesto sulla sezione.
+
+let _smGrigliaTesto = '';
+let _smGrigliaDest  = 'nuova';
+
+/** Anteprima o errore, aggiornati a ogni tasto senza ridisegnare la textarea. */
+function _smGrigliaAnteprima() {
+  const box = document.getElementById('sm-grid-preview');
+  const btn = document.getElementById('sm-grid-apply');
+  if (!box) return;
+  if (!_smGrigliaTesto.trim()) {
+    box.innerHTML = '<span style="color:var(--muted)">Qui compare l’anteprima, mentre scrivi.</span>';
+    if (btn) btn.disabled = true;
+    return;
+  }
+  const esito = analizzaGriglia(_smGrigliaTesto);
+  if (!esito.ok) {
+    box.innerHTML = `<span style="color:var(--red,#e06c75)">⚠ ${esito.errore}</span>`;
+    if (btn) btn.disabled = true;
+    return;
+  }
+  const chip = esito.anteprima.map((b, i) =>
+    `<span style="display:inline-block;border:1px solid var(--border);border-radius:4px;padding:2px 6px;margin:2px;font-family:monospace;font-size:11px">
+       <span style="color:var(--muted);font-size:9px">${i + 1}</span> ${b}</span>`).join('');
+  box.innerHTML = `<div style="color:var(--teal);margin-bottom:4px">${esito.battute} battute</div>${chip}`;
+  if (btn) btn.disabled = false;
+}
+
+window.smChordGridInput = val => { _smGrigliaTesto = val; _smGrigliaAnteprima(); };
+window.smChordGridDest  = val => { _smGrigliaDest = val; };
+
+window.smCloseChordGrid = () => {
+  const modal = document.getElementById('sm-grid-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.smOpenChordGrid = () => {
+  if (!AppState.session.manager) { alert('Nessuna sessione. Clicca ⚡ Genera prima.'); return; }
+  const secs = AppState.session.manager.getSections();
+  let modal = document.getElementById('sm-grid-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'sm-grid-modal';
+    modal.className = 'sm-adv-modal-overlay';
+    modal.onclick = e => { if (e.target === modal) window.smCloseChordGrid(); };
+    document.body.appendChild(modal);
+  }
+  if (!secs.some(sec => sec.id === _smGrigliaDest)) _smGrigliaDest = 'nuova';
+
+  modal.innerHTML = `
+    <div class="sm-adv-modal" style="width:min(720px,100%)">
+      <div class="sm-adv-modal-header">
+        <div style="font-size:13px;font-weight:700">📋 Incolla i tuoi accordi</div>
+        <button class="sm-adv-modal-close" onclick="smCloseChordGrid()" title="Chiudi">✕</button>
+      </div>
+      <div class="sm-adv-modal-body">
+        <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:8px">
+          Una battuta per cella, separate da <code>|</code>. Due accordi nella stessa battuta si scrivono
+          con uno spazio (<code>| Dm7 G7 |</code>) e prendono mezza battuta ciascuno.
+          <code>%</code> ripete la battuta precedente. Slash chord ed estensioni vanno bene:
+          <code>C/E</code>, <code>F#m7b5</code>, <code>Bb7</code>. Stile, tonalità e BPM restano quelli
+          della composer bar.
+        </div>
+        <textarea id="sm-grid-text" rows="6" spellcheck="false" autocomplete="off"
+          oninput="smChordGridInput(this.value)"
+          placeholder="| Am7 | D7 | Gmaj7 | Cmaj7 |"
+          style="width:100%;box-sizing:border-box;font-family:monospace;font-size:13px;background:var(--s2);
+                 color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px;resize:vertical">${_smGrigliaTesto}</textarea>
+        <div id="sm-grid-preview" style="font-size:12px;min-height:42px;margin:8px 0"></div>
+        <div class="sm-ctrl-row">
+          <span class="sm-ctrl-label">Dove</span>
+          <select class="sm-style-sel" onchange="smChordGridDest(this.value)">
+            <option value="nuova"${_smGrigliaDest === 'nuova' ? ' selected' : ''}>Nuova sezione in fondo</option>
+            ${secs.map(sec => `<option value="${sec.id}"${sec.id === _smGrigliaDest ? ' selected' : ''}>Sostituisci ${sec.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="btn-row" style="margin-top:12px">
+          <button id="sm-grid-apply" class="btn btn-p" onclick="smApplyChordGrid()" disabled>Applica</button>
+          <button class="btn btn-s" onclick="smCloseChordGrid()">Annulla</button>
+        </div>
+      </div>
+    </div>`;
+  modal.style.display = 'flex';
+  _smGrigliaAnteprima();
+  document.getElementById('sm-grid-text')?.focus();
+};
+
+window.smApplyChordGrid = () => {
+  const mgr = AppState.session.manager;
+  if (!mgr) return;
+  const esito = analizzaGriglia(_smGrigliaTesto);
+  if (!esito.ok) return;
+
+  let id = _smGrigliaDest;
+  if (id === 'nuova') {
+    id = mgr.addSection('custom', { bars: esito.battute }).id;
+  } else if (mgr.getSection(id)) {
+    mgr.setSectionBars(id, esito.battute);
+  } else {
+    return;
+  }
+  mgr.setSectionProgression(id, esito.progressione);
+  smInvalidateCache(id);
+  window.smCloseChordGrid();
+  smRender();
+  smToast(`Griglia applicata: ${esito.battute} battute.`, { icon: '📋' });
+  // Genera in sottofondo, come fa "rigenera sezione": senza, la sezione resta
+  // muta finche' non si preme Ascolta o Export.
+  smGenerateSection(id).then(() => smRender()).catch(() => {});
 };
 
 // ── Solo Mode standalone ──────────────────────────────────────────

@@ -16,6 +16,7 @@
  *                                        solo snapshot di undo (rigenerazione
  *                                        completa: vedi nota in fondo al file)
  *   .moveSection(id, direction)       — 'up' | 'down'
+ *   .setSectionBars(id, bars)         — cambia la lunghezza (A4: griglia incollata)
  *   .lockSection(id, locked)          — blocca seed sezione
  *   .mutateSeed(id, newSeed?)         — cambia seed (se non locked)
  *   .lockInstrument(sid, inst, lock)  — blocca strumento in sezione
@@ -387,6 +388,25 @@ export class SessionManager {
     const next = idx + (direction === 'up' ? -1 : 1);
     if (next < 0 || next >= arr.length) return false;
     [arr[idx], arr[next]] = [arr[next], arr[idx]];
+    this._touch();
+    return true;
+  }
+
+  /**
+   * Cambia la lunghezza di una sezione. Serve alla griglia incollata (A4): se
+   * incolli 12 battute, la sezione deve diventare di 12 battute. Il limite
+   * superiore e' lo stesso della griglia — oltre non e' piu' una sezione.
+   * @param {string} id
+   * @param {number} bars
+   */
+  setSectionBars(id, bars) {
+    const sec = this.getSection(id);
+    if (!sec) return false;
+    if (!Number.isInteger(bars) || bars < 1 || bars > 64) return false;
+    this.saveSnapshot();
+    sec.bars = bars;
+    sec.cachedEvents = null;
+    for (const inst of INSTRUMENTS) sec.instruments[inst].cachedEvents = null;
     this._touch();
     return true;
   }

@@ -209,6 +209,18 @@
   <h3>Umanizzazione</h3>
   <p>Aggiunge micro-variazioni casuali al timing e alla velocity degli eventi MIDI, simulando l'imperfezione di un musicista umano. <strong>0%</strong> = perfettamente quantizzato. <strong>100%</strong> = molto libero. Consigliato 25–45% per un suono naturale senza perdere il groove.</p>
 
+  <h3>📋 Accordi — suona sui tuoi accordi</h3>
+  <p>Il tasto <strong>📋 Accordi</strong> nella composer bar apre un campo dove incollare una griglia scritta da te: suMidi ci costruisce sopra l&rsquo;arrangiamento, con lo stile, la tonalità e il BPM che hai scelto. È il caso d&rsquo;uso opposto a Genera — non &ldquo;dammi una canzone&rdquo; ma &ldquo;accompagnami mentre suono la mia&rdquo;.</p>
+  <table>
+    <tr><th>Come si scrive</th><th>Cosa vuol dire</th></tr>
+    <tr><td><code>| Am7 | D7 | Gmaj7 | Cmaj7 |</code></td><td>Una battuta per cella. Le barre a inizio e fine riga sono facoltative, e andare a capo non cambia niente: conta solo l&rsquo;ordine delle celle.</td></tr>
+    <tr><td><code>| Dm7 G7 |</code></td><td>Due accordi nella stessa battuta, separati da uno spazio: mezza battuta ciascuno. È il ii-V dentro la battuta, e più di due non ci stanno.</td></tr>
+    <tr><td><code>| Am7 | % |</code></td><td><code>%</code> ripete la battuta precedente, come nei fake book.</td></tr>
+    <tr><td><code>Am F C G</code></td><td>Senza nessuna barra vale una battuta per accordo — comodo quando scrivi di fretta.</td></tr>
+    <tr><td><code>C/E</code> · <code>F#m7b5</code> · <code>Bb7</code> · <code>Dsus4</code></td><td>Slash chord, semidiminuiti, settime, sus: le stesse sigle che il resto del programma già conosce.</td></tr>
+  </table>
+  <p>Mentre scrivi, sotto al campo compare l&rsquo;anteprima battuta per battuta; se qualcosa non torna, il messaggio dice <em>quale</em> battuta guardare invece di limitarsi a un errore generico. Con <strong>Dove</strong> scegli se la griglia diventa una sezione nuova in fondo al brano o se sostituisce gli accordi di una sezione che c&rsquo;è già; in quel caso la sezione prende anche la lunghezza della griglia.</p>
+
   <h3>Seed</h3>
   <p>Numero intero che inizializza il generatore di numeri casuali. Stesso seed, stesso stile, stessa tonalità e stesso BPM producono sempre <strong>esattamente</strong> lo stesso brano — utile per confrontare varianti o tornare su un'idea che ti era piaciuta.</p>
   <p>Nella composer bar in alto trovi i controlli dedicati:</p>
