@@ -1,87 +1,143 @@
 # suMidi
 
-Generatore procedurale di brani MIDI multi-traccia, client-side (nessun server applicativo, nessun backend). Apri l'app da un server statico, scegli stile/tonalità/BPM, genera un brano completo (batteria, basso, chitarra, piano, ensemble), ascoltalo in-app ed esportalo in `.mid` pronto per il tuo DAW.
+**Generate a complete, multi-track MIDI song in your browser. No account, no server, no upload.**
+
+Pick a style, a key and a tempo: suMidi writes drums, bass, guitar, piano and ensemble parts,
+plays them back in the page, and exports a multi-track `.mid` file ready for your DAW. Everything
+runs client-side — the music never leaves your machine.
+
+### ▶ [Try it now — sumidi.johnwhale.com](https://sumidi.johnwhale.com)
+
+<!-- DEMO — sostituire questo commento con il video.
+     Come si fa: apri una issue qualsiasi sul repo, trascina l'mp4 nel campo del commento,
+     GitHub carica il file e restituisce un URL https://github.com/user-attachments/...
+     Copia quell'URL qui sotto e chiudi la issue senza inviarla.
+
+     <video src="URL_DEL_VIDEO" controls width="100%"></video>
+
+     Formato: mp4 (H.264 + audio AAC), 20-30 secondi, sotto i 10 MB. GitHub riproduce gli mp4
+     nel README con un player; mp3 e wav no, e una GIF non ha audio - che per un generatore
+     musicale e' il punto. -->
+
+*(30-second demo coming here — meanwhile, the link above runs the real thing.)*
 
 [![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/johnwhale)
 
-## Caratteristiche
+🇮🇹 [Leggi questa pagina in italiano](README.it.md)
 
-- **13 stili musicali**: MTV Unplugged, Folk Acoustic, Jazz Ballad, Neo Soul, Classical Chamber, Pop Rock, Blues Rock, Singer/Songwriter, Cinematic/Orchestral, Lo-Fi, Punk, Garage Rock, 8-Bit/Chiptune.
-- **Session Mode**: interfaccia DAW-inspired con arrangement lanes a blocchi per sezione, flyout per strumento/sezione, chord track interattiva con editor accordi (incluse slash chord) e voice-leading automatico.
-- **Solo Mode**: ascolta un solo strumento (Piano, Chitarra, Basso o Ensemble) sull'intera progressione di accordi già costruita, con stile fisso o adattato automaticamente per tipo di sezione — indipendente dall'arrangiamento multi-traccia, un click per attivarlo.
-- **Roster di 31 personaggi**: ogni strumento (batteria, drum machine, percussioni etniche, basso, chitarra, piano, ensemble) può essere assegnato a un personaggio con stile e "feel" propri.
-- **Drum machine**: step sequencer a 16 step con preset Trap, Lo-Fi, Electro, editabili passo per passo.
-- **Seed deterministico**: stesso seed, stesso stile/tonalità/BPM ⇒ stesso brano identico, sempre. Il seed è visibile e incollabile nella composer bar, e l'indirizzo della pagina lo porta con sé (`?style=&key=&bpm=&seed=`): un brano si ritrova dopo giorni e si condivide con un link, senza che nulla venga salvato su un server. Blocco seed e randomizzazione rapida di stile/tonalità/BPM dalla stessa barra.
-- **Progetti salvabili**: l'arrangiamento viene ripreso da solo alla riapertura della pagina, e il tasto 💾 salva l'intero progetto in un file `.sumidi.json` (sezioni, personaggi, accordi custom, seed) da riaprire con 📂. Il file contiene le decisioni, non le note: le note vengono rigenerate identiche da quelle.
-- **Playback in-app**: ascolto di sezione o del brano intero via WebAudioFont, senza dover prima esportare.
-- **Export**: file MIDI multi-traccia su canali separati.
-- **Undo** fino a 10 passi, umanizzazione regolabile del timing/velocity.
+## What it does
 
-## Come si usa
+- **13 styles**: MTV Unplugged, Folk Acoustic, Jazz Ballad, Neo Soul, Classical Chamber, Pop
+  Rock, Blues Rock, Singer/Songwriter, Cinematic/Orchestral, Lo-Fi, Punk, Garage Rock,
+  8-bit/Chiptune.
+- **Session Mode**: a DAW-inspired arrangement view — one lane per section, a flyout per
+  instrument, and an interactive chord track you can edit by hand (slash chords included) with
+  automatic voice leading.
+- **Solo Mode**: hear a single instrument (piano, guitar, bass or ensemble) play the whole
+  progression on its own, either in a fixed style or adapting to each section type. One click,
+  independent from the full arrangement.
+- **31 characters**: every instrument — drums, drum machine, world percussion, bass, guitar,
+  piano, ensemble — can be handed to a player with their own style and feel.
+- **Drum machine**: a 16-step sequencer with Trap, Lo-Fi and Electro presets, editable step by
+  step.
+- **Deterministic seed**: same seed, style, key and tempo always produce the exact same song.
+  The seed is visible and pasteable in the composer bar, and the page URL carries the whole
+  state (`?style=&key=&bpm=&seed=`) — so a song can be found again days later, or shared as a
+  link, without anything being stored on a server.
+- **Saveable projects**: your arrangement comes back on its own when you reopen the page, and 💾
+  saves the whole project to a `.sumidi.json` file (sections, characters, custom chords, seed)
+  that 📂 reopens. The file holds the decisions, not the notes: the notes are regenerated
+  identically from them.
+- **In-app playback** through WebAudioFont — listen to one section or the whole song without
+  exporting first.
+- **Export**: multi-track MIDI, one instrument per channel.
+- **Undo** up to 10 steps, with adjustable humanisation of timing and velocity.
 
-Non serve build, ma **serve un server statico**: l'app usa moduli ES (`import`/`export`), bloccati dal browser se apri `index.html` direttamente da `file://`.
+## Running it locally
+
+There is no build step, but you **do need a static server**: the app uses ES modules, which
+browsers refuse to load over `file://`.
 
 ```bash
 git clone https://github.com/johnwhaledev/sumidi.git
 cd sumidi
 npx serve .
-# poi apri l'URL che stampa (es. http://localhost:3000)
+# then open the URL it prints (e.g. http://localhost:3000)
 ```
 
-Per lo sviluppo (test, lint):
+For development (tests, linting):
 
 ```bash
 npm install
-npm test        # suite di regressione (vitest)
-npm run lint     # ESLint
+npm test        # regression suite (vitest)
+npm run lint    # ESLint
 ```
 
-## Struttura del progetto
+## Project layout
 
 ```
-index.html          punto d'ingresso dell'app
-manual.html          manuale utente
-styles.css           stili dell'interfaccia
-fonts/               font self-hostati (Ubuntu, woff2)
-soundfonts/          preset audio locali per il playback (non versionati, vedi sotto)
-scripts/             script di supporto (es. download-soundfonts.mjs)
-src/                  moduli JS (motore di generazione + UI)
-  SongArchitect.js    costruisce la struttura del brano (sezioni, armonia)
-  ChordTheory.js, SongProgressions.js, SongForms.js,
-  SectionPresets.js, Styles.js    dati musicali (accordi, pool, forme, stili)
-  *Generator.js       un generatore per strumento (Bass, Guitar, Piano, Drums, Ensemble, Chord)
-  Ornaments.js         motore condiviso per glissandi/portamento
-  FlowCore.js          utility condivise (RNG, dinamiche, memoria di frase)
-  Playback.js          motore di ascolto in-app (WebAudioFont)
-  CharacterRoster.js, GrooveLock.js, Humanizer.js  personaggi, groove, umanizzazione
-  MidiWriter.js, TabRenderer.js, MarkdownExporter.js   export MIDI/tablature/Markdown
-  SessionManager.js, AppState.js   stato (sessione, cache, UI)
-  SongEngine.js       gen() a blueprint intero + pannello Classic (usato da lab.html)
-  Session.js          Session Mode: pannelli, chord track, playback, export, Solo Mode
-  main.js             bootstrap (carica i due moduli sopra, avvia Session Mode)
-design/               componenti UI (DesignSystem.js) e materiale di design
-tests/                suite di regressione (vitest)
-img/                  icone strumenti e personaggi
+index.html           the app
+manual.html          user manual
+styles.css           interface styles
+fonts/               self-hosted fonts (Ubuntu, woff2)
+soundfonts/          local audio presets for playback (in the repo, 17 MB)
+vendor/              the WebAudioFont player library
+scripts/             support scripts (e.g. download-soundfonts.mjs, impronta-note.mjs)
+src/                 JS modules (generation engine + UI)
+  SongArchitect.js   builds the song structure (sections, harmony)
+  ChordTheory.js, ProgressioniGradi.js, SongProgressions.js, SongForms.js,
+  SectionPresets.js, Styles.js        musical data (chords, pools, forms, styles)
+  *Generator.js      one generator per instrument (bass, guitar, piano, drums, ensemble, pad)
+  Ornaments.js       shared engine for glides and portamento
+  FlowCore.js        shared utilities (RNG, dynamics, phrase memory)
+  Playback.js        in-app playback engine (WebAudioFont)
+  CharacterRoster.js, GrooveLock.js, Humanizer.js   characters, groove, humanisation
+  MidiWriter.js, TabRenderer.js, MarkdownExporter.js   MIDI / tab / Markdown export
+  SessionManager.js, SessionStore.js, SessionExport.js, AppState.js   state, saving, export
+  SongEngine.js      whole-blueprint gen() and the composer bar
+  SongEngineLab.js   the Classic panel, loaded only by lab.html
+  Session.js         Session Mode: panels, chord track, playback, export, Solo Mode
+  main.js            bootstrap
+design/              UI components (DesignSystem.js) and design material
+tests/               regression suite (vitest)
+img/                 instrument and character icons
 ```
 
-## Note tecniche
+## Technical notes
 
-L'arrangiamento in corso viene ripreso da solo alla riapertura della pagina, e il tasto 💾 salva l'intero progetto in un file `.sumidi.json`; per portare la musica in una DAW resta l'export `.mid`. È pensata per browser desktop moderni aggiornati (Chrome, Edge, Firefox).
+Built for up-to-date desktop browsers (Chrome, Edge, Firefox).
 
-**Nessuna risorsa parte in rete.** La libreria [WebAudioFont](https://github.com/surikov/webaudiofont) e i 65 preset sonori del playback sono nel repository (`vendor/` e `soundfonts/`, 17 MB in tutto), come i font e il resto dell'interfaccia: l'app funziona offline e non dipende da nessun servizio di terzi. Il CDN ufficiale resta solo come rete di sicurezza, se un preset dovesse mancare in locale.
+**Nothing is fetched from the network.** The [WebAudioFont](https://github.com/surikov/webaudiofont)
+library and the 65 playback presets live in the repository (`vendor/` and `soundfonts/`, 17 MB
+in total), as do the fonts and the rest of the interface: the app works offline and depends on
+no third-party service. The official CDN is kept only as a safety net, in case a preset is
+missing locally.
 
-## Supporta il progetto
+**A note on the language.** The code comments, the user manual and the commit messages are in
+Italian — it is the language this project is written in. The interface is being translated;
+until then, this README and [CONTRIBUTING.md](CONTRIBUTING.md) are your way in.
 
-Se suMidi ti è utile e vuoi supportarne lo sviluppo: [ko-fi.com/johnwhale](https://ko-fi.com/johnwhale) ☕
+## Support the project
 
-## Licenza
+If suMidi is useful to you: [ko-fi.com/johnwhale](https://ko-fi.com/johnwhale) ☕
 
-Distribuito con licenza **GNU Affero General Public License v3.0** — vedi [LICENSE](LICENSE). In sintesi: sei libero di usare, modificare e distribuire il codice, anche per scopi commerciali, ma se distribuisci una versione modificata (incluso offrirla come servizio web) devi rilasciarne il codice sorgente con la stessa licenza.
+## Licence
 
-**Licenza commerciale disponibile.** Se vuoi integrare suMidi in un prodotto senza rilasciarne il codice sorgente, esiste un'eccezione a pagamento all'AGPL: i recapiti sono su [www.johnwhale.com](https://www.johnwhale.com). Vedi [COMMERCIAL.md](COMMERCIAL.md).
+Released under the **GNU Affero General Public License v3.0** — see [LICENSE](LICENSE). In short:
+you are free to use, modify and distribute the code, including commercially, but if you
+distribute a modified version — including offering it as a web service — you must release your
+source code under the same licence.
 
-## Contribuire
+**A commercial licence is available.** If you want to build suMidi into a product without
+releasing your own source, there is a paid exception to the AGPL: contact details are at
+[www.johnwhale.com](https://www.johnwhale.com). See [COMMERCIAL.md](COMMERCIAL.md).
 
-Le pull request sono benvenute — con una premessa: una modifica che cambia il suono generato è una scelta musicale prima che tecnica, quindi conviene aprire prima una issue. Come lavora il progetto e cosa serve perché una modifica venga accolta: [CONTRIBUTING.md](CONTRIBUTING.md).
+## Contributing
 
-Perché l'eccezione commerciale qui sopra resti possibile, ogni contributo passa da un breve accordo di licenza — [CLA.md](CLA.md): mantieni il tuo copyright, non c'è niente da firmare, basta una riga nella pull request.
+Pull requests are welcome — with one caveat: a change that alters the *sound* is a musical
+decision before a technical one, so open an issue first. How this project works, and what a
+change needs to be accepted: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+For the commercial exception above to remain possible, every contribution goes through a short
+licence agreement — [CLA.md](CLA.md): you keep your copyright, there is nothing to sign, one
+line in the pull request is enough.
