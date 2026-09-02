@@ -155,13 +155,26 @@ export function applyGrooveLock(trackEvents, meta, rng) {
     });
   }
 
-  // Piano LH (note < MIDI 60): kick +14–22ms
+  // Piano LH (note < MIDI 57): kick +14–22ms
+  //
+  // SEGNALATO durante T1 di PLAN37 (2026-09-02), NON corretto — cambierebbe il
+  // timing del piano su ogni brano, quindi la decisione è del committente.
+  // `bass_string_only` è la stessa soglia della chitarra e filtra `note >= 57`,
+  // mentre il commento qui sotto diceva (e l'intento era) "sotto C4 = 60".
+  // Finché LH_HI valeva 57 la differenza era una nota sola; da O2, che ha
+  // alzato il tetto della mano sinistra a 60, il LA3, il SIb3 e il SI3 sono
+  // mano sinistra a tutti gli effetti e restano fuori dal pocket lock.
+  // Misurato su 13 stili x 4 seed x 2 tonalità: delle 23.238 note di piano che
+  // cadono sui beat 1 e 3, 5.525 prendono il lock e 1.682 (il 23% di quelle in
+  // registro basso) ne restano fuori per questa soglia — soprattutto cinematic
+  // (277), unplugged e classical (240 ciascuno).
+  // Il comportamento di oggi è fotografato in tests/grooveLock.test.js.
   if (trackEvents.piano?.length) {
     _lockEvents(trackEvents.piano, kickMap, {
       ...opts,
       beat1_ms_lo: 14, beat1_ms_hi: 22,
       beat3_ms_lo:  8, beat3_ms_hi: 14,
-      bass_string_only: true,  // solo note sotto C4 (60) = LH
+      bass_string_only: true,  // soglia effettiva: note sotto A3 (57)
     });
   }
 }
