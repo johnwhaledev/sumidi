@@ -67,11 +67,13 @@ export default [
     },
   },
   {
-    // I tre file di interfaccia: registrano gli handler come `window.smX = ...`
+    // I file di interfaccia: registrano gli handler come `window.smX = ...`
     // e li richiamano dagli attributi onclick dell'HTML, quindi ogni chiamata
     // fra un file e l'altro sembra un identificatore non dichiarato. Spento
     // solo no-undef: parsing e tutte le altre regole valgono come ovunque.
-    files: ['src/main.js', 'src/SongEngine.js', 'src/Session.js'],
+    // SongEngineLab.js è nato da SongEngine.js con D3(c) e ne eredita il
+    // pattern (window.rnd, window.labCompareFlat, alert dei bottoni).
+    files: ['src/main.js', 'src/SongEngine.js', 'src/Session.js', 'src/SongEngineLab.js'],
     rules: { 'no-undef': 'off' },
   },
   {

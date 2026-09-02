@@ -349,6 +349,10 @@
 
   <!-- ═══════════════════════════════════════════════════════════ -->
   <script type="module" src="src/main.js"></script>
+  <!-- D3(c) di PLAN37: il pannello Classic e la vetrina di questa pagina non
+       stanno più in SongEngine.js, che main.js carica ovunque. Li carica solo
+       lab.html, che è l'unica pagina ad avere gli elementi che leggono. -->
+  <script type="module" src="src/SongEngineLab.js"></script>
   <script>
   (function () {
     const canvas = document.getElementById('bg');

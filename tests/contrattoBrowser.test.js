@@ -68,11 +68,19 @@ function funzioniChiamateNegliHandler(testo) {
   return trovate;
 }
 
+/** Le funzioni globali registrate dai soli moduli che carica index.html. */
+let senzaLab = new Set();
+
 describe('Contratto fra HTML e moduli browser (T1)', () => {
   beforeAll(async () => {
     installaStubDom();
     await import('../src/SongEngine.js');
     await import('../src/Session.js');
+    // Fotografate qui, prima che SongEngineLab.js aggiunga le sue: index.html
+    // non carica quel modulo, quindi non può contare sulle funzioni che
+    // registra. Senza questa distinzione il test resterebbe verde anche
+    // spostando nel lab una funzione che serve alla pagina principale.
+    senzaLab = new Set(Object.keys(globalThis).filter(k => typeof globalThis[k] === 'function'));
   });
 
   it('SongEngine.js e Session.js si caricano e registrano i loro handler', () => {
@@ -86,7 +94,7 @@ describe('Contratto fra HTML e moduli browser (T1)', () => {
     const chiamate = funzioniChiamateNegliHandler(readFileSync(`${RADICE}index.html`, 'utf8'));
     expect(chiamate.size).toBeGreaterThan(10);
 
-    const mancanti = [...chiamate].filter(nome => typeof globalThis[nome] !== 'function');
+    const mancanti = [...chiamate].filter(nome => !senzaLab.has(nome));
     expect(mancanti, `onclick che puntano nel vuoto: ${mancanti.join(', ')}`).toEqual([]);
   });
 
@@ -97,7 +105,7 @@ describe('Contratto fra HTML e moduli browser (T1)', () => {
     const chiamate = funzioniChiamateNegliHandler(readFileSync(`${RADICE}src/Session.js`, 'utf8'));
     expect(chiamate.size).toBeGreaterThan(10);
 
-    const mancanti = [...chiamate].filter(nome => typeof globalThis[nome] !== 'function');
+    const mancanti = [...chiamate].filter(nome => !senzaLab.has(nome));
     expect(mancanti, `bottoni generati che puntano nel vuoto: ${mancanti.join(', ')}`).toEqual([]);
   });
 
@@ -115,6 +123,35 @@ describe('Contratto fra HTML e moduli browser (T1)', () => {
     for (const nome of usate) {
       expect(typeof globalThis[nome], `main.js chiama window.${nome}, che nessun modulo registra`).toBe('function');
     }
+  });
+});
+
+describe('lab.html e il suo modulo (D3(c))', () => {
+  beforeAll(async () => {
+    installaStubDom();
+    await import('../src/SongEngineLab.js');
+  });
+
+  it('ogni funzione chiamata da un onclick di lab.html esiste', () => {
+    // lab.html carica main.js più SongEngineLab.js: il contratto vale sulla
+    // somma dei due. Se un bottone del pannello Classic restasse orfano dopo
+    // l'estrazione, qui diventa rosso.
+    const chiamate = funzioniChiamateNegliHandler(readFileSync(`${RADICE}lab.html`, 'utf8'));
+    expect(chiamate.size).toBeGreaterThan(5);
+
+    const mancanti = [...chiamate].filter(nome => typeof globalThis[nome] !== 'function');
+    expect(mancanti, `onclick di lab.html che puntano nel vuoto: ${mancanti.join(', ')}`).toEqual([]);
+  });
+
+  it('index.html non chiama niente che viva solo nel modulo del lab', () => {
+    // È il senso di D3(c): il codice del pannello Classic non viene più
+    // scaricato da chi apre il sito. Se una funzione servisse a entrambe le
+    // pagine, andrebbe lasciata in SongEngine.js, non spostata qui.
+    const soloLab = Object.keys(globalThis).filter(k => typeof globalThis[k] === 'function' && !senzaLab.has(k));
+    const chiamateIndex = funzioniChiamateNegliHandler(readFileSync(`${RADICE}index.html`, 'utf8'));
+
+    const sconfinate = [...chiamateIndex].filter(nome => soloLab.includes(nome));
+    expect(sconfinate, `index.html chiama funzioni che solo lab.html carica: ${sconfinate.join(', ')}`).toEqual([]);
   });
 });
 
