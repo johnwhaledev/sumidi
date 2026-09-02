@@ -79,3 +79,9 @@ Se suMidi ti è utile e vuoi supportarne lo sviluppo: [ko-fi.com/johnwhale](http
 Distribuito con licenza **GNU Affero General Public License v3.0** — vedi [LICENSE](LICENSE). In sintesi: sei libero di usare, modificare e distribuire il codice, anche per scopi commerciali, ma se distribuisci una versione modificata (incluso offrirla come servizio web) devi rilasciarne il codice sorgente con la stessa licenza.
 
 **Licenza commerciale disponibile.** Se vuoi integrare suMidi in un prodotto senza rilasciarne il codice sorgente, esiste un'eccezione a pagamento all'AGPL: i recapiti sono su [www.johnwhale.com](https://www.johnwhale.com). Vedi [COMMERCIAL.md](COMMERCIAL.md).
+
+## Contribuire
+
+Le pull request sono benvenute — con una premessa: una modifica che cambia il suono generato è una scelta musicale prima che tecnica, quindi conviene aprire prima una issue. Come lavora il progetto e cosa serve perché una modifica venga accolta: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Perché l'eccezione commerciale qui sopra resti possibile, ogni contributo passa da un breve accordo di licenza — [CLA.md](CLA.md): mantieni il tuo copyright, non c'è niente da firmare, basta una riga nella pull request.
