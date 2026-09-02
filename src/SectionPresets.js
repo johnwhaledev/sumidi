@@ -322,44 +322,6 @@ export const SECTION_PRESETS = {
     },
   },
 
-  // ── Waltz 3/4 — arpeggio lento, ritmo ternario ────────────────
-  unplugged_waltz: {
-    intro: {
-      drums:    { active: false },
-      bass:     { active: false },
-      guitar:   { active: true,  style: 'arpeggio',      density: 0.25,dynamics: 'pp' },
-      piano:    { active: false },
-      ensemble: { active: false },
-    },
-    verse: {
-      drums:    { active: true,  style: 'brushes',       density: 0.25,dynamics: 'p'  },
-      bass:     { active: true,  style: 'fingerstyle',   density: 0.3, dynamics: 'p'  },
-      guitar:   { active: true,  style: 'waltz_8th',     density: 0.45,dynamics: 'mp' },
-      piano:    { active: true,  style: 'ballad',        density: 0.25,dynamics: 'p'  },
-      ensemble: { active: true,  style: 'pad',           density: 0.2, dynamics: 'pp' },
-    },
-    chorus: {
-      drums:    { active: true,  style: 'cajon',         density: 0.5, dynamics: 'mf' },
-      bass:     { active: true,  style: 'fingerstyle',   density: 0.5, dynamics: 'mp' },
-      guitar:   { active: true,  style: 'waltz_8th',     density: 0.6, dynamics: 'mf' },
-      piano:    { active: true,  style: 'ballad',        density: 0.4, dynamics: 'mp' },
-      ensemble: { active: true,  style: 'melodic',       density: 0.4, dynamics: 'mp' },
-    },
-    bridge: {
-      drums:    { active: false },
-      bass:     { active: true,  style: 'fingerstyle',   density: 0.2, dynamics: 'pp' },
-      guitar:   { active: true,  style: 'arpeggio',      density: 0.3, dynamics: 'p'  },
-      piano:    { active: false },
-      ensemble: { active: true,  style: 'pad',           density: 0.25,dynamics: 'p'  },
-    },
-    outro: {
-      drums:    { active: false },
-      bass:     { active: true,  style: 'fingerstyle',   density: 0.18,dynamics: 'pp' },
-      guitar:   { active: true,  style: 'arpeggio',      density: 0.2, dynamics: 'pp' },
-      piano:    { active: false },
-      ensemble: { active: false },
-    },
-  },
 
   // ── Classical Chamber ─────────────────────────────────────────
   classical: {

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { CHORD_INTERVALS, SCALE_INTERVALS, PITCH_CLASS, nomeAccordo, accordiPerBattuta } from '../src/ChordTheory.js';
 import { PROGRESSION_POOLS, PROGRESSIONS } from '../src/SongProgressions.js';
+import { PROGRESSIONI, POOL_INDICE } from '../src/ProgressioniGradi.js';
 import { SONG_FORMS } from '../src/SongForms.js';
 import { SECTION_PRESETS } from '../src/SectionPresets.js';
 import { STYLES } from '../src/Styles.js';
@@ -72,6 +73,45 @@ describe('Formato delle progressioni (B1)', () => {
           .filter(r => (r.start_tick - sec.startTick) % barTicks === 0)
           .map(r => r.chord);
         expect(dalMotore, `${stile}/${sec.type}`).toEqual(attesi);
+      }
+    }
+  });
+});
+
+// D3 di PLAN37 — la voce chiedeva di togliere i dati morti: 27 progressioni di
+// valzer in 5 pool, la forma `unplugged_waltz` e `folk_short`, scaricate da
+// ogni visitatore e raggiungibili da nessuno. Tolte il 2026-09-02 su decisione
+// del committente. Questi test impediscono che il caso si ripresenti: una
+// forma che nessuno stile elenca, o una progressione che nessun pool usa,
+// diventa rossa qui invece di restare in giro per mesi.
+describe('Dati raggiungibili (D3)', () => {
+  /** Le forme che un utente può davvero scegliere, dalla composer bar (A2). */
+  const raggiungibili = new Set();
+  for (const stile of Object.values(STYLES)) {
+    for (const forma of stile.availableForms ?? []) raggiungibili.add(forma);
+    if (stile.defaultForm) raggiungibili.add(stile.defaultForm);
+  }
+
+  it('ogni forma definita è elencata da almeno uno stile', () => {
+    const orfane = Object.keys(SONG_FORMS).filter(f => !raggiungibili.has(f));
+    expect(orfane, `forme che nessuno stile espone: ${orfane.join(', ')}`).toEqual([]);
+  });
+
+  it('ogni forma elencata da uno stile è definita', () => {
+    const fantasma = [...raggiungibili].filter(f => !SONG_FORMS[f]);
+    expect(fantasma, `forme elencate ma inesistenti: ${fantasma.join(', ')}`).toEqual([]);
+  });
+
+  it('nessuna progressione resta senza un pool che la usi', () => {
+    const usate  = new Set(Object.values(POOL_INDICE).flat());
+    const orfane = Object.keys(PROGRESSIONI).filter(id => !usate.has(id));
+    expect(orfane, `progressioni che nessun pool pesca: ${orfane.join(', ')}`).toEqual([]);
+  });
+
+  it('ogni pool pesca solo progressioni che esistono', () => {
+    for (const [pool, ids] of Object.entries(POOL_INDICE)) {
+      for (const id of ids) {
+        expect(PROGRESSIONI[id], `${pool} pesca ${id}, che non esiste`).toBeDefined();
       }
     }
   });

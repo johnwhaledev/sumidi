@@ -57,16 +57,6 @@ export const SONG_FORMS = {
     { type: 'chorus',  bars: [4, 8],   energy: 9 },
     { type: 'outro',   bars: [8, 8],   energy: 2 },
   ],
-  unplugged_waltz: [
-    { type: 'intro',   bars: [6, 6],   energy: 2, beatsPerBar: 3 },
-    { type: 'verse',   bars: [12, 12], energy: 4, beatsPerBar: 3 },
-    { type: 'chorus',  bars: [12, 12], energy: 7, beatsPerBar: 3 },
-    { type: 'verse',   bars: [12, 12], energy: 5, beatsPerBar: 3 },
-    { type: 'chorus',  bars: [12, 12], energy: 8, beatsPerBar: 3 },
-    { type: 'bridge',  bars: [6, 8],   energy: 5, beatsPerBar: 3 },
-    { type: 'chorus',  bars: [12, 12], energy: 9, beatsPerBar: 3 },
-    { type: 'outro',   bars: [6, 6],   energy: 2, beatsPerBar: 3 },
-  ],
 
   // ── Folk ───────────────────────────────────────────────────────
   folk_standard: [
@@ -78,14 +68,6 @@ export const SONG_FORMS = {
     { type: 'bridge',  bars: [4, 8],   energy: 5 },
     { type: 'chorus',  bars: [8, 8],   energy: 8 },
     { type: 'outro',   bars: [4, 4],   energy: 3 },
-  ],
-  folk_short: [
-    { type: 'intro',   bars: [4, 4],   energy: 3 },
-    { type: 'verse',   bars: [6, 8],   energy: 5 },
-    { type: 'chorus',  bars: [8, 8],   energy: 7 },
-    { type: 'verse',   bars: [6, 8],   energy: 6 },
-    { type: 'chorus',  bars: [8, 8],   energy: 8 },
-    { type: 'outro',   bars: [4, 6],   energy: 3 },
   ],
 
   // ── Jazz ───────────────────────────────────────────────────────

@@ -24,7 +24,7 @@
  * forma di sempre: nessun consumatore e' cambiato.
  */
 
-/** Le progressioni uniche: 564 record per 940 usi. */
+/** Le progressioni uniche: 560 record per 912 usi. */
 export const PROGRESSIONI = {
   p001: { modo: 'maggiore', gradi: [[0,""],[7,""],[9,"m"],[5,""]] },
   p002: { modo: 'maggiore', gradi: [[0,""],[5,""],[0,""],[7,""]] },
@@ -490,10 +490,6 @@ export const PROGRESSIONI = {
   p462: { modo: 'minore', gradi: [[0,"m"],[8,""],[3,""],[3,""]] },
   p463: { modo: 'minore', gradi: [[5,"m"],[10,""],[0,"m"],[0,"m"]] },
   p464: { modo: 'maggiore', gradi: [[9,"m"],[4,"m"],[5,""],[7,""]] },
-  p465: { modo: 'maggiore', gradi: [[0,"maj7"],[2,"m7"],[7,"7"],[0,"maj7"]] },
-  p466: { modo: 'maggiore', gradi: [[0,"maj7"],[5,"maj7"],[7,"7"],[9,"m7"]] },
-  p467: { modo: 'maggiore', gradi: [[2,"m"],[7,""],[9,"m"],[4,"7"]] },
-  p468: { modo: 'maggiore', gradi: [[9,"m"],[2,"m"],[4,"7"],[9,"m"]] },
   p469: { modo: 'maggiore', gradi: [[0,"maj7"],[5,"maj7"],[0,"maj7"],[5,"maj7"]] },
   p470: { modo: 'maggiore', gradi: [[0,"maj9"],[9,"m7"],[0,"maj9"],[9,"m7"]] },
   p471: { modo: 'maggiore', gradi: [[5,"maj7"],[4,"m7"],[2,"m7"],[4,"m7"]] },
@@ -684,11 +680,6 @@ export const POOL_INDICE = {
   cinematic_chorus_minor: ['p031', 'p138', 'p057', 'p140'],
   cinematic_bridge_minor: ['p030', 'p076', 'p461'],
   cinematic_outro_minor: ['p087', 'p462', 'p463'],
-  waltz_intro: ['p001', 'p002', 'p464', 'p147'],
-  waltz_verse: ['p001', 'p008', 'p010', 'p465', 'p023', 'p004', 'p022', 'p014'],
-  waltz_chorus: ['p442', 'p001', 'p109', 'p466', 'p003', 'p016'],
-  waltz_bridge: ['p003', 'p467', 'p024', 'p468', 'p021'],
-  waltz_outro: ['p001', 'p002', 'p444', 'p023'],
   lo_fi_intro: ['p469', 'p470', 'p471', 'p472', 'p473'],
   lo_fi_verse: ['p474', 'p475', 'p476', 'p477', 'p478', 'p479', 'p480'],
   lo_fi_chorus: ['p481', 'p482', 'p483', 'p484', 'p485', 'p486'],

@@ -796,10 +796,17 @@ function buildSong(params = {}) {
   );
   const keyInfo    = parseKey(keyStr);
   const presets    = SECTION_PRESETS[formName] ?? SECTION_PRESETS[style] ?? SECTION_PRESETS['unplugged'];
-  // Per le forme waltz, usa i pool waltz indipendentemente dallo stile
-  const progFamily = formName.includes('waltz') ? 'waltz' : styleDef.progressionFamily;
+  const progFamily = styleDef.progressionFamily;
 
-  // beatsPerBar dalla prima sezione della forma (3 per waltz, 4 per tutto il resto)
+  // D3(a) di PLAN37: qui c'era il dirottamento sui pool 'waltz' per le forme in
+  // 3/4. Con `unplugged_waltz` rimossa nessuna forma lo attiva più, e i pool
+  // waltz_* non esistono: il ramo puntava nel vuoto.
+  //
+  // beatsPerBar dalla prima sezione della forma. Dopo la rimozione del valzer
+  // nessuna forma dichiara 3, quindi oggi vale 4 dappertutto — il supporto al
+  // 3/4 resta nel motore (buildHarmonicMap usa la finestra intera quando la
+  // battuta è più corta di 4/4) e tornerebbe a servire alla prima forma
+  // ternaria che si volesse scrivere.
   const beatsPerBar = SONG_FORMS[formName]?.[0]?.beatsPerBar ?? 4;
   const barTicks    = ppq * beatsPerBar;
 
