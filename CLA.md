@@ -1,79 +1,79 @@
-# Accordo di licenza per i contributi (CLA)
+# Contributor Licence Agreement (CLA)
 
-**Versione 1.0 — 2 settembre 2026**
+🇮🇹 [Leggi questa pagina in italiano](CLA.it.md) — in case of divergence, the Italian text governs.
 
-Questo documento riguarda **solo chi propone modifiche al codice** di suMidi. Se usi il
-programma, o lo modifichi per conto tuo, non ti serve: bastano i termini della
-[AGPL-3.0](LICENSE).
+**Version 1.0 — 2 September 2026**
 
-## Perché esiste
+This document concerns **only those who propose changes to suMidi's code**. If you use the
+program, or modify it for your own use, you don't need it: the terms of the
+[AGPL-3.0](LICENSE) are enough.
 
-suMidi è distribuito in AGPL-3.0 e resterà tale. Accanto all'AGPL, il progetto offre una
-[licenza commerciale](COMMERCIAL.md) a chi vuole integrare suMidi in un prodotto chiuso: è la
-sola forma di sostegno economico che il progetto abbia, e serve a tenerlo vivo e gratuito per
-tutti gli altri.
+## Why it exists
 
-Per poter concedere quell'eccezione occorre avere il diritto di licenziare **tutto** il codice
-con termini diversi dall'AGPL. Sul codice scritto da altri quel diritto non c'è, a meno che
-l'autore non lo conceda esplicitamente: senza questo accordo, il primo contributo esterno
-accettato renderebbe impossibile vendere un'eccezione sull'intero programma.
+suMidi is distributed under the AGPL-3.0 and will remain so. Alongside the AGPL, the project
+offers a [commercial licence](COMMERCIAL.md) to those who want to build suMidi into a closed
+product: it is the project's only form of financial support, and it keeps it alive and free for
+everyone else.
 
-Questo accordo serve a quello, e a nient'altro.
+To be able to grant that exception, the project needs the right to license **all** of the code
+under terms other than the AGPL. That right doesn't exist over code written by others, unless the
+author grants it explicitly: without this agreement, the first accepted external contribution
+would make it impossible to sell an exception on the whole program.
 
-## Che cosa concedi
+This agreement exists for that, and nothing else.
 
-Accettando questo accordo, per ogni contributo che proponi al progetto:
+## What you grant
 
-1. **Mantieni il tuo copyright.** Non c'è nessuna cessione: il contributo resta tuo, e puoi
-   continuare a usarlo, pubblicarlo e concederlo a chiunque, come e quando vuoi.
+By accepting this agreement, for every contribution you propose to the project:
 
-2. **Concedi a John Whale**, titolare del progetto suMidi, una licenza sul diritto d'autore
-   perpetua, valida in tutto il mondo, non esclusiva, gratuita, irrevocabile e **sublicenziabile**
-   per riprodurre, modificare, pubblicare, distribuire ed eseguire il tuo contributo, da solo o
-   come parte di suMidi — **compresa la facoltà di distribuirlo con termini di licenza diversi
-   dall'AGPL-3.0**, anche non liberi. È questa facoltà, e solo questa, che rende possibile
-   l'eccezione commerciale.
+1. **You keep your copyright.** There is no assignment: the contribution remains yours, and you
+   can keep using it, publishing it and licensing it to anyone, however and whenever you want.
 
-3. **Concedi la stessa licenza sui brevetti** eventualmente necessari a usare il tuo contributo,
-   nella misura in cui ne sei titolare o puoi concederli. Se avvii un'azione per violazione di
-   brevetto sostenendo che suMidi viola un tuo brevetto, questa concessione decade.
+2. **You grant John Whale**, the owner of the suMidi project, a perpetual, worldwide,
+   non-exclusive, royalty-free, irrevocable and **sublicensable** copyright licence to reproduce,
+   modify, publish, distribute and perform your contribution, alone or as part of suMidi —
+   **including the right to distribute it under licence terms other than the AGPL-3.0**, even
+   non-free ones. It is this right, and only this right, that makes the commercial exception
+   possible.
 
-4. **Il tuo contributo resta pubblicato in AGPL-3.0** insieme al resto del programma. Nessuna
-   eccezione commerciale toglie a chiunque altro i diritti che l'AGPL gli dà.
+3. **You grant the same licence over any patents** necessary to use your contribution, to the
+   extent you own or can license them. If you bring a patent infringement action claiming that
+   suMidi infringes a patent of yours, this grant terminates.
 
-## Che cosa dichiari
+4. **Your contribution stays published under the AGPL-3.0** together with the rest of the
+   program. No commercial exception takes away the rights the AGPL gives to everyone else.
 
-- Il contributo è **opera tua**, oppure hai il diritto di concederne la licenza qui sopra.
-- Se il contributo contiene codice di altri, lo hai indicato esplicitamente nella pull request,
-  con la sua licenza.
-- Se lavori per qualcuno e il contributo rientra nella tua attività lavorativa, hai
-  l'autorizzazione del tuo datore di lavoro, oppure quel codice è escluso dal contributo.
-- Il contributo è offerto **così com'è**, senza garanzie di alcun tipo.
+## What you represent
 
-## Come si accetta
+- The contribution is **your own work**, or you have the right to license it as above.
+- If the contribution contains code from others, you have stated so explicitly in the pull
+  request, along with its licence.
+- If you work for someone and the contribution falls within your job, you have your employer's
+  authorisation, or that code is excluded from the contribution.
+- The contribution is offered **as is**, with no warranty of any kind.
 
-Non serve firmare niente né inviare documenti. Nella tua prima pull request, includi nella
-descrizione questa riga:
+## How to accept
+
+There is nothing to sign and no documents to send. In your first pull request, include this line
+in the description:
 
 ```
-Ho letto CLA.md e accetto l'accordo di licenza per i contributi.
+I have read CLA.md and I accept the contributor licence agreement.
 ```
 
-Vale per quel contributo e per tutti quelli successivi, finché questo documento non cambia
-versione. Se cambia, ti sarà chiesto di accettare la nuova versione alla prima pull request
-utile.
+It applies to that contribution and to every one after it, until this document changes version.
+If it changes, you will be asked to accept the new version on the next useful pull request.
 
-Se non vuoi accettare, il progetto resta comunque a tua disposizione: puoi mantenere un tuo
-fork in AGPL-3.0, che è un diritto pieno che nessuno può toglierti. Semplicemente, quel codice
-non potrà essere accolto qui.
+If you don't want to accept, the project is still available to you: you can maintain your own
+AGPL-3.0 fork, which is a full right nobody can take from you. Simply, that code won't be
+accepted here.
 
-## Note
+## Notes
 
-- Questo testo è redatto in italiano perché è la lingua del progetto. Con la traduzione
-  dell'interfaccia e della documentazione sarà affiancato da una versione inglese; in caso di
-  divergenza farà fede l'italiano.
-- Il testo si ispira alla struttura dei CLA di uso comune nei progetti open source in dual
-  licensing. **Non è stato redatto da un avvocato**: prima di accettare il primo contributo
-  esterno di rilievo, o se il progetto dovesse assumere valore commerciale, va fatto rivedere da
-  un legale — insieme alla dichiarazione di titolarità del copyright, che oggi il file
-  [LICENSE](LICENSE) non riporta.
+- This text is the English translation of the original Italian document
+  ([CLA.it.md](CLA.it.md)); **in case of divergence, the Italian text governs.**
+- The text follows the structure common to CLAs used in open-source dual-licensing projects.
+  **It was not drafted by a lawyer**: before accepting the first external contribution of any
+  weight, or if the project were to gain commercial value, it should be reviewed by legal
+  counsel — together with the copyright ownership statement, which the [LICENSE](LICENSE) file
+  does not currently include.
