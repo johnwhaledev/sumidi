@@ -161,11 +161,14 @@
       <div class="cb-spacer"></div>
       <button id="sm-seed-lock-btn" class="btn btn-s btn-sm" onclick="smToggleSeedLock()"
         title="Blocca il seed: rigenerando riproduci sempre lo stesso brano">🔓</button>
-      <button id="sm-share-btn" class="btn btn-s btn-sm" onclick="smCopyShareLink()"
+      <!-- Nascosto in attesa di verifica: non ancora provato a fondo. -->
+      <button id="sm-share-btn" class="btn btn-s btn-sm" onclick="smCopyShareLink()" hidden
         title="Copia il link di questo brano: chi lo apre ottiene lo stesso identico brano">🔗</button>
       <button id="sm-random-btn" class="btn btn-s btn-sm" onclick="smRandomAll()"
         title="Randomizza stile, tonalità e BPM e rigenera">🎲 Random</button>
-      <button id="sm-grid-btn" class="btn btn-s btn-sm" onclick="smOpenChordGrid()"
+      <!-- Nascosto: una battuta con 2 accordi nella griglia incollata manda in crisi il MIDI
+           esportato (segnalato 2026-09-04, v. PLAN37 B13). Da riaprire dopo il fix. -->
+      <button id="sm-grid-btn" class="btn btn-s btn-sm" onclick="smOpenChordGrid()" hidden
         title="Incolla una griglia di accordi tua (| Am7 | D7 | %  |) e suonaci sopra">📋 Accordi</button>
       <button id="sm-gen-btn" class="btn btn-p btn-sm" onclick="smAutoGenerate()"
         title="Genera canzone completa e importa nelle lanes">⚡ Genera</button>
@@ -179,10 +182,10 @@
       <button id="sm-adv-export-btn" class="btn btn-s btn-sm" onclick="smOpenAdvancedExport()"
         title="Tab chitarra/basso e chord chart in una finestra">📑 Tab &amp; Accordi</button>
       <button id="sm-export-btn" class="btn btn-d btn-sm" onclick="smExportSession()">⬇ MIDI</button>
-      <div class="cb-sep"></div>
-      <button id="sm-save-btn" class="btn btn-s btn-sm" onclick="smExportProject()"
+      <!-- Nascosti in attesa di verifica: salvataggio/apertura progetto non ancora provati a fondo. -->
+      <button id="sm-save-btn" class="btn btn-s btn-sm" onclick="smExportProject()" hidden
         title="Salva l'intero progetto (sezioni, personaggi, accordi custom) in un file .sumidi.json">💾 Salva</button>
-      <button id="sm-open-btn" class="btn btn-s btn-sm" onclick="smImportProject()"
+      <button id="sm-open-btn" class="btn btn-s btn-sm" onclick="smImportProject()" hidden
         title="Apri un progetto .sumidi.json salvato in precedenza">📂 Apri</button>
       <input type="file" id="sm-project-file" accept=".json,application/json"
         style="display:none" onchange="smImportProjectFile(event)">
