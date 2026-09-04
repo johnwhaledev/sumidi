@@ -1070,16 +1070,27 @@
     }
 
     /* ── Composer Header barra globale ─────────────────────────── */
+    /* Due righe esplicite, non una fila sola che va a capo da sola: prima i
+       campi (tonalità/BPM/stile/seed), poi i bottoni. Mischiati in una fila
+       sola andavano storti in altezza (i controlli hanno un'altezza diversa
+       dai bottoni) e il punto di ritorno a capo cadeva a caso in mezzo ai
+       bottoni. Segnalato dal committente il 2026-09-04. */
     .composer-bar {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       gap: 10px;
-      flex-wrap: wrap;
       padding: 10px 14px;
       background: var(--s1);
       border: 1px solid var(--border);
       border-radius: 10px;
       margin-bottom: 16px;
+    }
+
+    .composer-bar .cb-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .composer-bar label {

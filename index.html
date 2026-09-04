@@ -95,6 +95,7 @@
 
     <!-- Composer bar — Key / BPM / Style / bottoni export sempre visibili -->
     <div class="composer-bar" id="composer-bar">
+      <div class="cb-row cb-row-data">
       <div>
         <label>Tonalità</label>
         <select id="sm-key" onchange="smSyncMeta()">
@@ -151,14 +152,15 @@
         <select id="sm-form" onchange="smSyncMeta()"
           title="Struttura del brano: quante sezioni e in che ordine. Compare solo per gli stili che ne hanno più di una."></select>
       </div>
-      <div class="cb-sep"></div>
+      <div class="cb-spacer"></div>
       <div class="cb-seed">
         <label>Seed</label>
         <input type="text" id="sm-seed" inputmode="numeric" maxlength="5" placeholder="—"
           oninput="smSeedFieldInput()" spellcheck="false" autocomplete="off"
           title="Il numero che identifica il brano. Incollane uno e premi Genera per riottenere esattamente quel brano.">
       </div>
-      <div class="cb-spacer"></div>
+      </div>
+      <div class="cb-row cb-row-actions">
       <button id="sm-seed-lock-btn" class="btn btn-s btn-sm" onclick="smToggleSeedLock()"
         title="Blocca il seed: rigenerando riproduci sempre lo stesso brano">🔓</button>
       <!-- Nascosto in attesa di verifica: non ancora provato a fondo. -->
@@ -189,6 +191,7 @@
         title="Apri un progetto .sumidi.json salvato in precedenza">📂 Apri</button>
       <input type="file" id="sm-project-file" accept=".json,application/json"
         style="display:none" onchange="smImportProjectFile(event)">
+      </div>
     </div>
 
     <!-- ── Session Mode ───────────────────────────────────────────── -->
