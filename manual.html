@@ -209,18 +209,6 @@
   <h3>Umanizzazione</h3>
   <p>Aggiunge micro-variazioni casuali al timing e alla velocity degli eventi MIDI, simulando l'imperfezione di un musicista umano. <strong>0%</strong> = perfettamente quantizzato. <strong>100%</strong> = molto libero. Consigliato 25–45% per un suono naturale senza perdere il groove.</p>
 
-  <h3>📋 Accordi — suona sui tuoi accordi</h3>
-  <p>Il tasto <strong>📋 Accordi</strong> nella composer bar apre un campo dove incollare una griglia scritta da te: suMidi ci costruisce sopra l&rsquo;arrangiamento, con lo stile, la tonalità e il BPM che hai scelto. È il caso d&rsquo;uso opposto a Genera — non &ldquo;dammi una canzone&rdquo; ma &ldquo;accompagnami mentre suono la mia&rdquo;.</p>
-  <table>
-    <tr><th>Come si scrive</th><th>Cosa vuol dire</th></tr>
-    <tr><td><code>| Am7 | D7 | Gmaj7 | Cmaj7 |</code></td><td>Una battuta per cella. Le barre a inizio e fine riga sono facoltative, e andare a capo non cambia niente: conta solo l&rsquo;ordine delle celle.</td></tr>
-    <tr><td><code>| Dm7 G7 |</code></td><td>Due accordi nella stessa battuta, separati da uno spazio: mezza battuta ciascuno. È il ii-V dentro la battuta, e più di due non ci stanno.</td></tr>
-    <tr><td><code>| Am7 | % |</code></td><td><code>%</code> ripete la battuta precedente, come nei fake book.</td></tr>
-    <tr><td><code>Am F C G</code></td><td>Senza nessuna barra vale una battuta per accordo — comodo quando scrivi di fretta.</td></tr>
-    <tr><td><code>C/E</code> · <code>F#m7b5</code> · <code>Bb7</code> · <code>Dsus4</code></td><td>Slash chord, semidiminuiti, settime, sus: le stesse sigle che il resto del programma già conosce.</td></tr>
-  </table>
-  <p>Mentre scrivi, sotto al campo compare l&rsquo;anteprima battuta per battuta; se qualcosa non torna, il messaggio dice <em>quale</em> battuta guardare invece di limitarsi a un errore generico. Con <strong>Dove</strong> scegli se la griglia diventa una sezione nuova in fondo al brano o se sostituisce gli accordi di una sezione che c&rsquo;è già; in quel caso la sezione prende anche la lunghezza della griglia.</p>
-
   <h3>Seed</h3>
   <p>Numero intero che inizializza il generatore di numeri casuali. Stesso seed, stesso stile, stessa tonalità e stesso BPM producono sempre <strong>esattamente</strong> lo stesso brano — utile per confrontare varianti o tornare su un'idea che ti era piaciuta.</p>
   <p>Nella composer bar in alto trovi i controlli dedicati:</p>
@@ -228,7 +216,6 @@
     <tr><th>Controllo</th><th>Cosa fa</th></tr>
     <tr><td>Campo <strong>Seed</strong></td><td>Mostra il seed del brano che stai ascoltando. Puoi anche scriverci o incollarci dentro un seed che avevi annotato: premendo Genera riottieni quel brano esatto, a patto che stile, tonalità e BPM siano gli stessi. Compilare il campo blocca automaticamente il seed (il lucchetto accanto si chiude), perché altrimenti Genera ne estrarrebbe subito un altro.</td></tr>
     <tr><td>🔓 / 🔒 Blocca seed</td><td>Se sbloccato (🔓), ogni volta che premi Genera viene estratto un nuovo seed casuale (quindi un brano diverso anche a parità di stile/tonalità/BPM). Se bloccato (🔒), il seed resta fisso e rigenerare riproduce sempre lo stesso brano.</td></tr>
-    <tr><td>🔗 Copia link</td><td>Copia negli appunti l'indirizzo del brano corrente. L'indirizzo contiene stile, tonalità, BPM e seed: chi lo apre ottiene lo stesso identico brano, e a te basta salvarlo fra i preferiti per ritrovarlo domani.</td></tr>
     <tr><td>🎲 Random</td><td>Randomizza insieme stile, tonalità e BPM (scelto in un range coerente con lo stile estratto) e rigenera subito il brano. Utile per uscire dal "blocco dell'idea" e scoprire combinazioni a cui non avresti pensato.</td></tr>
   </table>
   <p>La barra degli indirizzi si aggiorna da sola a ogni generazione: l'indirizzo <em>è</em> il brano. Nessun dato viene inviato da nessuna parte — il brano non è salvato su un server, viene semplicemente rigenerato identico a partire dai quattro parametri che il link porta con sé.</p>
@@ -287,16 +274,8 @@
 
 <!-- SALVATAGGIO PROGETTO -->
 <div class="section">
-  <h2>Salvare e riaprire un progetto</h2>
-  <p>Il file <strong>.mid</strong> è il risultato: si apre in una DAW ma non si può più rimettere in suMidi per continuare a lavorarci. Per quello ci sono due strade, con scopi diversi.</p>
-  <table>
-    <tr><th>Cosa</th><th>A cosa serve</th></tr>
-    <tr><td><strong>Ripresa automatica</strong></td><td>suMidi salva da solo l'arrangiamento nel tuo browser a ogni modifica, e lo ripropone alla riapertura della pagina. È una rete di sicurezza contro la scheda chiusa per sbaglio: c'è <strong>un solo slot</strong>, e rispecchia sempre l'ultima cosa che avevi a schermo. Non è un archivio, e sparisce se cancelli i dati del sito.</td></tr>
-    <tr><td>💾 <strong>Salva</strong></td><td>Scrive un file <strong>.sumidi.json</strong> con l'intero progetto: sezioni, battute, personaggi, accordi custom del chord track, strumenti mutati, seed. È il salvataggio vero — quello da tenere, da archiviare e da mandare a qualcun altro.</td></tr>
-    <tr><td>📂 <strong>Apri</strong></td><td>Ricarica un <strong>.sumidi.json</strong> salvato in precedenza, sostituendo quello che c'è a schermo.</td></tr>
-  </table>
-  <p>Il progetto è leggero perché non contiene note: contiene le <em>decisioni</em>, e le note vengono rigenerate identiche da quelle. Per la stessa ragione un <strong>.sumidi.json</strong> è il modo migliore per segnalare un problema: allegandolo, chi legge riproduce esattamente ciò che senti tu.</p>
-  <p class="muted">Aprire un link condiviso (con <code>?seed=</code> nell'indirizzo) mostra il brano del link e <strong>non</strong> tocca la tua ripresa automatica: il lavoro che avevi in corso resta dov'è finché non lo modifichi.</p>
+  <h2>Riprendere da dove avevi lasciato</h2>
+  <p>Il file <strong>.mid</strong> è il risultato: si apre in una DAW ma non si può più rimettere in suMidi per continuare a lavorarci. suMidi salva da solo l'arrangiamento nel tuo browser a ogni modifica, e lo ripropone alla riapertura della pagina — è una rete di sicurezza contro la scheda chiusa per sbaglio: c'è <strong>un solo slot</strong>, e rispecchia sempre l'ultima cosa che avevi a schermo. Non è un archivio, e sparisce se cancelli i dati del sito.</p>
 </div>
 
 <!-- INTERFACCIA E MIXER -->
@@ -355,7 +334,7 @@
   <h2>Note tecniche e risoluzione problemi</h2>
 
   <h3>Dove finisce il lavoro in corso</h3>
-  <p>L'arrangiamento viene ripreso da solo alla riapertura della pagina, ma resta nel browser di quel computer: un solo slot, che si perde cancellando i dati del sito o passando a un altro browser. Per tenere davvero un progetto usa <strong>💾 Salva</strong> e conserva il file <strong>.sumidi.json</strong>; per il risultato finito esporta il <strong>.mid</strong> (e, se ti serve, il <strong>.md</strong> con accordi e tablature). La cronologia <strong>Undo (↩)</strong> resta valida solo nella sessione corrente e limitata a 10 passi.</p>
+  <p>L'arrangiamento viene ripreso da solo alla riapertura della pagina, ma resta nel browser di quel computer: un solo slot, che si perde cancellando i dati del sito o passando a un altro browser. Per il risultato finito esporta il <strong>.mid</strong> (e, se ti serve, il <strong>.md</strong> con accordi e tablature). La cronologia <strong>Undo (↩)</strong> resta valida solo nella sessione corrente e limitata a 10 passi.</p>
 
   <h3>Compatibilità</h3>
   <p>suMidi è pensato per browser desktop moderni (Chrome, Edge, Firefox aggiornati). Non richiede installazione né connessione a Internet dopo il primo caricamento della pagina, con l'eccezione del font Google (Ubuntu) caricato da remoto: se non c'è connessione, l'app resta comunque utilizzabile con un font di sistema equivalente.</p>
